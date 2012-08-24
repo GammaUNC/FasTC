@@ -1,0 +1,57 @@
+INCLUDE_DIRECTORIES(${TexC_SOURCE_DIR}/BPTCEncoder/include)
+
+INCLUDE(CheckCXXSourceCompiles)
+
+SET(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+IF(CMAKE_COMPILER_IS_GNUCC)
+	SET(CMAKE_REQUIRED_FLAGS -msse4.1)
+	CHECK_CXX_SOURCE_COMPILES("config/testsse4.1.cpp" HAS_SSE_41)
+
+	IF(HAS_SSE_41)
+		SET(CMAKE_REQUIRED_FLAGS -msse4.2)
+		CHECK_CXX_SOURCE_COMPILES("config/testsse4.2.cpp"	HAS_SSE_POPCNT)
+	ENDIF(HAS_SSE_41)
+
+ELSEIF(MSVC)
+ENDIF()
+SET(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
+
+CONFIGURE_FILE(
+	"config/BC7Config.h.in"
+	"src/BC7Config.h"
+)
+
+IF(CMAKE_COMPILER_IS_GNUCC)
+	ADD_DEFINITIONS(-fasm-blocks)
+ENDIF(CMAKE_COMPILER_IS_GNUCC)
+
+SET( HEADERS
+	src/BC7CompressionMode.h
+	src/BC7IntTypes.h
+	src/BitStream.h
+	src/RGBAEndpoints.h
+)
+
+SET( SOURCES
+	src/BC7Compressor.cpp
+	src/RGBAEndpoints.cpp
+)
+
+IF( HAS_SSE_41 ) 
+	SET( HEADERS
+		${HEADERS}
+		src/RGBAEndpointsSIMD.h
+		src/BC7CompressionModeSIMD.h
+	)
+
+	SET( SOURCES
+		${SOURCES}
+		src/BC7CompressorSIMD.cpp
+		src/RGBAEndpointsSIMD.cpp
+	)
+ENDIF( HAS_SSE_41 )
+
+ADD_LIBRARY( BPTCEncoder
+	${SOURCES}
+	${SIMD_SOURCES}
+)

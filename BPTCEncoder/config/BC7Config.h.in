@@ -1,0 +1,8 @@
+// Copyright (c) 2012 Pavel Krajcevski
+// All Rights Reserved
+
+// BC7Config.h.in  -- This file contains variables that are introduced
+// explicitly by the CMake build process.
+
+// Do we have the proper popcnt instruction defined?
+#define HAS_SSE_POPCNT @HAS_SSE_POPCNT@
