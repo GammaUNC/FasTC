@@ -5,4 +5,4 @@
 // explicitly by the CMake build process.
 
 // Do we have the proper popcnt instruction defined?
-#define HAS_SSE_POPCNT @HAS_SSE_POPCNT@
+#cmakedefine HAS_SSE_POPCNT

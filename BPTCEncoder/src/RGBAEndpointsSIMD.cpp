@@ -119,7 +119,7 @@ __m128i RGBAVectorSIMD::ToPixel(const __m128i &qmask) const {
 
 	// !SPEED! We should figure out a way to get rid of these scalar operations.
 #ifdef HAS_SSE_POPCNT
-	const uint32 prec = _mm_popcnt32(((uint32 *)(&qmask))[0]);
+	const uint32 prec = _mm_popcnt_u32(((uint32 *)(&qmask))[0]);
 #else
 	const uint32 prec = popcnt32(((uint32 *)(&qmask))[0]);
 #endif
@@ -160,7 +160,7 @@ __m128i RGBAVectorSIMD::ToPixel(const __m128i &qmask, const int pBit) const {
 	
 	// !SPEED! We should figure out a way to get rid of these scalar operations.
 #ifdef HAS_SSE_POPCNT
-	const uint32 prec = _mm_popcnt32(((uint32 *)(&qmask))[0]);
+	const uint32 prec = _mm_popcnt_u32(((uint32 *)(&qmask))[0]);
 #else
 	const uint32 prec = popcnt32(((uint32 *)(&qmask))[0]);
 #endif
@@ -283,7 +283,11 @@ float RGBAClusterSIMD::QuantizedError(const RGBAVectorSIMD &p1, const RGBAVector
 	// nBuckets should be a power of two.
 	assert(!(nBuckets & (nBuckets - 1)));
 
+#ifdef HAS_SSE_POPCNT
 	const uint8 indexPrec = 8-_mm_popcnt_u32(~(nBuckets - 1) & 0xFF);
+#else
+	const uint8 indexPrec = 8-popcnt32(~(nBuckets - 1) & 0xFF);
+#endif
 	assert(indexPrec >= 2 && indexPrec <= 4);
 
 	typedef __m128i tInterpPair[2];
