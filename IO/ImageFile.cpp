@@ -1,10 +1,11 @@
 #include "ImageFile.h"
+#include <string.h>
 
 ImageFile::ImageFile(const char *filename) : 
-  m_PixelData(0)
+  m_PixelData(0),
+  m_FileFormat(  DetectFileFormat(filename) )
 {
   unsigned char *rawData = ReadFileData(filename);
-  DetectFileFormat(filename);
   LoadImage(rawData);
   delete [] rawData;
 }
@@ -24,17 +25,33 @@ ImageFile::~ImageFile() {
   }
 }
 
-void ImageFile::GetPixels() const {
+EImageFileFormat ImageFile::DetectFileFormat(const char *filename) {
 
+  int len = strlen(filename);
+  if(len >= 256) {
+    // !FIXME! Report Error...
+    return kNumImageFileFormats;
+  }
+
+  int dotPos = len - 1;
+
+  while(dotPos >= 0 && filename[dotPos--] != '.');
+
+  if(dotPos < 0) {
+    // !FIXME! Report Error.....
+    return kNumImageFileFormats;
+  }
+
+  const char *ext = &filename[dotPos];
+
+  if(strcmp(ext, ".png") == 0) {
+    return eFileFormat_PNG;
+  }
+  return kNumImageFileFormats;
 }
 
-EImageFileFormat ImageFile::DetectFileFormat() {
-}
-
-void ImageFile::LoadImage(const unsigend char *rawImageData) {
-}
-
-void ImageFile::LoadPNGImage(const unsigned char *rawImageData) {
+bool ImageFile::LoadImage(const unsigned char *rawImageData) {
+  return false;
 }
 
 #ifdef _MSC_VER
