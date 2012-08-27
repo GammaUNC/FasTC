@@ -1402,12 +1402,12 @@ namespace BC7C
 		{
 			for(int i = 0; i < width; i += 4)
 			{
-				ExtractBlock(inBuf + i * 4, width, block);
-				CompressBC7Block(block, outBuf);
+			  // ExtractBlock(inBuf + i * 4, width, block);
+			  CompressBC7Block((const uint32 *)inBuf, outBuf);
+			  BC7CompressionMode::NumUses[gBestMode]++;
 
-				BC7CompressionMode::NumUses[gBestMode]++;
-
-				outBuf += 16;
+			  outBuf += 16;
+			  inBuf += 64;
 			}
 		}
 	}
