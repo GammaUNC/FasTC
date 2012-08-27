@@ -1,5 +1,9 @@
-#include "ImageFile.h"
 #include <string.h>
+#include "ImageFile.h"
+
+#ifdef PNG_FOUND
+#  include "ImageLoaderPNG.h"
+#endif
 
 ImageFile::ImageFile(const char *filename) : 
   m_PixelData(0),

@@ -43,4 +43,6 @@ class ImageLoader {
   unsigned char * GetAlphaPixelData() const { return m_AlphaData; }
 };
 
+#cmakedefine PNG_FOUND
+
 #endif // _IMAGE_LOADER_H_

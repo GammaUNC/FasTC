@@ -5,10 +5,10 @@
 
 class ImageLoaderPNG : public ImageLoader {
  public:
-  ImageLoader(const unsigned char *rawData);
-  virtual ~ImageLoader();
+  ImageLoaderPNG(const unsigned char *rawData);
+  virtual ~ImageLoaderPNG();
 
-  void ReadData();
+  virtual void ReadData();
 };
 
 #endif // _IMAGE_LOADER_H_

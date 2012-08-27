@@ -8,6 +8,15 @@ SET( HEADERS
 	ImageFile.h
 )
 
+FIND_PACKAGE( PNG )
+IF( PNG_FOUND )
+	INCLUDE_DIRECTORIES( ${PNG_INCLUDE_DIR} )
+	TARGET_LINK_LIBRARIES( ${PNG_LIBRARY} )
+
+	SET( SOURCES ${SOURCES} ImageLoaderPNG.cpp )
+	SET( HEADERS ${HEADERS} ImageLoaderPNG.h )
+ENDIF()
+
 CONFIGURE_FILE(
 	"ImageLoader.h.in"
 	"ImageLoader.h"
