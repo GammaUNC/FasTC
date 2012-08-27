@@ -62,16 +62,19 @@ class ImageLoader {
   virtual bool ReadData() = 0;
 
   int GetRedChannelPrecision() const { return m_RedChannelPrecision; }
-  unsigned char * GetRedPixelData() const { return m_RedData; }
+  const unsigned char * GetRedPixelData() const { return m_RedData; }
 
   int GetGreenChannelPrecision() const { return m_GreenChannelPrecision; }
-  unsigned char * GetGreenPixelData() const { return m_GreenData; }
+  const unsigned char * GetGreenPixelData() const { return m_GreenData; }
 
   int GetBlueChannelPrecision() const { return m_BlueChannelPrecision; }
-  unsigned char * GetBluePixelData() const { return m_BlueData; }
+  const unsigned char * GetBluePixelData() const { return m_BlueData; }
 
   int GetAlphaChannelPrecision() const { return m_AlphaChannelPrecision; }
-  unsigned char * GetAlphaPixelData() const { return m_AlphaData; }
+  const unsigned char * GetAlphaPixelData() const { return m_AlphaData; }
+
+  int GetWidth() const { return m_Width; }
+  int GetHeight() const { return m_Height; }
 };
 
 #cmakedefine PNG_FOUND
