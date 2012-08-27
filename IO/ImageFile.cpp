@@ -63,6 +63,23 @@ EImageFileFormat ImageFile::DetectFileFormat(const char *filename) {
 }
 
 bool ImageFile::LoadImage(const unsigned char *rawImageData) {
+
+  ImageLoader *loader = NULL;
+  switch(m_FileFormat) {
+
+#ifdef PNG_FOUND
+    case eFileFormat_PNG:
+      {
+	loader = new ImageLoaderPNG(rawImageData);
+      }
+      break;
+#endif // PNG_FOUND
+
+    default:
+      fprintf(stderr, "Unable to load image: unknown file format.\n");
+      break;
+  }
+
   return false;
 }
 

@@ -8,7 +8,11 @@ class ImageLoaderPNG : public ImageLoader {
   ImageLoaderPNG(const unsigned char *rawData);
   virtual ~ImageLoaderPNG();
 
-  virtual void ReadData();
+  virtual bool ReadData();
+
+private:
+  unsigned int m_StreamPosition;
+  friend class PNGStreamReader;
 };
 
 #endif // _IMAGE_LOADER_H_
