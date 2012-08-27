@@ -1,4 +1,8 @@
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+
 #include "ImageFile.h"
 
 #ifdef PNG_FOUND
@@ -10,8 +14,10 @@ ImageFile::ImageFile(const char *filename) :
   m_FileFormat(  DetectFileFormat(filename) )
 {
   unsigned char *rawData = ReadFileData(filename);
-  LoadImage(rawData);
-  delete [] rawData;
+  if(rawData) {
+    LoadImage(rawData);
+    delete [] rawData;
+  }
 }
 
 ImageFile::ImageFile(const char *filename, EImageFileFormat format) :
@@ -19,8 +25,10 @@ ImageFile::ImageFile(const char *filename, EImageFileFormat format) :
   m_PixelData(0)
 {
   unsigned char *rawData = ReadFileData(filename);
-  LoadImage(rawData);
-  delete [] rawData;
+  if(rawData) {
+    LoadImage(rawData);
+    delete [] rawData;
+  }
 }
 
 ImageFile::~ImageFile() {
@@ -60,10 +68,41 @@ bool ImageFile::LoadImage(const unsigned char *rawImageData) {
 
 #ifdef _MSC_VER
 unsigned char *ImageFile::ReadFileData(const char *filename) {
-
+  //!FIXME! - Actually, implement me
+  assert(!"Not implemented!");
 }
 #else
 unsigned char *ImageFile::ReadFileData(const char *filename) {
+  FILE *fp = fopen(filename, "rb");
+  if(!fp) {
+    fprintf(stderr, "Error opening file for reading: %s\n", filename);
+    return 0;
+  }
 
+  // Check filesize
+  long fileSize = 0;
+  fseek(fp, 0, SEEK_END);
+  fileSize = ftell(fp);
+
+  // Allocate data for file contents
+  unsigned char *rawData = new unsigned char[fileSize];
+
+  // Return stream to beginning of file
+  fseek(fp, 0, SEEK_SET);
+  assert(ftell(fp) == 0);
+
+  // Read all of the data
+  size_t bytesRead = fread(rawData, 1, fileSize, fp);
+  if(bytesRead != fileSize) {
+    assert(!"We didn't read as much data as we thought we had!");
+    fprintf(stderr, "Internal error: Incorrect file size assumption\n");
+    return 0;
+  }
+
+  // Close the file pointer
+  fclose(fp);
+
+  // Return the data..
+  return rawData;
 }
 #endif
