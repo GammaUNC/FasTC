@@ -5,6 +5,10 @@
 
 #include <png.h>
 
+static void ReportError(const char *msg) {
+  fprintf(stderr, "ERROR: ImageLoaderPNG -- %s\n", msg);
+}
+
 class PNGStreamReader {
 public:
   static void ReadDataFromStream(
@@ -12,21 +16,28 @@ public:
     png_bytep outBytes, 
     png_size_t byteCountToRead
   ) {
+    png_voidp io_ptr = png_get_io_ptr( png_ptr );
+    if( io_ptr == NULL ) {
+      ReportError("Read callback had invalid io pointer.\n");
+      return;
+    }
 
-    
+    ImageLoaderPNG &loader = *(ImageLoaderPNG *)(io_ptr);
+
+    const unsigned char *stream = &(loader.m_RawData[loader.m_StreamPosition]);
+    memcpy(outBytes, stream, byteCountToRead);
+
+    loader.m_StreamPosition += byteCountToRead;
   }
 };
 
 ImageLoaderPNG::ImageLoaderPNG(const unsigned char *rawData) 
   : ImageLoader(rawData)
+  , m_StreamPosition(8) // We start at position 8 because of PNG header.
 {
 }
 
 ImageLoaderPNG::~ImageLoaderPNG() {
-}
-
-static void ReportError(const char *msg) {
-  fprintf(stderr, "ERROR: ImageLoaderPNG -- %s\n", msg);
 }
 
 bool ImageLoaderPNG::ReadData() {
