@@ -3,6 +3,13 @@
 #include <string.h>
 #include <stdlib.h>
 
+CompressedImage::CompressedImage()
+  : m_Width(0)
+  , m_Height(0)
+  , m_Format(ECompressionFormat(-1))
+  , m_Data(0)
+{ }
+
 CompressedImage::CompressedImage( const CompressedImage &other )
   : m_Width(other.m_Width)
   , m_Height(other.m_Height)

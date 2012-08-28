@@ -1,0 +1,18 @@
+
+IF( MSVC )
+	SET( SOURCES "src/clwin32.cpp" )
+ELSE()
+	SET( SOURCES "src/clunix.cpp" )
+ENDIF()
+
+INCLUDE_DIRECTORIES( ${TexC_SOURCE_DIR}/Core/include )
+INCLUDE_DIRECTORIES( ${TexC_SOURCE_DIR}/IO/include )
+
+ADD_EXECUTABLE(
+	tc
+	${SOURCES}
+)
+
+TARGET_LINK_LIBRARIES( tc TexCompIO )
+TARGET_LINK_LIBRARIES( tc TexCompCore )
+TARGET_LINK_LIBRARIES( tc BPTCEncoder )

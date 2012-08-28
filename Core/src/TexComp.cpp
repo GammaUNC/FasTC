@@ -17,9 +17,8 @@ static void ReportError(const char *msg) {
   fprintf(stderr, "TexComp -- %s\n", msg);
 }
 
-void CompressImage(
+CompressedImage * CompressImage(
   const ImageFile &img, 
-  CompressedImage &outImg, 
   const SCompressionSettings &settings
 ) { 
   
@@ -35,21 +34,25 @@ void CompressImage(
 
   if(cmpDataSz == 0) {
     ReportError("Unknown compression format");
-    return;
+    return NULL;
   }
 
+  CompressedImage *outImg = NULL;
   unsigned char *cmpData = new unsigned char[cmpDataSz];
 
   CompressionFunc f = ChooseFuncFromSettings(settings);
   if(f) {
     (*f)(img.GetPixels(), cmpData, img.GetWidth(), img.GetHeight());
-    outImg = CompressedImage(img.GetWidth(), img.GetHeight(), settings.format, cmpData);
+    outImg = new CompressedImage(img.GetWidth(), img.GetHeight(), settings.format, cmpData);
   }
   else {
     ReportError("Could not find adequate compression function for specified settings");
-    // return
+    delete [] cmpData;
+    return NULL;
   }
 
   // Cleanup
   delete [] cmpData;
+
+  return outImg;
 } 

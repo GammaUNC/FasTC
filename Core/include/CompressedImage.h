@@ -20,6 +20,7 @@ class CompressedImage {
 
   void InitData(const unsigned char *withData);
  public:
+  CompressedImage();
   CompressedImage(
     const unsigned int width, 
     const unsigned int height, 

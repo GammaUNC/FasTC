@@ -11,9 +11,8 @@ struct SCompressionSettings {
   int iNumThreads;
 };
 
-extern void CompressImage(
+extern CompressedImage * CompressImage(
   const ImageFile &, 
-  CompressedImage &, 
   const SCompressionSettings &settings
 );
 
