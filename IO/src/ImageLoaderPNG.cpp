@@ -43,7 +43,8 @@ ImageLoaderPNG::~ImageLoaderPNG() {
 bool ImageLoaderPNG::ReadData() {
   
   const int kNumSigBytesToRead = 8;
-  if(!png_sig_cmp(m_RawData, 0, kNumSigBytesToRead)) {
+  const int numSigNoMatch = png_sig_cmp(m_RawData, 0, kNumSigBytesToRead);
+  if(numSigNoMatch) {
     ReportError("Incorrect PNG signature");
     return false;
   }

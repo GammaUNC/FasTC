@@ -1,3 +1,4 @@
+#include "BC7Compressor.h"
 #include "TexComp.h"
 
 #include <stdlib.h>
@@ -10,6 +11,18 @@ SCompressionSettings:: SCompressionSettings()
 {}
 
 static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
+  switch(s.format) {
+    case eCompressionFormat_BPTC:
+    {
+      if(s.bUseSIMD) {
+	return BC7C::CompressImageBC7SIMD;
+      }
+      else {
+	return BC7C::CompressImageBC7;
+      }
+    }
+    break;
+  }
   return NULL;
 }
 

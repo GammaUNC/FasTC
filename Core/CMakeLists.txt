@@ -9,8 +9,12 @@ SET( HEADERS
 	"include/CompressedImage.h"
 )
 
-INCLUDE_DIRECTORIES( ${TexC_BINARY_DIR}/IO/include )
+INCLUDE_DIRECTORIES( ${TexC_SOURCE_DIR}/BPTCEncoder/include )
+INCLUDE_DIRECTORIES( ${TexC_BINARY_DIR}/BPTCEncoder/include )
+
 INCLUDE_DIRECTORIES( ${TexC_SOURCE_DIR}/IO/include )
+INCLUDE_DIRECTORIES( ${TexC_BINARY_DIR}/IO/include )
+
 INCLUDE_DIRECTORIES( ${TexC_SOURCE_DIR}/Core/include )
 
 ADD_LIBRARY( TexCompCore
@@ -19,3 +23,4 @@ ADD_LIBRARY( TexCompCore
 )
 
 TARGET_LINK_LIBRARIES( TexCompCore TexCompIO )
+TARGET_LINK_LIBRARIES( TexCompCore BPTCEncoder )

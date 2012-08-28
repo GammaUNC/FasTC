@@ -180,6 +180,10 @@ bool ImageFile::LoadImage(const unsigned char *rawImageData) {
       break;
   }
 
+  // Read the image data!
+  if(!loader->ReadData())
+    return false;
+
   m_Width = loader->GetWidth();
   m_Height = loader->GetHeight();
 
