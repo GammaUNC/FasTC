@@ -15,6 +15,7 @@
 //
 //--------------------------------------------------------------------------------------
 
+#include "BC7Config.h"
 #include "BC7IntTypes.h"
 #include "RGBAEndpoints.h"
 #include "BC7Compressor.h"
@@ -66,7 +67,7 @@ static const float kFloatConversion[256] = {
 ///////////////////////////////////////////////////////////////////////////////
 static inline uint32 CountBitsInMask(uint8 n) {
 
-#if _WIN64
+#if defined(_WIN64) || defined(NO_INLINE_ASSEMBLY)
 	if(!n) return 0; // no bits set
 	if(!(n & (n-1))) return 1; // power of two
 
@@ -76,15 +77,23 @@ static inline uint32 CountBitsInMask(uint8 n) {
 	}
 	return c;
 #else
-
-	__asm
-	{
+#ifdef _MSC_VER
+	__asm {
 		mov eax, 8
 		movzx ecx, n
 		bsf ecx, ecx
 		sub eax, ecx
-	}
-
+        }
+#else
+	__asm__("mov %%eax, 8;"
+		"movzbl %0, %%ecx;"
+		"bsf %%ecx, %%ecx;"
+		"sub %%eax, %%ecx;"
+		: // No output registers
+		: "r"(n)
+		: "%eax", "%ecx"
+	);
+#endif	
 #endif
 }
 

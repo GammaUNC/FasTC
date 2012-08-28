@@ -5,7 +5,67 @@ INCLUDE(CheckCXXSourceRuns)
 
 SET(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
 IF(CMAKE_COMPILER_IS_GNUCC)
-	SET(CMAKE_REQUIRED_FLAGS -msse4.1 -E)
+
+        # Test whether or not the compiler allows inline
+	# assmbly...
+	CHECK_CXX_SOURCE_RUNS("
+            \#ifdef _MSC_VER
+             int main() {
+             int x = 1, y = 0;
+               __asm {
+                mov eax, x
+                mov y, eax
+               }
+             return !y;
+             }
+            \#else
+             int main() {
+             int x = 1, y = 0;
+             __asm__ (\"movl %1, %%eax;\"
+                      \"movl %%eax, %0;\"
+                       :\"=r\"(y)        /* output */
+                       :\"r\"(x)         /* input */
+                       :\"%eax\"         /* clobbered register */
+             ); 
+
+             return !y;
+             }
+            \#endif"
+            HAS_INLINE_ASSEMBLY
+        )
+
+        # If the compiler doesn't allow it, then try with a
+        # compiler flag...
+	IF( NOT HAS_INLINE_ASSEMBLY )
+          SET(CMAKE_REQUIRED_FLAGS -fasm-blocks)
+          CHECK_CXX_SOURCE_RUNS("
+            \#ifdef _MSC_VER
+             int main() {
+             int x = 1, y = 0;
+               __asm {
+                mov eax, x
+                mov y, eax
+               }
+             return !y;
+             }
+            \#else
+             int main() {
+             int x = 1, y = 0;
+             __asm__ (\"movl %1, %%eax;\"
+                      \"movl %%eax, %0;\"
+                       :\"=r\"(y)        /* output */
+                       :\"r\"(x)         /* input */
+                       :\"%eax\"         /* clobbered register */
+             ); 
+
+             return !y;
+             }
+            \#endif"
+            HAS_INLINE_ASSEMBLY_WITH_FLAGS
+          )
+        ENDIF()
+
+	SET(CMAKE_REQUIRED_FLAGS -msse4.1)
 	CHECK_CXX_SOURCE_RUNS("
 		#include <smmintrin.h>
 		int main() {
@@ -36,14 +96,14 @@ ELSEIF(MSVC)
 ENDIF()
 SET(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
 
+IF( NOT HAS_INLINE_ASSEMBLY AND NOT HAS_INLINE_ASSEMBLY_WITH_FLAGS )
+  SET( NO_INLINE_ASSEMBLY true )
+ENDIF()
+
 CONFIGURE_FILE(
 	"config/BC7Config.h.in"
 	"include/BC7Config.h"
 )
-
-IF(CMAKE_COMPILER_IS_GNUCC)
-	ADD_DEFINITIONS(-fasm-blocks)
-ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
 SET( HEADERS
 	src/BC7CompressionMode.h
@@ -85,6 +145,14 @@ IF( HAS_SSE_41 )
 		src/RGBAEndpointsSIMD.cpp
 	)
 ENDIF( HAS_SSE_41 )
+
+IF( HAS_INLINE_ASSEMBLY_WITH_FLAGS )
+  IF( MSVC )
+    # !FIXME!
+  ELSE()
+    ADD_DEFINITIONS( -fasm-blocks )
+  ENDIF()
+ENDIF()
 
 ADD_LIBRARY( BPTCEncoder
 	${HEADERS}
