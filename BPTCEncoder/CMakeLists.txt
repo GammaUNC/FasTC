@@ -25,7 +25,7 @@ IF(CMAKE_COMPILER_IS_GNUCC)
 			#include <smmintrin.h>
 			int main() {
 				const unsigned int testMe = 5;
-				return _mm_popcnt_u32(testMe);
+				return !(2 == _mm_popcnt_u32(testMe));
 			}"
 			HAS_SSE_POPCNT
 		)
