@@ -67,7 +67,7 @@ static const float kFloatConversion[256] = {
 ///////////////////////////////////////////////////////////////////////////////
 static inline uint32 CountBitsInMask(uint8 n) {
 
-#if defined(_WIN64) || defined(NO_INLINE_ASSEMBLY)
+#if defined(_WIN64) || defined(__x86_64__) || defined(NO_INLINE_ASSEMBLY)
 	if(!n) return 0; // no bits set
 	if(!(n & (n-1))) return 1; // power of two
 
@@ -85,14 +85,17 @@ static inline uint32 CountBitsInMask(uint8 n) {
 		sub eax, ecx
         }
 #else
-	__asm__("mov %%eax, 8;"
-		"movzbl %0, %%ecx;"
+	uint32 ans;
+	__asm__("movl $8, %%eax;"
+		"movzbl %b1, %%ecx;"
 		"bsf %%ecx, %%ecx;"
-		"sub %%eax, %%ecx;"
-		: // No output registers
+		"subl %%ecx, %%eax;"
+		"movl %%eax, %0;"
+		: "=Q"(ans)
 		: "r"(n)
 		: "%eax", "%ecx"
 	);
+	return ans;
 #endif	
 #endif
 }
@@ -105,7 +108,7 @@ static inline void clamp(ty &x, const ty &min, const ty &max) {
 // absolute distance. It turns out the compiler does a much
 // better job of optimizing this than we can, since we can't 
 // translate the values to/from registers
-static uint8 sad(uint8 a, uint8 b) {
+static uint sad(uint8 a, uint8 b) {
 #if 0
 	__asm
 	{
