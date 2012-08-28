@@ -1,7 +1,7 @@
 #ifndef _IMAGE_FILE_H_ 
 #define _IMAGE_FILE_H_ 
 
-#include "ImageLoader.h"
+#include "ImageFileFormat.h"
 
 class ImageFile {
 

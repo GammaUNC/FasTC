@@ -1,11 +1,7 @@
 #ifndef _IMAGE_LOADER_H_
 #define _IMAGE_LOADER_H_
 
-enum EImageFileFormat {
-  eFileFormat_PNG,
-
-  kNumImageFileFormats
-};
+#include "ImageFileFormat.h"
 
 class ImageLoader {
 

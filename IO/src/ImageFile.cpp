@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include "ImageFile.h"
+#include "ImageLoader.h"
 
 #ifdef PNG_FOUND
 #  include "ImageLoaderPNG.h"
@@ -149,6 +150,9 @@ EImageFileFormat ImageFile::DetectFileFormat(const char *filename) {
     // !FIXME! Report Error.....
     return kNumImageFileFormats;
   }
+  
+  // consume the last character...
+  dotPos++;
 
   const char *ext = &filename[dotPos];
 
