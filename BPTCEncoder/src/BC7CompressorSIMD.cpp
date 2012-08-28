@@ -978,7 +978,7 @@ namespace BC7C
 	// 4-byte RGBA format. The width and height parameters specify the size of the image in pixels.
 	// The buffer pointed to by outBuf should be large enough to store the compressed image. This
 	// implementation has an 4:1 compression ratio.
-	void CompressImageBC7SIMD(const uint8* inBuf, uint8* outBuf, int width, int height)
+	void CompressImageBC7SIMD(const unsigned char *inBuf, unsigned char *outBuf, unsigned int width, unsigned int height)
 	{
 		ALIGN_SSE uint32 block[16];
 
@@ -987,7 +987,7 @@ namespace BC7C
 
 		BC7CompressionModeSIMD::MaxAnnealingIterations = GetQualityLevel();
 
-		for(int j = 0; j < height; j += 4, inBuf += width * 4 * 4)
+		for(int j = 0; j < height; j += 4)
 		{
 			for(int i = 0; i < width; i += 4)
 			{

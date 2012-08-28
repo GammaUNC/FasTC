@@ -50,12 +50,12 @@ namespace BC7C
 
 	// Compress the image given as RGBA data to BC7 format. Width and Height are the dimensions of
 	// the image in pixels.
-	void CompressImageBC7(const unsigned char *inBuf, unsigned char *outBuf, int width, int height);
+	void CompressImageBC7(const unsigned char *inBuf, unsigned char *outBuf, unsigned int width, unsigned int height);
 
 	// Compress the image given as RGBA data to BC7 format using an algorithm optimized for SIMD
 	// enabled platforms. Width and Height are the dimensions of the image in pixels.
-	void CompressImageBC7SIMD(const unsigned char* inBuf, unsigned char* outBuf, int width, int height);
+	void CompressImageBC7SIMD(const unsigned char* inBuf, unsigned char* outBuf, unsigned int width, unsigned int height);
 
 	// Decompress the image given as BC7 data to R8G8B8A8 format. Width and Height are the dimensions of the image in pixels.
-	void DecompressImageBC7SIMD(const unsigned char* inBuf, unsigned char* outBuf, int width, int height);
+	void DecompressImageBC7SIMD(const unsigned char* inBuf, unsigned char* outBuf, unsigned int width, unsigned int height);
 }
