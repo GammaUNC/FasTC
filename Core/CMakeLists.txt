@@ -17,6 +17,16 @@ INCLUDE_DIRECTORIES( ${TexC_BINARY_DIR}/IO/include )
 
 INCLUDE_DIRECTORIES( ${TexC_SOURCE_DIR}/Core/include )
 
+FIND_PACKAGE( Boost COMPONENTS thread system ) 
+IF( Boost_FOUND )
+	INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
+
+	SET( SOURCES ${SOURCES} "src/ThreadGroup.cpp")
+	SET( HEADERS ${HEADERS} "src/ThreadGroup.h")
+
+	LINK_DIRECTORIES( ${Boost_LIBRARY_DIR} )
+ENDIF()
+
 ADD_LIBRARY( TexCompCore
 	${HEADERS}
 	${SOURCES}
@@ -24,3 +34,7 @@ ADD_LIBRARY( TexCompCore
 
 TARGET_LINK_LIBRARIES( TexCompCore TexCompIO )
 TARGET_LINK_LIBRARIES( TexCompCore BPTCEncoder )
+
+IF( Boost_FOUND )
+	TARGET_LINK_LIBRARIES( TexCompCore ${Boost_LIBRARIES} )
+ENDIF()

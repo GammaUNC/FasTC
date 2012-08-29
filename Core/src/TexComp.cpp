@@ -1,5 +1,6 @@
 #include "BC7Compressor.h"
 #include "TexComp.h"
+#include "ThreadGroup.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -55,8 +56,15 @@ CompressedImage * CompressImage(
 
   CompressionFunc f = ChooseFuncFromSettings(settings);
   if(f) {
-    (*f)(img.GetPixels(), cmpData, img.GetWidth(), img.GetHeight());
-    outImg = new CompressedImage(img.GetWidth(), img.GetHeight(), settings.format, cmpData);
+    if(settings.iNumThreads > 1) {
+      ThreadGroup tgrp (settings.iNumThreads, img, f, cmpData);
+      tgrp.Start();
+      tgrp.Join();
+    }
+    else {
+      (*f)(img.GetPixels(), cmpData, img.GetWidth(), img.GetHeight());
+      outImg = new CompressedImage(img.GetWidth(), img.GetHeight(), settings.format, cmpData);
+    }
   }
   else {
     ReportError("Could not find adequate compression function for specified settings");
