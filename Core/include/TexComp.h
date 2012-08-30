@@ -9,6 +9,7 @@ struct SCompressionSettings {
   ECompressionFormat format; 
   bool bUseSIMD;
   int iNumThreads;
+  int iQuality;
 };
 
 extern CompressedImage * CompressImage(

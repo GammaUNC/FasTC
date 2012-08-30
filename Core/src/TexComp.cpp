@@ -5,16 +5,35 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+template <typename T>
+static T min(const T &a, const T &b) {
+  return (a < b)? a : b;
+}
+
+template <typename T>
+static T max(const T &a, const T &b) {
+  return (a > b)? a : b;
+}
+
+template <typename T>
+static void clamp(T &x, const T &minX, const T &maxX) {
+  x = max(min(maxX, x), minX);
+}
+
 SCompressionSettings:: SCompressionSettings()
   : format(eCompressionFormat_BPTC)
   , bUseSIMD(false)
   , iNumThreads(1)
-{}
+  , iQuality(50)
+{
+  clamp(iQuality, 0, 256);
+}
 
 static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
   switch(s.format) {
     case eCompressionFormat_BPTC:
     {
+      BC7C::SetQualityLevel(s.iQuality);
       if(s.bUseSIMD) {
 	return BC7C::CompressImageBC7SIMD;
       }

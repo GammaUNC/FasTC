@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     if(strcmp(argv[fileArg], "-q") == 0) {
       fileArg++;
       
-      if(fileArg == argc || (quality = atoi(argv[fileArg])) < 1) {
+      if(fileArg == argc || (quality = atoi(argv[fileArg])) < 0) {
 	PrintUsage();
 	exit(1);
       }
@@ -62,6 +62,7 @@ int main(int argc, char **argv) {
   SCompressionSettings settings;
   settings.bUseSIMD = bUseSIMD;
   settings.iNumThreads = numThreads;
+  settings.iQuality = quality;
 
   CompressedImage *ci = CompressImage(file, settings);
 
