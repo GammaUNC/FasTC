@@ -12,8 +12,11 @@ SET( HEADERS
 
 # Make sure to add the appropriate stopwatch files...
 SET( HEADERS	${HEADERS} "src/StopWatch.h" )
-IF( MSVC )
+
+IF( WIN32 )
 	SET( SOURCES ${SOURCES} "src/StopWatchWin32.cpp" )
+ELSEIF( APPLE )
+	SET( SOURCES ${SOURCES} "src/StopWatchOSX.cpp" )
 ELSE()
 	SET( SOURCES ${SOURCES} "src/StopWatchUnix.cpp" )
 ENDIF()

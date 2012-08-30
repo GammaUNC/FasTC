@@ -15,15 +15,20 @@
 //
 //--------------------------------------------------------------------------------------
 
-#pragma once
-
-#include "TexCompTypes.h"
+// Forward declare the private implementation of the class that will actually implement
+// the timing features. This class is defined in each module depending on the platform...
+class StopWatchImpl;
 
 // A simple stopwatch class using Windows' high-resolution performance counters.
 class StopWatch
 {
 public:
 	StopWatch();
+	StopWatch(const StopWatch &);
+
+	~StopWatch();
+
+	StopWatch &operator=(const StopWatch &);
 
 	void Start();
 	void Stop();
@@ -34,8 +39,5 @@ public:
 	double TimeInMicroseconds() const;
 
 private:
-	uint64 frequency;
-	uint64 start;
-	uint64 stop;
-	int32_ptr affinityMask;
+	StopWatchImpl *impl;
 };

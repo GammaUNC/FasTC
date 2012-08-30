@@ -16,91 +16,113 @@
 //--------------------------------------------------------------------------------------
 
 #include "StopWatch.h"
+#include "TexCompTypes.h"
+
 #include <cassert>
 
-// Initialize member variables.
-StopWatch::StopWatch() :
-	frequency(0),
-	start(0),
-	stop(0),
-	affinityMask(0)
-{
-	// Initialize the performance counter frequency.
-	LARGE_INTEGER perfQuery;
-	BOOL supported = QueryPerformanceFrequency(&perfQuery);
-	assert(supported == TRUE);
-	this->frequency = perfQuery.QuadPart;
+class StopWatchImpl {
+  uint64 frequency;
+  uint64 start;
+  uint64 stop;
+  uintptr affinityMask;
+
+  StopWatchImpl() :
+    start(0), stop(0), affinityMask(0)
+  {
+    // Initialize the performance counter frequency.
+    LARGE_INTEGER perfQuery;
+    BOOL supported = QueryPerformanceFrequency(&perfQuery);
+    assert(supported == TRUE);
+    this->frequency = perfQuery.QuadPart;
+  }
+};
+
+StopWatch::StopWatch(const StopWatch &other) {
+  impl = new StopWatchImpl();
+  memcpy(impl, other.impl, sizeof(StopWatchImpl));
+}
+
+StopWatch &StopWatch::operator=(const StopWatch &other) {
+  if(impl) {
+    delete impl;
+  }
+  impl = new StopWatchImpl();
+  memcpy(impl, other.impl. sizeof(StopWatchImpl));
+}
+
+StopWatch::~StopWatch() {
+  delete impl;
 }
 
 // Start the stopwatch.
 void StopWatch::Start()
 {
-	// MSDN recommends setting the thread affinity to avoid bugs in the BIOS and HAL.
-	// Create an affinity mask for the current processor.
-	affinityMask = (DWORD_PTR)1 << GetCurrentProcessorNumber();
-	HANDLE currThread = GetCurrentThread();
-	DWORD_PTR prevAffinityMask = SetThreadAffinityMask(currThread, affinityMask);
-	assert(prevAffinityMask != 0);
+  // MSDN recommends setting the thread affinity to avoid bugs in the BIOS and HAL.
+  // Create an affinity mask for the current processor.
+  impl->affinityMask = (DWORD_PTR)1 << GetCurrentProcessorNumber();
+  HANDLE currThread = GetCurrentThread();
+  DWORD_PTR prevAffinityMask = SetThreadAffinityMask(currThread, impl->affinityMask);
+  assert(prevAffinityMask != 0);
 
-	// Query the performance counter.
-	LARGE_INTEGER perfQuery;
-	BOOL result = QueryPerformanceCounter(&perfQuery);
-    assert(result);
-    start = perfQuery.QuadPart;
+  // Query the performance counter.
+  LARGE_INTEGER perfQuery;
+  BOOL result = QueryPerformanceCounter(&perfQuery);
+  assert(result);
+  impl->start = perfQuery.QuadPart;
 
-	// Restore the thread's affinity mask.
-	prevAffinityMask = SetThreadAffinityMask(currThread, prevAffinityMask);
-	assert(prevAffinityMask != 0);
+  // Restore the thread's affinity mask.
+  prevAffinityMask = SetThreadAffinityMask(currThread, prevAffinityMask);
+  assert(prevAffinityMask != 0);
 }
 
 // Stop the stopwatch.
 void StopWatch::Stop()
 {
-	// MSDN recommends setting the thread affinity to avoid bugs in the BIOS and HAL.
-	// Use the affinity mask that was created in the Start function.
-	HANDLE currThread = GetCurrentThread();
-	DWORD_PTR prevAffinityMask = SetThreadAffinityMask(currThread, affinityMask);
-	assert(prevAffinityMask != 0);
+  // MSDN recommends setting the thread affinity to avoid bugs in the BIOS and HAL.
+  // Use the affinity mask that was created in the Start function.
+  HANDLE currThread = GetCurrentThread();
+  DWORD_PTR prevAffinityMask = SetThreadAffinityMask(currThread, impl->affinityMask);
+  assert(prevAffinityMask != 0);
 
-	// Query the performance counter.
-	LARGE_INTEGER perfQuery;
-	BOOL result = QueryPerformanceCounter(&perfQuery);
-    assert(result);
-    stop = perfQuery.QuadPart;
+  // Query the performance counter.
+  LARGE_INTEGER perfQuery;
+  BOOL result = QueryPerformanceCounter(&perfQuery);
+  assert(result);
+  impl->stop = perfQuery.QuadPart;
 
-	// Restore the thread's affinity mask.
-	prevAffinityMask = SetThreadAffinityMask(currThread, prevAffinityMask);
-	assert(prevAffinityMask != 0);
+  // Restore the thread's affinity mask.
+  prevAffinityMask = SetThreadAffinityMask(currThread, prevAffinityMask);
+  assert(prevAffinityMask != 0);
 }
 
 // Reset the stopwatch.
 void StopWatch::Reset()
 {
-	start = 0;
-	stop = 0;
-	affinityMask = 0;
+  impl->start = 0;
+  impl->stop = 0;
+  impl->affinityMask = 0;
 }
 
 // Get the elapsed time in seconds.
 double StopWatch::TimeInSeconds() const
 {
-	// Return the elapsed time in seconds.
-	assert((stop - start) > 0);
-	return double(stop - start) / double(frequency);
+  // Return the elapsed time in seconds.
+  assert((impl->stop - impl->start) > 0);
+  return double(impl->stop - impl->start) / double(frequency);
 }
 
 // Get the elapsed time in milliseconds.
 double StopWatch::TimeInMilliseconds() const
 {
-	// Return the elapsed time in milliseconds.
-	assert((stop - start) > 0);
-	return double(stop - start) / double(frequency) * 1000.0;
+  // Return the elapsed time in milliseconds.
+  assert((impl->stop - impl->start) > 0);
+  return double(impl->stop - impl->start) / double(frequency) * 1000.0;
 }
 
 // Get the elapsed time in microseconds.
 double StopWatch::TimeInMicroseconds() const
 {
-	// Return the elapsed time in microseconds.
-	assert((stop - start) > 0);
-	return double(stop - start) / double(frequency) * 1000000.0;
+  // Return the elapsed time in microseconds.
+  assert((impl->stop - impl->start) > 0);
+  return double(impl->stop - impl->start) / double(impl->frequency) * 1000000.0;
 }
