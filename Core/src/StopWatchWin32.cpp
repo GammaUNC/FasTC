@@ -47,7 +47,7 @@ StopWatch &StopWatch::operator=(const StopWatch &other) {
     delete impl;
   }
   impl = new StopWatchImpl();
-  memcpy(impl, other.impl. sizeof(StopWatchImpl));
+  memcpy(impl, other.impl, sizeof(StopWatchImpl));
 }
 
 StopWatch::~StopWatch() {

@@ -19,6 +19,9 @@ ELSEIF( APPLE )
 	SET( SOURCES ${SOURCES} "src/StopWatchOSX.cpp" )
 ELSE()
 	SET( SOURCES ${SOURCES} "src/StopWatchUnix.cpp" )
+	
+	# Assume compiler is GCC
+	SET( LINK_FLAGS -lrt ${LINK_FLAGS} )
 ENDIF()
 
 INCLUDE_DIRECTORIES( ${TexC_SOURCE_DIR}/BPTCEncoder/include )
@@ -49,4 +52,8 @@ TARGET_LINK_LIBRARIES( TexCompCore BPTCEncoder )
 
 IF( Boost_FOUND )
 	TARGET_LINK_LIBRARIES( TexCompCore ${Boost_LIBRARIES} )
+ENDIF()
+
+IF( NOT WIN32 AND NOT APPLE )
+  	TARGET_LINK_LIBRARIES( TexCompCore rt )
 ENDIF()

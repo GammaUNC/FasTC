@@ -23,7 +23,7 @@ StopWatch &StopWatch::operator=(const StopWatch &other) {
     delete impl;
   }
   impl = new StopWatchImpl();
-  memcpy(impl, other.impl. sizeof(StopWatchImpl));
+  memcpy(impl, other.impl, sizeof(StopWatchImpl));
 }
 
 StopWatch::~StopWatch() {
@@ -36,17 +36,17 @@ StopWatch::StopWatch() : impl(new StopWatchImpl) {
 
 void StopWatch::Start() {
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &(impl->ts));
-  impl->timer = double(ts.tv_sec) + 1e-9 * double(ts.tv_nsec);
+  impl->timer = double(impl->ts.tv_sec) + 1e-9 * double(impl->ts.tv_nsec);
 }
 
 void StopWatch::Stop() {
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &(impl->ts));
-  impl->duration = -(impl->timer) + (double(ts.tv_sec) + 1e-9 * double(ts.tv_nsec));
+  impl->duration = -(impl->timer) + (double(impl->ts.tv_sec) + 1e-9 * double(impl->ts.tv_nsec));
 }
 
 void StopWatch::Reset() {
   impl->timer = impl->duration = 0.0;
-  memset(impl->ts, 0, sizeof(timespec));
+  memset(&(impl->ts), 0, sizeof(timespec));
 }
 
 double StopWatch::TimeInSeconds() const {
