@@ -1,5 +1,8 @@
 #include "ThreadGroup.h"
 
+#include <stdlib.h>
+#include <stdio.h>
+
 #include <boost/thread/thread.hpp>
 #include <boost/thread/barrier.hpp>
 
