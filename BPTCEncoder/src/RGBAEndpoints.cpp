@@ -16,7 +16,6 @@
 //--------------------------------------------------------------------------------------
 
 #include "BC7Config.h"
-#include "BC7IntTypes.h"
 #include "RGBAEndpoints.h"
 #include "BC7Compressor.h"
 #include "BC7CompressionMode.h"

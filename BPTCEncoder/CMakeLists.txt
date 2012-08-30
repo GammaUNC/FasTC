@@ -1,3 +1,5 @@
+INCLUDE_DIRECTORIES(${TexC_SOURCE_DIR}/Core/include)
+
 INCLUDE_DIRECTORIES(${TexC_SOURCE_DIR}/BPTCEncoder/include)
 INCLUDE_DIRECTORIES(${TexC_BINARY_DIR}/BPTCEncoder/include)
 
@@ -107,7 +109,6 @@ CONFIGURE_FILE(
 
 SET( HEADERS
 	src/BC7CompressionMode.h
-	src/BC7IntTypes.h
 	src/BitStream.h
 	src/RGBAEndpoints.h
 )

@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "Windows.h"
+#include "TexCompTypes.h"
 
 // A simple stopwatch class using Windows' high-resolution performance counters.
 class StopWatch
@@ -34,8 +34,8 @@ public:
 	double TimeInMicroseconds() const;
 
 private:
-	LONGLONG frequency;
-	LONGLONG start;
-	LONGLONG stop;
-	DWORD_PTR affinityMask;
+	uint64 frequency;
+	uint64 start;
+	uint64 stop;
+	int32_ptr affinityMask;
 };

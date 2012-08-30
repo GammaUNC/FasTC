@@ -18,7 +18,8 @@
 #ifndef __RGBA_ENDPOINTS_H__
 #define __RGBA_ENDPOINTS_H__
 
-#include "BC7IntTypes.h"
+#include "TexCompTypes.h"
+
 #include <cmath>
 #include <cfloat>
 #include <cstring>

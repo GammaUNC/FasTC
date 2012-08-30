@@ -15,7 +15,7 @@
 //
 //--------------------------------------------------------------------------------------
 
-#include "BC7IntTypes.h"
+#include "TexCompTypes.h"
 #include "BC7Compressor.h"
 #include "BC7CompressionMode.h"
 #include "BCLookupTables.h"

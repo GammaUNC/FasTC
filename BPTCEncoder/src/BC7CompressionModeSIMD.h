@@ -18,7 +18,7 @@
 #ifndef __BC7_COMPRESSIONMODE_H__
 #define __BC7_COMPRESSIONMODE_H__
 
-#include "BC7IntTypes.h"
+#include "TexCompTypes.h"
 #include "RGBAEndpointsSIMD.h"
 
 // Forward Declarations
