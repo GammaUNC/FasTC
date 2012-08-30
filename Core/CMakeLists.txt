@@ -7,7 +7,16 @@ SET( SOURCES
 SET( HEADERS
 	"include/TexComp.h"
 	"include/CompressedImage.h"
+	"include/TexCompTypes.h"
 )
+
+# Make sure to add the appropriate stopwatch files...
+SET( HEADERS	${HEADERS} "src/StopWatch.h" )
+IF( MSVC )
+	SET( SOURCES ${SOURCES} "src/StopWatchWin32.cpp" )
+ELSE()
+	SET( SOURCES ${SOURCES} "src/StopWatchUnix.cpp" )
+ENDIF()
 
 INCLUDE_DIRECTORIES( ${TexC_SOURCE_DIR}/BPTCEncoder/include )
 INCLUDE_DIRECTORIES( ${TexC_BINARY_DIR}/BPTCEncoder/include )

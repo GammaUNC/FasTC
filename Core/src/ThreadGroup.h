@@ -2,6 +2,7 @@
 #define _THREAD_GROUP_H_
 
 #include "TexComp.h"
+#include "StopWatch.h"
 
 // forward declare
 namespace boost {
@@ -38,6 +39,8 @@ class ThreadGroup {
   void Start();
   void Join();
 
+  const StopWatch &GetStopWatch() const { return m_StopWatch; }
+
  private:
   boost::barrier *m_Barrier;
 
@@ -48,6 +51,8 @@ class ThreadGroup {
 
   CmpThread m_Threads[kMaxNumThreads];
   boost::thread *m_ThreadHandles[kMaxNumThreads];
+
+  StopWatch m_StopWatch;
 };
 
 #endif // _THREAD_GROUP_H_

@@ -34,6 +34,11 @@ ThreadGroup::~ThreadGroup() {
 
 void ThreadGroup::Start() {
 
+  // Have we already activated the thread group?
+  if(m_ActiveThreads > 0) {
+    return;
+  }
+
   for(int i = 0; i < m_NumThreads; i++) {
 
     if(m_ActiveThreads >= kMaxNumThreads)
@@ -45,6 +50,8 @@ void ThreadGroup::Start() {
     m_ActiveThreads++;
   }
 
+  m_StopWatch.Reset();
+  m_StopWatch.Start();
 }
 
 void ThreadGroup::Join() {
@@ -54,5 +61,11 @@ void ThreadGroup::Join() {
     delete m_ThreadHandles[i];
   }
 
+  // !FIXME! This will also take the thread deletion into account. We
+  // should really be using better synchronization to actually only 
+  // measure how long it takes for all threads to finish execution.
+  m_StopWatch.Stop();
+
+  // Reset active number of threads...
   m_ActiveThreads = 0;
 }

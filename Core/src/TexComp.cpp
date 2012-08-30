@@ -56,15 +56,27 @@ CompressedImage * CompressImage(
 
   CompressionFunc f = ChooseFuncFromSettings(settings);
   if(f) {
+
+    StopWatch stopWatch = StopWatch();
+
     if(settings.iNumThreads > 1) {
+
       ThreadGroup tgrp (settings.iNumThreads, img, f, cmpData);
+
       tgrp.Start();
       tgrp.Join();
+
+      stopWatch = tgrp.GetStopWatch();
     }
     else {
+      stopWatch.Start();
       (*f)(img.GetPixels(), cmpData, img.GetWidth(), img.GetHeight());
+      stopWatch.Stop();
       outImg = new CompressedImage(img.GetWidth(), img.GetHeight(), settings.format, cmpData);
     }
+
+    // Report compression time
+    fprintf(stdout, "Compression time: %0.3f ms\n", stopWatch.TimeInMilliseconds());
   }
   else {
     ReportError("Could not find adequate compression function for specified settings");
