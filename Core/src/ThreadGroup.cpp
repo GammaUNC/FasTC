@@ -132,15 +132,12 @@ void ThreadGroup::Join() {
     m_FinishCV->wait(lock);
   }
 
+  m_StopWatch.Stop();
+
   for(int i = 0; i < m_ActiveThreads; i++) {
     m_ThreadHandles[i]->join();
     delete m_ThreadHandles[i];
   }
-
-  // !FIXME! This will also take the thread deletion into account. We
-  // should really be using better synchronization to actually only 
-  // measure how long it takes for all threads to finish execution.
-  m_StopWatch.Stop();
 
   // Reset active number of threads...
   m_ActiveThreads = 0;
