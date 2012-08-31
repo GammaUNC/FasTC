@@ -6,9 +6,14 @@
 
 #include <boost/thread/thread.hpp>
 #include <boost/thread/barrier.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/condition_variable.hpp>
 
 CmpThread::CmpThread() 
-  : m_Barrier(NULL)
+  : m_ParentCounter(NULL)
+  , m_ParentCounterLock(NULL)
+  , m_FinishCV(NULL)
+  , m_Barrier(NULL)
   , m_Width(0)
   , m_Height(0)
   , m_CmpFunc(NULL)
@@ -17,32 +22,51 @@ CmpThread::CmpThread()
 { }
 
 void CmpThread::operator()() {
-  if(!m_Barrier || !m_CmpFunc || !m_OutBuf || !m_InBuf ) {
+  if(!m_Barrier || !m_CmpFunc || !m_OutBuf || !m_InBuf 
+     || !m_ParentCounter || !m_ParentCounterLock
+     || !m_FinishCV
+  ) {
     fprintf(stderr, "Incorrect thread initialization.\n");
     return;
   }
 
+  // Wait for all threads to be ready...
   m_Barrier->wait();
 
   (*m_CmpFunc)(m_InBuf, m_OutBuf, m_Width, m_Height);
+
+  {
+    boost::lock_guard<boost::mutex> lock(*m_ParentCounterLock);
+    (*m_ParentCounter)++;
+  }
+
+  m_FinishCV->notify_one();
 }
 
 
 ThreadGroup::ThreadGroup( int numThreads, const ImageFile &image, CompressionFunc func, unsigned char *outBuf )
   : m_Barrier(new boost::barrier(numThreads))
+  , m_FinishMutex(new boost::mutex())
+  , m_FinishCV(new boost::condition_variable())
   , m_NumThreads(numThreads)
   , m_ActiveThreads(0)
   , m_Func(func)
   , m_Image(image)
   , m_OutBuf(outBuf)
 { 
-  for(int i = 0; i < kMaxNumThreads; i++)
+  for(int i = 0; i < kMaxNumThreads; i++) {
+    // Thread synchronization primitives
+    m_Threads[i].m_ParentCounterLock = m_FinishMutex;
+    m_Threads[i].m_FinishCV = m_FinishCV;
+    m_Threads[i].m_ParentCounter = &m_ThreadsFinished;
     m_Threads[i].m_Barrier = m_Barrier;
+  }
 }
 
 ThreadGroup::~ThreadGroup() {
   delete m_Barrier;
 }
+
 unsigned int ThreadGroup::GetCompressedBlockSize() {
   if(m_Func == BC7C::CompressImageBC7) return 16;
   if(m_Func == BC7C::CompressImageBC7SIMD) return 16;
@@ -71,6 +95,8 @@ void ThreadGroup::Start() {
   int blocksProcessed = 0;
   int blocksPerThread = (numBlocks/m_NumThreads) + ((numBlocks % m_NumThreads)? 1 : 0);
 
+  // Currently no threads are finished...
+  m_ThreadsFinished = 0;
   for(int i = 0; i < m_NumThreads; i++) {
 
     if(m_ActiveThreads >= kMaxNumThreads)
@@ -100,6 +126,11 @@ void ThreadGroup::Start() {
 }
 
 void ThreadGroup::Join() {
+
+  boost::unique_lock<boost::mutex> lock(*m_FinishMutex);
+  while(m_ThreadsFinished != m_ActiveThreads) {
+    m_FinishCV->wait(lock);
+  }
 
   for(int i = 0; i < m_ActiveThreads; i++) {
     m_ThreadHandles[i]->join();

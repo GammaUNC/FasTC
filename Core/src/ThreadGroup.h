@@ -8,12 +8,19 @@
 namespace boost {
   class barrier;
   class thread;
+  class mutex;
+  class condition_variable;
 }
 
 struct CmpThread {
   friend class ThreadGroup;  
 
 private:
+  int *m_ParentCounter;
+
+  boost::mutex *m_ParentCounterLock;
+  boost::condition_variable *m_FinishCV;
+
   boost::barrier *m_Barrier;
 
   int m_Width;
@@ -43,11 +50,14 @@ class ThreadGroup {
 
  private:
   boost::barrier *const m_Barrier;
+  boost::mutex *const m_FinishMutex;
+  boost::condition_variable *const m_FinishCV;
 
   static const int kMaxNumThreads = 256;
   const int m_NumThreads;
 
   int m_ActiveThreads;
+  int m_ThreadsFinished;
 
   CmpThread m_Threads[kMaxNumThreads];
   boost::thread *m_ThreadHandles[kMaxNumThreads];
