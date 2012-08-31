@@ -3,23 +3,19 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <mach/mach_time.h>
+#include <sys/time.h>
 
 class StopWatchImpl {
 public:
   uint64 start;
-  
-  double resolution;
-  double duration;
-
-  StopWatchImpl() {
-    mach_timebase_info_data_t info;
-    mach_timebase_info(&info);
-
-    resolution = double(info.numer) / double(info.denom);
-    resolution *= 1e-9;
-  }
+  uint64 duration;
 };
+
+static uint64 Now() {
+  timeval tv;
+  gettimeofday(&tv, NULL);
+  return tv.tv_usec + (1e6 * tv.tv_sec);
+}
 
 StopWatch::StopWatch(const StopWatch &other) {
   impl = new StopWatchImpl();
@@ -43,11 +39,11 @@ StopWatch::StopWatch() : impl(new StopWatchImpl) {
 }
 
 void StopWatch::Start() {
-  impl->start = mach_absolute_time();
+  impl->start = Now();
 }
 
 void StopWatch::Stop() {
-  impl->duration = impl->resolution * (double(mach_absolute_time()) - impl->start);
+  impl->duration = Now() - impl->start;
 }
 
 void StopWatch::Reset() {
@@ -55,13 +51,13 @@ void StopWatch::Reset() {
 }
 
 double StopWatch::TimeInSeconds() const {
-  return impl->duration;
+  return double(impl->duration) / 1e6;
 }
 
 double StopWatch::TimeInMilliseconds() const {
-  return impl->duration * 1000;
+  return double(impl->duration) / 1e3;
 }
 	
 double StopWatch::TimeInMicroseconds() const {
-  return impl->duration * 1000000;
+  return double(impl->duration);
 }
