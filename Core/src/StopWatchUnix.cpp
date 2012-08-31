@@ -35,12 +35,12 @@ StopWatch::StopWatch() : impl(new StopWatchImpl) {
 }
 
 void StopWatch::Start() {
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &(impl->ts));
+  clock_gettime(CLOCK_REALTIME, &(impl->ts));
   impl->timer = double(impl->ts.tv_sec) + 1e-9 * double(impl->ts.tv_nsec);
 }
 
 void StopWatch::Stop() {
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &(impl->ts));
+  clock_gettime(CLOCK_REALTIME, &(impl->ts));
   impl->duration = -(impl->timer) + (double(impl->ts.tv_sec) + 1e-9 * double(impl->ts.tv_nsec));
 }
 
