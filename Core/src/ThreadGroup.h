@@ -42,7 +42,7 @@ class ThreadGroup {
   const StopWatch &GetStopWatch() const { return m_StopWatch; }
 
  private:
-  boost::barrier *m_Barrier;
+  boost::barrier *const m_Barrier;
 
   static const int kMaxNumThreads = 256;
   const int m_NumThreads;
@@ -51,6 +51,14 @@ class ThreadGroup {
 
   CmpThread m_Threads[kMaxNumThreads];
   boost::thread *m_ThreadHandles[kMaxNumThreads];
+
+  // State variables.
+  const ImageFile &m_Image;
+  const CompressionFunc m_Func;
+  unsigned char *m_OutBuf;
+
+  unsigned int GetCompressedBlockSize();
+  unsigned int GetUncompressedBlockSize();
 
   StopWatch m_StopWatch;
 };
