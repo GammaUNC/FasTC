@@ -15,6 +15,8 @@
 //
 //--------------------------------------------------------------------------------------
 
+#include "BC7Config.h"
+
 namespace BC7C
 {
 	// This is the error metric that is applied to our error measurement algorithm
@@ -52,10 +54,12 @@ namespace BC7C
 	// the image in pixels.
 	void CompressImageBC7(const unsigned char *inBuf, unsigned char *outBuf, unsigned int width, unsigned int height);
 
+#ifdef HAS_SSE_41
 	// Compress the image given as RGBA data to BC7 format using an algorithm optimized for SIMD
 	// enabled platforms. Width and Height are the dimensions of the image in pixels.
 	void CompressImageBC7SIMD(const unsigned char* inBuf, unsigned char* outBuf, unsigned int width, unsigned int height);
+#endif
 
 	// Decompress the image given as BC7 data to R8G8B8A8 format. Width and Height are the dimensions of the image in pixels.
-	void DecompressImageBC7SIMD(const unsigned char* inBuf, unsigned char* outBuf, unsigned int width, unsigned int height);
+	void DecompressImageBC7(const unsigned char* inBuf, unsigned char* outBuf, unsigned int width, unsigned int height);
 }

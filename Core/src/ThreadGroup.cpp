@@ -71,12 +71,16 @@ ThreadGroup::~ThreadGroup() {
 
 unsigned int ThreadGroup::GetCompressedBlockSize() {
   if(m_Func == BC7C::CompressImageBC7) return 16;
+#ifdef HAS_SSE_41
   if(m_Func == BC7C::CompressImageBC7SIMD) return 16;
+#endif
 }
 
 unsigned int ThreadGroup::GetUncompressedBlockSize() {
   if(m_Func == BC7C::CompressImageBC7) return 64;
+#ifdef HAS_SSE_41
   if(m_Func == BC7C::CompressImageBC7SIMD) return 64;
+#endif
 }
 
 void ThreadGroup::Start() {
