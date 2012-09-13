@@ -65,6 +65,8 @@ ThreadGroup::ThreadGroup( int numThreads, const ImageFile &image, CompressionFun
 
 ThreadGroup::~ThreadGroup() {
   delete m_Barrier;
+  delete m_FinishMutex;
+  delete m_FinishCV;
 }
 
 unsigned int ThreadGroup::GetCompressedBlockSize() {
