@@ -11,6 +11,10 @@ void PrintUsage() {
 int main(int argc, char **argv) {
 
   int fileArg = 1;
+  if(fileArg == argc) {
+    PrintUsage();
+    exit(1);
+  }
 
   int quality = 50;
   int numThreads = 1;
