@@ -71,6 +71,7 @@ int main(int argc, char **argv) {
   CompressedImage *ci = CompressImage(file, settings);
 
   // Cleanup 
-  delete ci;
+  if(NULL != ci)
+    delete ci;
   return 0;
 }
