@@ -29,6 +29,12 @@
 #include <cfloat>
 #include <ctime>
 
+#ifdef _MSC_VER
+#define ALIGN_SSE __declspec( align(16) )
+#else
+#define ALIGN_SSE __attribute__((aligned(16)))
+#endif
+
 static const uint32 kNumShapes2 = 64;
 static const uint16 kShapeMask2[kNumShapes2] = {
 	0xcccc, 0x8888, 0xeeee, 0xecc8, 0xc880, 0xfeec, 0xfec8, 0xec80,
@@ -1319,6 +1325,17 @@ double BC7CompressionMode::Compress(BitStream &stream, const int shapeIdx, const
 
 namespace BC7C
 {
+	static ErrorMetric gErrorMetric = eErrorMetric_Uniform;
+	void SetErrorMetric(ErrorMetric e) { gErrorMetric = e; }
+
+	ALIGN_SSE const float kErrorMetrics[kNumErrorMetrics][kNumColorChannels] = {
+		{ 1.0f, 1.0f, 1.0f, 1.0f },
+		{ sqrtf(0.3f), sqrtf(0.56f), sqrtf(0.11f), 1.0f }
+	};
+
+	const float *GetErrorMetric() { return kErrorMetrics[GetErrorMetricEnum()]; }
+	ErrorMetric GetErrorMetricEnum() { return gErrorMetric; }
+
 	// Function prototypes
 	static void ExtractBlock(const uint8* inPtr, int width, uint32* colorBlock);
 	static void CompressBC7Block(const uint32 *block, uint8 *outBuf);
