@@ -7,3 +7,4 @@
 // Do we have the proper popcnt instruction defined?
 #cmakedefine NO_INLINE_ASSEMBLY
 #cmakedefine HAS_SSE_POPCNT
+#cmakedefine HAS_SSE_41
