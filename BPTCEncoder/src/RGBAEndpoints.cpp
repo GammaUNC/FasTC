@@ -172,15 +172,13 @@ uint8 QuantizeChannel(const uint8 val, const uint8 mask, const int pBit) {
 }
 
 uint32 RGBAVector::ToPixel(const uint32 channelMask, const int pBit) const {
-	uint32 ret = 0;
-	uint8 *pRet = (uint8 *)&ret;
 
-	const uint8 *channelMaskBytes = (const uint8 *)&channelMask;
+	const uint8 pRet0 = QuantizeChannel(uint32(r + 0.5) & 0xFF, channelMask & 0xFF, pBit);
+	const uint8 pRet1 = QuantizeChannel(uint32(g + 0.5) & 0xFF, (channelMask >> 8) & 0xFF, pBit);
+	const uint8 pRet2 = QuantizeChannel(uint32(b + 0.5) & 0xFF, (channelMask >> 16) & 0xFF, pBit);
+	const uint8 pRet3 = QuantizeChannel(uint32(a + 0.5) & 0xFF, (channelMask >> 24) & 0xFF, pBit);
 
-	pRet[0] = QuantizeChannel(uint32(r + 0.5) & 0xFF, channelMaskBytes[0], pBit);
-	pRet[1] = QuantizeChannel(uint32(g + 0.5) & 0xFF, channelMaskBytes[1], pBit);
-	pRet[2] = QuantizeChannel(uint32(b + 0.5) & 0xFF, channelMaskBytes[2], pBit);
-	pRet[3] = QuantizeChannel(uint32(a + 0.5) & 0xFF, channelMaskBytes[3], pBit);
+	const uint32 ret = pRet0 | (pRet1 << 8) | (pRet2 << 16) | (pRet3 << 24);
 
 	return ret;
 }
@@ -341,6 +339,8 @@ double RGBACluster::QuantizedError(const RGBAVector &p1, const RGBAVector &p2, u
 	uint8 *pqp1 = (uint8 *)&qp1;
 	uint8 *pqp2 = (uint8 *)&qp2;
 
+	const RGBAVector metric = errorMetricVec;
+
 	float totalError = 0.0;
 	for(int i = 0; i < m_NumPoints; i++) {
 
@@ -358,10 +358,9 @@ double RGBACluster::QuantizedError(const RGBAVector &p1, const RGBAVector &p2, u
 			for(int k = 0; k < kNumColorChannels; k++) {
 				const uint8 ip = (((uint32(pqp1[k]) * interp0) + (uint32(pqp2[k]) * interp1) + 32) >> 6) & 0xFF;
 				const uint8 dist = sad(pb[k], ip);
-				errorVec.c[k] = kFloatConversion[dist];
+				errorVec.c[k] = kFloatConversion[dist] * metric.c[k];
 			}
 			
-			errorVec *= errorMetricVec;
 			float error = errorVec * errorVec;
 			if(error < minError) {
 				minError = error;
