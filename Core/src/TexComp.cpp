@@ -34,12 +34,16 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
     case eCompressionFormat_BPTC:
     {
       BC7C::SetQualityLevel(s.iQuality);
+#ifdef HAS_SSE_41
       if(s.bUseSIMD) {
 	return BC7C::CompressImageBC7SIMD;
       }
       else {
+#endif
 	return BC7C::CompressImageBC7;
+#ifdef HAS_SSE_41
       }
+#endif
     }
     break;
   }
@@ -54,7 +58,16 @@ CompressedImage * CompressImage(
   const ImageFile &img, 
   const SCompressionSettings &settings
 ) { 
-  
+
+  // Make sure that platform supports SSE if they chose this
+  // option...
+  #ifndef HAS_SSE_41
+  if(settings.bUseSIMD) {
+    ReportError("Platform does not support SIMD!\n");
+    return NULL;
+  }
+  #endif
+
   const unsigned int dataSz = img.GetWidth() * img.GetHeight() * 4;
 
   // Allocate data based on the compression method
