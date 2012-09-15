@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 template <typename T>
 static T min(const T &a, const T &b) {
@@ -25,6 +26,7 @@ SCompressionSettings:: SCompressionSettings()
   , bUseSIMD(false)
   , iNumThreads(1)
   , iQuality(50)
+  , iNumCompressions(1)
 {
   clamp(iQuality, 0, 256);
 }
@@ -90,15 +92,22 @@ CompressedImage * CompressImage(
   if(f) {
 
     StopWatch stopWatch = StopWatch();
+    double cmpMSTime = 0.0;
 
     if(settings.iNumThreads > 1) {
 
       ThreadGroup tgrp (settings.iNumThreads, img, f, cmpData);
+      if(!(tgrp.PrepareThreads())) {
+        assert(!"Thread group failed to prepare threads?!");
+        return NULL;
+      }
 
       tgrp.Start();
       tgrp.Join();
 
       stopWatch = tgrp.GetStopWatch();
+
+      tgrp.CleanUpThreads();
     }
     else {
       stopWatch.Start();

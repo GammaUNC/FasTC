@@ -10,42 +10,50 @@
 #include <boost/thread/condition_variable.hpp>
 
 CmpThread::CmpThread() 
-  : m_ParentCounter(NULL)
+  : m_StartBarrier(NULL)
+  , m_ParentCounter(NULL)
   , m_ParentCounterLock(NULL)
   , m_FinishCV(NULL)
-  , m_Barrier(NULL)
   , m_Width(0)
   , m_Height(0)
   , m_CmpFunc(NULL)
   , m_OutBuf(NULL)
   , m_InBuf(NULL)
+  , m_ParentExitFlag(NULL)
 { }
 
 void CmpThread::operator()() {
-  if(!m_Barrier || !m_CmpFunc || !m_OutBuf || !m_InBuf 
-     || !m_ParentCounter || !m_ParentCounterLock
-     || !m_FinishCV
+  if(!m_CmpFunc || !m_OutBuf || !m_InBuf 
+     || !m_ParentCounter || !m_ParentCounterLock || !m_FinishCV
+     || !m_StartBarrier
+     || !m_ParentExitFlag
   ) {
     fprintf(stderr, "Incorrect thread initialization.\n");
     return;
   }
 
-  // Wait for all threads to be ready...
-  m_Barrier->wait();
+  while(1) {
+    // Wait for signal to start work...
+    m_StartBarrier->wait();
 
-  (*m_CmpFunc)(m_InBuf, m_OutBuf, m_Width, m_Height);
+    if(*m_ParentExitFlag) {
+      return;
+    }
 
-  {
-    boost::lock_guard<boost::mutex> lock(*m_ParentCounterLock);
-    (*m_ParentCounter)++;
+    (*m_CmpFunc)(m_InBuf, m_OutBuf, m_Width, m_Height);
+
+    {
+      boost::lock_guard<boost::mutex> lock(*m_ParentCounterLock);
+      (*m_ParentCounter)++;
+    }
+
+    m_FinishCV->notify_one();
   }
-
-  m_FinishCV->notify_one();
 }
 
 
 ThreadGroup::ThreadGroup( int numThreads, const ImageFile &image, CompressionFunc func, unsigned char *outBuf )
-  : m_Barrier(new boost::barrier(numThreads))
+  : m_StartBarrier(new boost::barrier(numThreads + 1))
   , m_FinishMutex(new boost::mutex())
   , m_FinishCV(new boost::condition_variable())
   , m_NumThreads(numThreads)
@@ -53,18 +61,21 @@ ThreadGroup::ThreadGroup( int numThreads, const ImageFile &image, CompressionFun
   , m_Func(func)
   , m_Image(image)
   , m_OutBuf(outBuf)
+  , m_ThreadState(eThreadState_Done)
+  , m_ExitFlag(false)
 { 
   for(int i = 0; i < kMaxNumThreads; i++) {
     // Thread synchronization primitives
     m_Threads[i].m_ParentCounterLock = m_FinishMutex;
     m_Threads[i].m_FinishCV = m_FinishCV;
     m_Threads[i].m_ParentCounter = &m_ThreadsFinished;
-    m_Threads[i].m_Barrier = m_Barrier;
+    m_Threads[i].m_StartBarrier = m_StartBarrier;
+    m_Threads[i].m_ParentExitFlag = &m_ExitFlag;
   }
 }
 
 ThreadGroup::~ThreadGroup() {
-  delete m_Barrier;
+  delete m_StartBarrier;
   delete m_FinishMutex;
   delete m_FinishCV;
 }
@@ -83,11 +94,17 @@ unsigned int ThreadGroup::GetUncompressedBlockSize() {
 #endif
 }
 
-void ThreadGroup::Start() {
+bool ThreadGroup::PrepareThreads() {
+
+  // Make sure that threads aren't running.
+  if(m_ThreadState != eThreadState_Done) {
+    return false;
+  }
 
   // Have we already activated the thread group?
   if(m_ActiveThreads > 0) {
-    return;
+    m_ThreadState = eThreadState_Waiting;
+    return true;
   }
 
   // Make sure that the image dimensions are multiples of 4
@@ -127,8 +144,55 @@ void ThreadGroup::Start() {
     m_ActiveThreads++;
   }
 
+  m_ThreadState = eThreadState_Waiting;
+  return true;
+}
+
+bool ThreadGroup::Start() {
+
+  if(m_ActiveThreads <= 0) {
+    return false;
+  }
+
+  if(m_ThreadState != eThreadState_Waiting) {
+    return false;
+  }
+
   m_StopWatch.Reset();
   m_StopWatch.Start();
+
+  // Last thread to activate the barrier is this one.
+  m_ThreadState = eThreadState_Running;
+  m_StartBarrier->wait();
+
+  return true;
+}
+
+bool ThreadGroup::CleanUpThreads() {
+
+  // Are the threads currently running?
+  if(m_ThreadState == eThreadState_Running) {
+    // ... if so, wait for them to finish
+    Join();
+  }
+
+  assert(m_ThreadState == eThreadState_Done || m_ThreadState == eThreadState_Waiting);
+  
+  // Mark all threads for exit
+  m_ExitFlag = true;
+
+  // Hit the barrier to signal them to go.
+  m_StartBarrier->wait();
+
+  // Clean up.
+  for(int i = 0; i < m_ActiveThreads; i++) {
+    m_ThreadHandles[i]->join();
+    delete m_ThreadHandles[i];
+  }
+
+  // Reset active number of threads...
+  m_ActiveThreads = 0;
+  m_ExitFlag = false;
 }
 
 void ThreadGroup::Join() {
@@ -139,12 +203,6 @@ void ThreadGroup::Join() {
   }
 
   m_StopWatch.Stop();
-
-  for(int i = 0; i < m_ActiveThreads; i++) {
-    m_ThreadHandles[i]->join();
-    delete m_ThreadHandles[i];
-  }
-
-  // Reset active number of threads...
-  m_ActiveThreads = 0;
+  m_ThreadState = eThreadState_Done;
+  m_ThreadsFinished = 0;
 }

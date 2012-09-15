@@ -6,9 +6,9 @@
 
 // forward declare
 namespace boost {
-  class barrier;
   class thread;
   class mutex;
+  class barrier;
   class condition_variable;
 }
 
@@ -16,12 +16,12 @@ struct CmpThread {
   friend class ThreadGroup;  
 
 private:
-  int *m_ParentCounter;
+  boost::barrier *m_StartBarrier;
 
+  int *m_ParentCounter;
+  
   boost::mutex *m_ParentCounterLock;
   boost::condition_variable *m_FinishCV;
-
-  boost::barrier *m_Barrier;
 
   int m_Width;
   int m_Height;
@@ -30,6 +30,8 @@ private:
 
   unsigned char *m_OutBuf;
   const unsigned char *m_InBuf;
+
+  bool *m_ParentExitFlag;
 
   CmpThread();
 
@@ -43,13 +45,22 @@ class ThreadGroup {
   ThreadGroup( int numThreads, const ImageFile &, CompressionFunc func, unsigned char *outBuf );
   ~ThreadGroup();
 
-  void Start();
+  bool PrepareThreads();
+  bool Start();
   void Join();
+  bool CleanUpThreads();
 
   const StopWatch &GetStopWatch() const { return m_StopWatch; }
 
+  enum EThreadState {
+    eThreadState_Waiting,
+    eThreadState_Running,
+    eThreadState_Done
+  };
+
  private:
-  boost::barrier *const m_Barrier;
+  boost::barrier *const m_StartBarrier;
+
   boost::mutex *const m_FinishMutex;
   boost::condition_variable *const m_FinishCV;
 
@@ -71,6 +82,9 @@ class ThreadGroup {
   unsigned int GetUncompressedBlockSize();
 
   StopWatch m_StopWatch;
+
+  EThreadState m_ThreadState;
+  bool m_ExitFlag;
 };
 
 #endif // _THREAD_GROUP_H_
