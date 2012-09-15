@@ -18,11 +18,24 @@ int main(int argc, char **argv) {
 
   int quality = 50;
   int numThreads = 1;
+  int numCompressions = 1;
   bool bUseSIMD = false;
   
   bool knowArg = false;
   do {
     knowArg = false;
+
+    if(strcmp(argv[fileArg], "-n") == 0) {
+      fileArg++;
+
+      if(fileArg == argc || (numCompressions = atoi(argv[fileArg])) < 0) {
+        PrintUsage();
+        exit(1);
+      }
+
+      fileArg++;
+      knowArg = true;
+    }
     
     if(strcmp(argv[fileArg], "-s") == 0) {
       fileArg++;
@@ -67,6 +80,7 @@ int main(int argc, char **argv) {
   settings.bUseSIMD = bUseSIMD;
   settings.iNumThreads = numThreads;
   settings.iQuality = quality;
+  settings.iNumCompressions = numCompressions;
 
   CompressedImage *ci = CompressImage(file, settings);
 

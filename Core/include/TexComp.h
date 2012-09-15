@@ -10,6 +10,7 @@ struct SCompressionSettings {
   bool bUseSIMD;
   int iNumThreads;
   int iQuality;
+  int iNumCompressions;
 };
 
 extern CompressedImage * CompressImage(
