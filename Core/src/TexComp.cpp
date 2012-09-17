@@ -91,7 +91,6 @@ CompressedImage * CompressImage(
   CompressionFunc f = ChooseFuncFromSettings(settings);
   if(f) {
 
-    StopWatch stopWatch = StopWatch();
     double cmpMSTime = 0.0;
 
     if(settings.iNumThreads > 1) {
@@ -102,22 +101,42 @@ CompressedImage * CompressImage(
         return NULL;
       }
 
-      tgrp.Start();
-      tgrp.Join();
+      double cmpTimeTotal = 0.0;
+      for(int i = 0; i < settings.iNumCompressions; i++) {
+        if(i > 0)
+          tgrp.PrepareThreads();
 
-      stopWatch = tgrp.GetStopWatch();
+        tgrp.Start();
+        tgrp.Join();
+
+        StopWatch stopWatch = tgrp.GetStopWatch();
+        cmpTimeTotal += tgrp.GetStopWatch().TimeInMilliseconds();
+      }
+
+      cmpMSTime = cmpTimeTotal / double(settings.iNumCompressions);
 
       tgrp.CleanUpThreads();
     }
     else {
-      stopWatch.Start();
-      (*f)(img.GetPixels(), cmpData, img.GetWidth(), img.GetHeight());
-      stopWatch.Stop();
+      double cmpTimeTotal = 0.0;
+      for(int i = 0; i < settings.iNumCompressions; i++) {
+
+        StopWatch stopWatch = StopWatch();
+        stopWatch.Reset();
+        stopWatch.Start();
+
+        (*f)(img.GetPixels(), cmpData, img.GetWidth(), img.GetHeight());
+        stopWatch.Stop();
+
+        cmpTimeTotal += stopWatch.TimeInMilliseconds();
+      }
+
+      cmpMSTime = cmpTimeTotal / double(settings.iNumCompressions);
       outImg = new CompressedImage(img.GetWidth(), img.GetHeight(), settings.format, cmpData);
     }
 
     // Report compression time
-    fprintf(stdout, "Compression time: %0.3f ms\n", stopWatch.TimeInMilliseconds());
+    fprintf(stdout, "Compression time: %0.3f ms\n", cmpMSTime);
   }
   else {
     ReportError("Could not find adequate compression function for specified settings");
