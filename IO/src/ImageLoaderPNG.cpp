@@ -108,7 +108,7 @@ bool ImageLoaderPNG::ReadData() {
 	
 	png_read_row(png_ptr, rowData, NULL);
 
-	unsigned int rowOffset = i * m_Height;
+	unsigned int rowOffset = i * m_Width;
 	
 	unsigned int byteIdx = 0;
 	for(int j = 0; j < m_Width; j++) {
@@ -132,7 +132,7 @@ bool ImageLoaderPNG::ReadData() {
 	
 	png_read_row(png_ptr, rowData, NULL);
 
-	unsigned int rowOffset = i * m_Height;
+	unsigned int rowOffset = i * m_Width;
 	
 	unsigned int byteIdx = 0;
 	for(int j = 0; j < m_Width; j++) {
@@ -159,7 +159,7 @@ bool ImageLoaderPNG::ReadData() {
 	
 	png_read_row(png_ptr, rowData, NULL);
 
-	unsigned int rowOffset = i * m_Height;
+	unsigned int rowOffset = i * m_Width;
 	
 	unsigned int byteIdx = 0;
 	for(int j = 0; j < m_Width; j++) {
@@ -183,7 +183,7 @@ bool ImageLoaderPNG::ReadData() {
 	
 	png_read_row(png_ptr, rowData, NULL);
 
-	unsigned int rowOffset = i * m_Height;
+	unsigned int rowOffset = i * m_Width;
 	
 	unsigned int byteIdx = 0;
 	for(int j = 0; j < m_Width; j++) {
