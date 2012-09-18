@@ -112,7 +112,7 @@ bool ImageLoaderPNG::ReadData() {
 	
 	unsigned int byteIdx = 0;
 	for(int j = 0; j < m_Width; j++) {
-
+ 	  m_RedData[rowOffset + j] = rowData[byteIdx++];
 	}
 
 	assert(byteIdx == bpr);

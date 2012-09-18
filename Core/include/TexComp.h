@@ -25,4 +25,6 @@ typedef void (* CompressionFunc)(
   unsigned int height
 );
 
+extern double ComputePSNR(const CompressedImage &, const ImageFile &);
+
 #endif //_TEX_COMP_H_

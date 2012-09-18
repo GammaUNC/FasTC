@@ -196,6 +196,11 @@ bool ImageFile::LoadImage(const unsigned char *rawImageData) {
   const unsigned int aw = ((m_Width + 3) >> 2) << 2;
   const unsigned int ah = ((m_Height + 3) >> 2) << 2;
 
+#ifndef NDEBUG
+  if(aw != m_Width || ah != m_Height)
+    fprintf(stderr, "Warning: Image dimension not multiple of four. Space will be filled with black.\n");
+#endif
+
   int byteIdx = 0;
   for(int i = 0; i < ah; i+=4) {
     for(int j = 0; j < aw; j+= 4) {

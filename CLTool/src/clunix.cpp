@@ -84,8 +84,17 @@ int main(int argc, char **argv) {
 
   CompressedImage *ci = CompressImage(file, settings);
 
+  double PSNR = ComputePSNR(*ci, file);
+  if(PSNR > 0.0) {
+    fprintf(stdout, "PSNR: %.3f\n", PSNR);
+  }
+  else {
+    fprintf(stderr, "Error computing PSNR\n");
+  }
+
   // Cleanup 
   if(NULL != ci)
     delete ci;
+
   return 0;
 }

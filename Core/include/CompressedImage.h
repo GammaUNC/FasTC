@@ -30,6 +30,8 @@ class CompressedImage {
 
   CompressedImage( const CompressedImage &other );
   ~CompressedImage();
+
+  bool DecompressImage(unsigned char *outBuf, unsigned int outBufSz) const;
 };
 
 #endif // _COMPRESSED_IMAGE_H_
