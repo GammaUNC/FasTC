@@ -57,6 +57,71 @@ static void ReportError(const char *msg) {
   fprintf(stderr, "TexComp -- %s\n", msg);
 }
 
+static double CompressImageInSerial(
+  const ImageFile &img,
+  const SCompressionSettings &settings,
+  const CompressionFunc f,
+  unsigned char *outBuf
+) {
+  double cmpTimeTotal = 0.0;
+
+  for(int i = 0; i < settings.iNumCompressions; i++) {
+
+    StopWatch stopWatch = StopWatch();
+    stopWatch.Reset();
+    stopWatch.Start();
+
+    (*f)(img.GetPixels(), outBuf, img.GetWidth(), img.GetHeight());
+
+    stopWatch.Stop();
+
+    cmpTimeTotal += stopWatch.TimeInMilliseconds();
+  }
+
+  double cmpTime = cmpTimeTotal / double(settings.iNumCompressions);
+  return cmpTime;
+}
+
+static double CompressImageWithThreads(
+  const ImageFile &img,
+  const SCompressionSettings &settings,
+  const CompressionFunc f,
+  unsigned char *outBuf
+) {
+
+  ThreadGroup tgrp (settings.iNumThreads, img, f, outBuf);
+  if(!(tgrp.PrepareThreads())) {
+    assert(!"Thread group failed to prepare threads?!");
+    return NULL;
+  }
+
+  double cmpTimeTotal = 0.0;
+  for(int i = 0; i < settings.iNumCompressions; i++) {
+    if(i > 0)
+      tgrp.PrepareThreads();
+
+    tgrp.Start();
+    tgrp.Join();
+
+    StopWatch stopWatch = tgrp.GetStopWatch();
+    cmpTimeTotal += tgrp.GetStopWatch().TimeInMilliseconds();
+  }
+
+  tgrp.CleanUpThreads();  
+
+  double cmpTime = cmpTimeTotal / double(settings.iNumCompressions);
+  return cmpTime;
+}
+
+static double CompressImageWithWorkerQueue(
+  const ImageFile &img,
+  const SCompressionSettings &settings,
+  const CompressionFunc f,
+  unsigned char *outBuf
+) {
+  return 0.0;
+}                                             
+
 CompressedImage * CompressImage(
   const ImageFile &img, 
   const SCompressionSettings &settings
@@ -95,44 +160,10 @@ CompressedImage * CompressImage(
     double cmpMSTime = 0.0;
 
     if(settings.iNumThreads > 1) {
-
-      ThreadGroup tgrp (settings.iNumThreads, img, f, cmpData);
-      if(!(tgrp.PrepareThreads())) {
-        assert(!"Thread group failed to prepare threads?!");
-        return NULL;
-      }
-
-      double cmpTimeTotal = 0.0;
-      for(int i = 0; i < settings.iNumCompressions; i++) {
-        if(i > 0)
-          tgrp.PrepareThreads();
-
-        tgrp.Start();
-        tgrp.Join();
-
-        StopWatch stopWatch = tgrp.GetStopWatch();
-        cmpTimeTotal += tgrp.GetStopWatch().TimeInMilliseconds();
-      }
-
-      cmpMSTime = cmpTimeTotal / double(settings.iNumCompressions);
-
-      tgrp.CleanUpThreads();
+      cmpMSTime = CompressImageWithThreads(img, settings, f, cmpData);
     }
     else {
-      double cmpTimeTotal = 0.0;
-      for(int i = 0; i < settings.iNumCompressions; i++) {
-
-        StopWatch stopWatch = StopWatch();
-        stopWatch.Reset();
-        stopWatch.Start();
-
-        (*f)(img.GetPixels(), cmpData, img.GetWidth(), img.GetHeight());
-        stopWatch.Stop();
-
-        cmpTimeTotal += stopWatch.TimeInMilliseconds();
-      }
-
-      cmpMSTime = cmpTimeTotal / double(settings.iNumCompressions);
+      cmpMSTime = CompressImageInSerial(img, settings, f, cmpData);
     }
 
     outImg = new CompressedImage(img.GetWidth(), img.GetHeight(), settings.format, cmpData);
