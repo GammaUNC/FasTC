@@ -83,7 +83,11 @@ int main(int argc, char **argv) {
   settings.iNumCompressions = numCompressions;
 
   CompressedImage *ci = CompressImage(file, settings);
-
+  if(NULL == ci) {
+    fprintf(stderr, "Error compressing image!\n");
+    return 1;
+  }
+  
   double PSNR = ComputePSNR(*ci, file);
   if(PSNR > 0.0) {
     fprintf(stdout, "PSNR: %.3f\n", PSNR);
@@ -93,8 +97,7 @@ int main(int argc, char **argv) {
   }
 
   // Cleanup 
-  if(NULL != ci)
-    delete ci;
+  delete ci;
 
   return 0;
 }
