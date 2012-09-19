@@ -133,8 +133,9 @@ CompressedImage * CompressImage(
       }
 
       cmpMSTime = cmpTimeTotal / double(settings.iNumCompressions);
-      outImg = new CompressedImage(img.GetWidth(), img.GetHeight(), settings.format, cmpData);
     }
+
+    outImg = new CompressedImage(img.GetWidth(), img.GetHeight(), settings.format, cmpData);
 
     // Report compression time
     fprintf(stdout, "Compression time: %0.3f ms\n", cmpMSTime);
