@@ -91,7 +91,7 @@ static inline uint32 CountBitsInMask(uint8 n) {
 		"subl %%ecx, %%eax;"
 		"movl %%eax, %0;"
 		: "=Q"(ans)
-		: "r"(n)
+		: "b"(n)
 		: "%eax", "%ecx"
 	);
 	return ans;

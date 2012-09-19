@@ -43,7 +43,10 @@ ImageLoaderPNG::~ImageLoaderPNG() {
 bool ImageLoaderPNG::ReadData() {
   
   const int kNumSigBytesToRead = 8;
-  const int numSigNoMatch = png_sig_cmp(m_RawData, 0, kNumSigBytesToRead);
+  uint8 pngSigBuf[kNumSigBytesToRead];
+  memcpy(pngSigBuf, m_RawData, kNumSigBytesToRead);
+
+  const int numSigNoMatch = png_sig_cmp(pngSigBuf, 0, kNumSigBytesToRead);
   if(numSigNoMatch) {
     ReportError("Incorrect PNG signature");
     return false;
@@ -74,7 +77,7 @@ bool ImageLoaderPNG::ReadData() {
   int colorType = -1;
 
   if( 1 != png_get_IHDR(png_ptr, info_ptr, 
-      &m_Width, &m_Height, 
+      (png_uint_32 *)(&m_Width), (png_uint_32 *)(&m_Height), 
       &bitDepth, &colorType, 
       NULL, NULL, NULL) 
   ) {
@@ -90,7 +93,7 @@ bool ImageLoaderPNG::ReadData() {
   }
 
   const int numPixels = m_Width * m_Height;
-  unsigned int bpr = png_get_rowbytes(png_ptr, info_ptr);
+  png_uint_32 bpr = png_get_rowbytes(png_ptr, info_ptr);
   png_bytep rowData = new png_byte[bpr];
 
   switch(colorType) {

@@ -2,13 +2,14 @@
 #define _IMAGE_LOADER_H_
 
 #include "ImageFileFormat.h"
+#include "TexCompTypes.h"
 
 class ImageLoader {
 
  protected:
 
-  unsigned int m_Width;
-  unsigned int m_Height;
+  uint32 m_Width;
+  uint32 m_Height;
 
   unsigned int m_RedChannelPrecision;
   unsigned char *m_RedData;
