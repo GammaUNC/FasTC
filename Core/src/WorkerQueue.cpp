@@ -59,6 +59,7 @@ void WorkerThread::operator()() {
 }
 
 WorkerQueue::WorkerQueue(
+  uint32 numCompressions,
   uint32 numThreads,
   uint32 jobSize,
   const uint8 *inBuf,
@@ -66,7 +67,9 @@ WorkerQueue::WorkerQueue(
   CompressionFunc func,
   uint8 *outBuf
 )
-  : m_NumThreads(numThreads)
+  : m_NumCompressions(0)
+  , m_TotalNumCompressions(max(uint32(1), numCompressions))
+  , m_NumThreads(numThreads)
   , m_ActiveThreads(0)
   , m_JobSize(max(uint32(1), jobSize))
   , m_InBufSz(inBufSz)
@@ -74,7 +77,7 @@ WorkerQueue::WorkerQueue(
   , m_OutBuf(outBuf)
   , m_CompressionFunc(func)
 {
-  clamp(m_NumThreads, uint32(1), kMaxNumWorkerThreads);
+  clamp(m_NumThreads, uint32(1), uint32(kMaxNumWorkerThreads));
 
 #ifndef NDEBUG
   if(m_InBufSz % 64) {
@@ -93,10 +96,15 @@ void WorkerQueue::Run() {
     m_ActiveThreads++;
   }
 
+  m_StopWatch.Reset();
+  m_StopWatch.Start();
+
   // Wait for them to finish...
   while(m_ActiveThreads > 0) {
     m_CV.wait(lock);
   }
+
+  m_StopWatch.Stop();
 
   // Join them all together..
   for(int i = 0; i < m_NumThreads; i++) {
@@ -140,6 +148,10 @@ WorkerThread::EAction WorkerQueue::AcceptThreadData(uint32 threadIdx) {
 
   // Make sure the next block is updated.
   m_NextBlock += blocksProcessed;
+
+  if(m_NextBlock == totalBlocks && ++m_NumCompressions < m_TotalNumCompressions) {
+    m_NextBlock = 0;
+  }
 
   return WorkerThread::eAction_DoWork;
 }

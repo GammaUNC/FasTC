@@ -18,6 +18,7 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+  int numJobs = 0;
   int quality = 50;
   int numThreads = 1;
   int numCompressions = 1;
@@ -69,6 +70,18 @@ int main(int argc, char **argv) {
       knowArg = true;
     }
 
+    if(strcmp(argv[fileArg], "-j") == 0) {
+      fileArg++;
+      
+      if(fileArg == argc || (numJobs = atoi(argv[fileArg])) < 0) {
+	PrintUsage();
+	exit(1);
+      }
+
+      fileArg++;
+      knowArg = true;
+    }
+
   } while(knowArg);
 
   if(fileArg == argc) {
@@ -88,6 +101,7 @@ int main(int argc, char **argv) {
   settings.iNumThreads = numThreads;
   settings.iQuality = quality;
   settings.iNumCompressions = numCompressions;
+  settings.iJobSize = numJobs;
 
   CompressedImage *ci = img->Compress(settings);
   if(NULL == ci) {

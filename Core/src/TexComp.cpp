@@ -135,6 +135,7 @@ static double CompressImageWithWorkerQueue(
   unsigned char *outBuf
 ) {
   WorkerQueue wq (
+    settings.iNumCompressions,
     settings.iNumThreads,
     settings.iJobSize,
     imgData,
@@ -144,6 +145,9 @@ static double CompressImageWithWorkerQueue(
   );
 
   wq.Run();
+
+  return wq.GetStopWatch().TimeInMilliseconds() / 
+    double(settings.iNumCompressions);
 }
 
 bool CompressImageData(

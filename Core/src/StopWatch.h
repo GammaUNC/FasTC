@@ -1,3 +1,6 @@
+#ifndef __TEXCOMP_STOP_WATCH_H__
+#define __TEXCOMP_STOP_WATCH_H__
+
 //--------------------------------------------------------------------------------------
 // Copyright 2011 Intel Corporation
 // All Rights Reserved
@@ -41,3 +44,5 @@ public:
 private:
 	StopWatchImpl *impl;
 };
+
+#endif // __TEXCOMP_STOP_WATCH_H__

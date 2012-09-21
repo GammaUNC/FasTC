@@ -12,6 +12,7 @@ namespace boost {
 #include "TexComp.h"
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
+#include "StopWatch.h"
 
 struct WorkerThread {
   friend class WorkerQueue;
@@ -36,6 +37,7 @@ class WorkerQueue {
   friend class WorkerThread;
  public:
   WorkerQueue(
+    uint32 numCompressions,
     uint32 numThreads, 
     uint32 jobSize,
     const uint8 *inBuf, 
@@ -48,9 +50,12 @@ class WorkerQueue {
 
   // Runs the workers
   void Run();
+  const StopWatch &GetStopWatch() const { return m_StopWatch; }
 
  private:
 
+  uint32 m_NumCompressions;
+  const uint32 m_TotalNumCompressions;
   uint32 m_NumThreads;
   uint32 m_ActiveThreads;
   uint32 m_JobSize;
@@ -62,7 +67,7 @@ class WorkerQueue {
   boost::mutex m_Mutex;
   uint32 m_NextBlock;
 
-  static const uint32 kMaxNumWorkerThreads = 256;
+  static const int kMaxNumWorkerThreads = 256;
   uint32 m_Offsets[kMaxNumWorkerThreads];
   uint32 m_NumBlocks[kMaxNumWorkerThreads];
 
@@ -74,6 +79,8 @@ class WorkerQueue {
   
   const CompressionFunc m_CompressionFunc;
   CompressionFunc GetCompressionFunc() const { return m_CompressionFunc; }
+
+  StopWatch m_StopWatch;
 
   WorkerThread::EAction AcceptThreadData(uint32 threadIdx);
   void NotifyWorkerFinished();
