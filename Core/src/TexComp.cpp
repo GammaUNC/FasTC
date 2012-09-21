@@ -6,9 +6,12 @@
 #include <assert.h>
 
 #include "BC7Compressor.h"
+#include "WorkerQueue.h"
 #include "ThreadGroup.h"
+
 #include "ImageFile.h"
 #include "Image.h"
+
 
 template <typename T>
 static T min(const T &a, const T &b) {
@@ -125,12 +128,22 @@ static double CompressImageWithThreads(
 }
 
 static double CompressImageWithWorkerQueue(
-  const ImageFile &img,
+  const unsigned char *imgData,
+  const unsigned int imgDataSz,
   const SCompressionSettings &settings,
   const CompressionFunc f,
   unsigned char *outBuf
 ) {
-  return 0.0;
+  WorkerQueue wq (
+    settings.iNumThreads,
+    settings.iJobSize,
+    imgData,
+    imgDataSz,
+    f,
+    outBuf
+  );
+
+  wq.Run();
 }
 
 bool CompressImageData(
@@ -178,7 +191,10 @@ bool CompressImageData(
     double cmpMSTime = 0.0;
 
     if(settings.iNumThreads > 1) {
-      cmpMSTime = CompressImageWithThreads(data, dataSz, settings, f, cmpData);
+      if(settings.iJobSize > 0)
+	cmpMSTime = CompressImageWithWorkerQueue(data, dataSz, settings, f, cmpData);
+      else
+	cmpMSTime = CompressImageWithThreads(data, dataSz, settings, f, cmpData);
     }
     else {
       cmpMSTime = CompressImageInSerial(data, dataSz, settings, f, cmpData);

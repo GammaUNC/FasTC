@@ -1,17 +1,17 @@
 #ifndef __TEXCOMP_WORKDER_QUEUE_H__
 #define __TEXCOMP_WORKDER_QUEUE_H__
 
-#include "TexCompTypes.h"
-#include "TexComp.h"
-
 // Forward declare...
 class WorkerQueue;
 namespace boost {
   class thread;
-  class mutex;
-  class barrier;
-  class condition_variable;
 }
+
+// Necessary includes...
+#include "TexCompTypes.h"
+#include "TexComp.h"
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/condition_variable.hpp>
 
 struct WorkerThread {
   friend class WorkerQueue;
@@ -19,6 +19,13 @@ public:
 
   WorkerThread(WorkerQueue *, uint32 idx);
   void operator ()();
+
+  enum EAction {
+    eAction_DoWork,
+    eAction_Quit,
+
+    kNumWorkerThreadActions
+  };
 
 private:
   uint32 m_ThreadIdx;
@@ -39,21 +46,37 @@ class WorkerQueue {
 
   ~WorkerQueue() { }
 
-  // Runs the 
+  // Runs the workers
   void Run();
 
  private:
 
-  static const int kMaxNumWorkerThreads = 256;
-  int m_Offsets[kMaxNumWorkerThreads];
+  uint32 m_NumThreads;
+  uint32 m_ActiveThreads;
+  uint32 m_JobSize;
+  uint32 m_InBufSz;
+  const uint8 *m_InBuf;
+  uint8 *m_OutBuf;
 
-  int GetOffsetForThread(const int threadIdx) const;
+  boost::condition_variable m_CV;
+  boost::mutex m_Mutex;
+  uint32 m_NextBlock;
+
+  static const uint32 kMaxNumWorkerThreads = 256;
+  uint32 m_Offsets[kMaxNumWorkerThreads];
+  uint32 m_NumBlocks[kMaxNumWorkerThreads];
+
+  boost::thread *m_ThreadHandles[kMaxNumWorkerThreads];
+
+  const uint8 *GetSrcForThread(const int threadIdx) const;
+  uint8 *GetDstForThread(const int threadIdx) const;
+  uint32 GetNumBlocksForThread(const int threadIdx) const;
   
   const CompressionFunc m_CompressionFunc;
   CompressionFunc GetCompressionFunc() const { return m_CompressionFunc; }
 
-  void SignalThreadReady(int threadIdx);
-  bool AcceptThreadData(int threadIdx) const;
+  WorkerThread::EAction AcceptThreadData(uint32 threadIdx);
+  void NotifyWorkerFinished();
 };
 
 #endif //__TEXCOMP_WORKDER_QUEUE_H__
