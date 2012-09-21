@@ -1,0 +1,186 @@
+#include "WorkerQueue.h"
+
+#include "BC7Compressor.h"
+
+#include <stdlib.h>
+#include <stdio.h>
+
+#include <boost/thread/thread.hpp>
+#include <boost/thread/barrier.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/condition_variable.hpp>
+
+WorkerThread::WorkerThread(WorkerQueue * parent, uint32 idx) 
+  : m_ThreadIdx(idx)
+  , m_Parent(parent)
+{ }
+
+void WorkerThread::operator()() {
+
+  if(!m_Parent) {
+    fprintf(stderr, "%s\n", "Illegal worker thread initialization -- parent is NULL.");
+    return;
+  }
+
+  CompressionFunc f = m_Parent->GetCompressionFunc();
+  if(!f) {
+    fprintf(stderr, "%s\n", "Illegal worker queue initialization -- compression func is NULL.");
+    return;
+  }
+
+  return;
+}
+
+#if 0
+ThreadGroup::ThreadGroup( int numThreads, const unsigned char *inBuf, unsigned int inBufSz, CompressionFunc func, unsigned char *outBuf )
+  : m_StartBarrier(new boost::barrier(numThreads + 1))
+  , m_FinishMutex(new boost::mutex())
+  , m_FinishCV(new boost::condition_variable())
+  , m_NumThreads(numThreads)
+  , m_ActiveThreads(0)
+  , m_Func(func)
+  , m_ImageDataSz(inBufSz)
+  , m_ImageData(inBuf)
+  , m_OutBuf(outBuf)
+  , m_ThreadState(eThreadState_Done)
+  , m_ExitFlag(false)
+{ 
+  for(int i = 0; i < kMaxNumThreads; i++) {
+    // Thread synchronization primitives
+    m_Threads[i].m_ParentCounterLock = m_FinishMutex;
+    m_Threads[i].m_FinishCV = m_FinishCV;
+    m_Threads[i].m_ParentCounter = &m_ThreadsFinished;
+    m_Threads[i].m_StartBarrier = m_StartBarrier;
+    m_Threads[i].m_ParentExitFlag = &m_ExitFlag;
+  }
+}
+
+ThreadGroup::~ThreadGroup() {
+  delete m_StartBarrier;
+  delete m_FinishMutex;
+  delete m_FinishCV;
+}
+
+unsigned int ThreadGroup::GetCompressedBlockSize() {
+  if(m_Func == BC7C::CompressImageBC7) return 16;
+#ifdef HAS_SSE_41
+  if(m_Func == BC7C::CompressImageBC7SIMD) return 16;
+#endif
+}
+
+unsigned int ThreadGroup::GetUncompressedBlockSize() {
+  if(m_Func == BC7C::CompressImageBC7) return 64;
+#ifdef HAS_SSE_41
+  if(m_Func == BC7C::CompressImageBC7SIMD) return 64;
+#endif
+}
+
+bool ThreadGroup::PrepareThreads() {
+
+  // Make sure that threads aren't running.
+  if(m_ThreadState != eThreadState_Done) {
+    return false;
+  }
+
+  // Have we already activated the thread group?
+  if(m_ActiveThreads > 0) {
+    m_ThreadState = eThreadState_Waiting;
+    return true;
+  }
+
+  // We can assume that the image data is in block stream order
+  // so, the size of the data given to each thread will be (nb*4)x4
+  int numBlocks = m_ImageDataSz / 64;
+
+  int blocksProcessed = 0;
+  int blocksPerThread = (numBlocks/m_NumThreads) + ((numBlocks % m_NumThreads)? 1 : 0);
+
+  // Currently no threads are finished...
+  m_ThreadsFinished = 0;
+  for(int i = 0; i < m_NumThreads; i++) {
+
+    if(m_ActiveThreads >= kMaxNumThreads)
+      break;
+
+    int numBlocksThisThread = blocksPerThread;
+    if(blocksProcessed + numBlocksThisThread > numBlocks) {
+      numBlocksThisThread = numBlocks - blocksProcessed;
+    }
+
+    CmpThread &t = m_Threads[m_ActiveThreads];
+    t.m_Height = 4;
+    t.m_Width = numBlocksThisThread * 4;
+    t.m_CmpFunc = m_Func;
+    t.m_OutBuf = m_OutBuf + (blocksProcessed * GetCompressedBlockSize());
+    t.m_InBuf = m_ImageData + (blocksProcessed * GetUncompressedBlockSize());
+
+    blocksProcessed += numBlocksThisThread;
+    
+    m_ThreadHandles[m_ActiveThreads] = new boost::thread(t);
+
+    m_ActiveThreads++;
+  }
+
+  m_ThreadState = eThreadState_Waiting;
+  return true;
+}
+
+bool ThreadGroup::Start() {
+
+  if(m_ActiveThreads <= 0) {
+    return false;
+  }
+
+  if(m_ThreadState != eThreadState_Waiting) {
+    return false;
+  }
+
+  m_StopWatch.Reset();
+  m_StopWatch.Start();
+
+  // Last thread to activate the barrier is this one.
+  m_ThreadState = eThreadState_Running;
+  m_StartBarrier->wait();
+
+  return true;
+}
+
+bool ThreadGroup::CleanUpThreads() {
+
+  // Are the threads currently running?
+  if(m_ThreadState == eThreadState_Running) {
+    // ... if so, wait for them to finish
+    Join();
+  }
+
+  assert(m_ThreadState == eThreadState_Done || m_ThreadState == eThreadState_Waiting);
+  
+  // Mark all threads for exit
+  m_ExitFlag = true;
+
+  // Hit the barrier to signal them to go.
+  m_StartBarrier->wait();
+
+  // Clean up.
+  for(int i = 0; i < m_ActiveThreads; i++) {
+    m_ThreadHandles[i]->join();
+    delete m_ThreadHandles[i];
+  }
+
+  // Reset active number of threads...
+  m_ActiveThreads = 0;
+  m_ExitFlag = false;
+}
+
+void ThreadGroup::Join() {
+
+  boost::unique_lock<boost::mutex> lock(*m_FinishMutex);
+  while(m_ThreadsFinished != m_ActiveThreads) {
+    m_FinishCV->wait(lock);
+  }
+
+  m_StopWatch.Stop();
+  m_ThreadState = eThreadState_Done;
+  m_ThreadsFinished = 0;
+}
+#endif 

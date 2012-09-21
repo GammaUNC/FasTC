@@ -42,7 +42,13 @@ public:
 
 class ThreadGroup {
  public:
-  ThreadGroup( int numThreads, const unsigned char *inBuf, unsigned int inBufSz, CompressionFunc func, unsigned char *outBuf );
+  ThreadGroup( 
+    int numThreads, 
+    const unsigned char *inBuf, 
+    unsigned int inBufSz, 
+    CompressionFunc func, 
+    unsigned char *outBuf
+  );
   ~ThreadGroup();
 
   bool PrepareThreads();

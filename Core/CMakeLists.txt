@@ -38,8 +38,11 @@ FIND_PACKAGE( Boost COMPONENTS thread system )
 IF( Boost_FOUND )
 	INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 
-	SET( SOURCES ${SOURCES} "src/ThreadGroup.cpp")
-	SET( HEADERS ${HEADERS} "src/ThreadGroup.h")
+	SET( SOURCES ${SOURCES} "src/ThreadGroup.cpp" )
+	SET( SOURCES ${SOURCES} "src/WorkerQueue.cpp" )
+
+	SET( HEADERS ${HEADERS} "src/ThreadGroup.h" )
+	SET( HEADERS ${HEADERS} "src/WorkerQueue.h" )
 
 	LINK_DIRECTORIES( ${Boost_LIBRARY_DIR} )
 ENDIF()
