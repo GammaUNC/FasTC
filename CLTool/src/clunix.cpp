@@ -4,6 +4,7 @@
 
 #include "TexComp.h"
 #include "ImageFile.h"
+#include "Image.h"
 
 void PrintUsage() {
    fprintf(stderr, "Usage: tc [-s|-t <num>] <imagefile>\n");
@@ -76,6 +77,11 @@ int main(int argc, char **argv) {
   }
 
   ImageFile file (argv[fileArg]);
+  const Image *img = file.GetImage();
+  if(NULL == img) {
+    fprintf(stderr, "Error loading file: %s\n", argv[fileArg]);
+    return 1;
+  }
   
   SCompressionSettings settings;
   settings.bUseSIMD = bUseSIMD;
@@ -83,13 +89,13 @@ int main(int argc, char **argv) {
   settings.iQuality = quality;
   settings.iNumCompressions = numCompressions;
 
-  CompressedImage *ci = file.Compress(settings);
+  CompressedImage *ci = img->Compress(settings);
   if(NULL == ci) {
     fprintf(stderr, "Error compressing image!\n");
     return 1;
   }
   
-  double PSNR = ComputePSNR(*ci, file);
+  double PSNR = img->ComputePSNR(*ci);
   if(PSNR > 0.0) {
     fprintf(stdout, "PSNR: %.3f\n", PSNR);
   }

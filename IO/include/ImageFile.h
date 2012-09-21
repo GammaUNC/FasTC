@@ -4,6 +4,7 @@
 #include "ImageFileFormat.h"
 
 // Forward declare
+class Image;
 class CompressedImage;
 
 // Class definition
@@ -18,19 +19,20 @@ public:
   unsigned int GetWidth() const { return m_Width; }
   unsigned int GetHeight() const { return m_Height; }
   CompressedImage *Compress(const SCompressionSettings &) const;
-
-  const unsigned char *RawData() const { return m_PixelData; }
+  Image *GetImage() const { return m_Image; }
 
  private:
   unsigned int m_Handle;
   unsigned int m_Width;
   unsigned int m_Height;
-  unsigned char *m_PixelData;
+
+  Image *m_Image;
+  
   const EImageFileFormat m_FileFormat;
 
   static unsigned char *ReadFileData(const char *filename);
   static EImageFileFormat DetectFileFormat(const char *filename);
 
-  bool LoadImage(const unsigned char *rawImageData);
+  Image *LoadImage(const unsigned char *rawImageData) const;
 };
 #endif // _IMAGE_FILE_H_ 

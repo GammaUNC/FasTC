@@ -8,6 +8,7 @@
 #include "ImageFile.h"
 #include "ImageLoader.h"
 #include "CompressedImage.h"
+#include "Image.h"
 
 #ifdef PNG_FOUND
 #  include "ImageLoaderPNG.h"
@@ -33,107 +34,72 @@ static inline T min(const T &a, const T &b) {
   return (a < b)? a : b;
 }
 
-static unsigned int GetChannelForPixel(
-  const ImageLoader *loader, 
-  unsigned int x, unsigned int y,
-  int ch
-) {
-  unsigned int prec;
-  const unsigned char *data;
-
-  switch(ch) {
-  case 0:
-    prec = loader->GetRedChannelPrecision();
-    data = loader->GetRedPixelData();
-    break;
-
-  case 1:
-    prec = loader->GetGreenChannelPrecision();
-    data = loader->GetGreenPixelData();
-    break;
-
-  case 2:
-    prec = loader->GetBlueChannelPrecision();
-    data = loader->GetBluePixelData();
-    break;
-
-  case 3:
-    prec = loader->GetAlphaChannelPrecision();
-    data = loader->GetAlphaPixelData();
-    break;
-
-  default:
-    ReportError("Unspecified channel");
-    return INT_MAX;
-  }
-
-  if(0 == prec)
-    return 0;
-
-  assert(x < loader->GetWidth());
-  assert(y < loader->GetHeight());
-
-  int pixelIdx = y * loader->GetWidth() + x;
-  const unsigned int val = data[pixelIdx];
-  
-  if(prec < 8) {
-    unsigned int ret = 0;
-    for(unsigned int precLeft = 8; precLeft > 0; precLeft -= min(prec, abs(prec - precLeft))) {
-      
-      if(prec > precLeft) {
-	const int toShift = prec - precLeft;
-	ret = ret << precLeft;
-	ret |= val >> toShift;
-      }
-      else {
-	ret = ret << prec;
-	ret |= val;
-      }
-
-    }
-
-    return ret;
-  }
-  else if(prec > 8) {
-    const int toShift = prec - 8;
-    return val >> toShift;
-  }
-
-  return val;
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////
 //
 // ImageFile implementation
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-ImageFile::ImageFile(const char *filename) : 
-  m_PixelData(0),
-  m_FileFormat(  DetectFileFormat(filename) )
+ImageFile::ImageFile(const char *filename)
+  : m_FileFormat(  DetectFileFormat(filename) )
+  , m_Image(NULL)
 {
   unsigned char *rawData = ReadFileData(filename);
   if(rawData) {
-    LoadImage(rawData);
+    m_Image = LoadImage(rawData);
     delete [] rawData;
   }
 }
 
-ImageFile::ImageFile(const char *filename, EImageFileFormat format) :
-  m_FileFormat(format),
-  m_PixelData(0)
+ImageFile::ImageFile(const char *filename, EImageFileFormat format)
+  : m_FileFormat(format)
+  , m_Image(NULL)
 {
   unsigned char *rawData = ReadFileData(filename);
   if(rawData) {
-    LoadImage(rawData);
+    m_Image = LoadImage(rawData);
     delete [] rawData;
   }
 }
 
-ImageFile::~ImageFile() {
-  if(m_PixelData) {
-    delete [] m_PixelData;
+ImageFile::~ImageFile() { 
+  if(m_Image) {
+    delete m_Image;
+    m_Image = NULL;
   }
+}
+
+Image *ImageFile::LoadImage(const unsigned char *rawImageData) const {
+
+  ImageLoader *loader = NULL;
+  switch(m_FileFormat) {
+
+#ifdef PNG_FOUND
+    case eFileFormat_PNG:
+      {
+	loader = new ImageLoaderPNG(rawImageData);
+      }
+      break;
+#endif // PNG_FOUND
+
+    default:
+      fprintf(stderr, "Unable to load image: unknown file format.\n");
+      return NULL;
+  }
+
+  if(!loader)
+    return NULL;
+
+  if(!(loader->LoadImage())) {
+    fprintf(stderr, "Unable to load image!\n");
+    delete loader;
+    return NULL;
+  }
+
+  Image *i = new Image(*loader);
+  delete loader;
+
+  return i;
 }
 
 EImageFileFormat ImageFile::DetectFileFormat(const char *filename) {
@@ -162,106 +128,6 @@ EImageFileFormat ImageFile::DetectFileFormat(const char *filename) {
     return eFileFormat_PNG;
   }
   return kNumImageFileFormats;
-}
-
-bool ImageFile::LoadImage(const unsigned char *rawImageData) {
-
-  ImageLoader *loader = NULL;
-  switch(m_FileFormat) {
-
-#ifdef PNG_FOUND
-    case eFileFormat_PNG:
-      {
-	loader = new ImageLoaderPNG(rawImageData);
-      }
-      break;
-#endif // PNG_FOUND
-
-    default:
-      fprintf(stderr, "Unable to load image: unknown file format.\n");
-      break;
-  }
-
-  // Read the image data!
-  if(!loader->ReadData())
-    return false;
-
-  m_Width = loader->GetWidth();
-  m_Height = loader->GetHeight();
-
-  // Create RGBA buffer 
-  const unsigned int dataSz = 4 * m_Width * m_Height;
-  m_PixelData = new unsigned char[dataSz];
-
-  // Populate buffer in block stream order... make 
-  // sure that width and height are aligned to multiples of four.
-  const unsigned int aw = ((m_Width + 3) >> 2) << 2;
-  const unsigned int ah = ((m_Height + 3) >> 2) << 2;
-
-#ifndef NDEBUG
-  if(aw != m_Width || ah != m_Height)
-    fprintf(stderr, "Warning: Image dimension not multiple of four. Space will be filled with black.\n");
-#endif
-
-  int byteIdx = 0;
-  for(int i = 0; i < ah; i+=4) {
-    for(int j = 0; j < aw; j+= 4) {
-
-      // For each block, visit the pixels in sequential order
-      for(int y = i; y < i+4; y++) {
-	for(int x = j; x < j+4; x++) {
-
-	  if(y >= m_Height || x >= m_Width) {
-	    m_PixelData[byteIdx++] = 0; // r
-	    m_PixelData[byteIdx++] = 0; // g
-	    m_PixelData[byteIdx++] = 0; // b
-	    m_PixelData[byteIdx++] = 0; // a
-	    continue;
-	  }
-
-	  unsigned int redVal = GetChannelForPixel(loader, x, y, 0);
-	  if(redVal == INT_MAX)
-	    return false;
-
-	  unsigned int greenVal = redVal;
-	  unsigned int blueVal = redVal;
-
-	  if(loader->GetGreenChannelPrecision() > 0) {
-	    greenVal = GetChannelForPixel(loader, x, y, 1);
-	    if(greenVal == INT_MAX)
-	      return false;
-	  }
-
-	  if(loader->GetBlueChannelPrecision() > 0) {
-	    blueVal = GetChannelForPixel(loader, x, y, 2);
-	    if(blueVal == INT_MAX)
-	      return false;
-	  }
-
-	  unsigned int alphaVal = 0xFF;
-	  if(loader->GetAlphaChannelPrecision() > 0) {
-	    alphaVal = GetChannelForPixel(loader, x, y, 3);
-	    if(alphaVal == INT_MAX)
-	      return false;
-	  }
-
-	  // Red channel
-	  m_PixelData[byteIdx++] = redVal & 0xFF;
-
-	  // Green channel
-	  m_PixelData[byteIdx++] = greenVal & 0xFF;
-
-	  // Blue channel
-	  m_PixelData[byteIdx++] = blueVal & 0xFF;
-
-	  // Alpha channel
-	  m_PixelData[byteIdx++] = alphaVal & 0xFF;
-	}
-      }
-    }
-  }
-
-  return true;
 }
 
 #ifdef _MSC_VER
@@ -304,25 +170,3 @@ unsigned char *ImageFile::ReadFileData(const char *filename) {
   return rawData;
 }
 #endif
-
-CompressedImage *ImageFile::Compress(const SCompressionSettings &settings) const {
-  CompressedImage *outImg = NULL;
-  const unsigned int dataSz = GetWidth() * GetHeight() * 4;
-
-  assert(dataSz > 0);
-
-  // Allocate data based on the compression method
-  int cmpDataSz = 0;
-  switch(settings.format) {
-    case eCompressionFormat_DXT1: cmpDataSz = dataSz / 8;
-    case eCompressionFormat_DXT5: cmpDataSz = dataSz / 4;
-    case eCompressionFormat_BPTC: cmpDataSz = dataSz / 4;
-  }
-
-  unsigned char *cmpData = new unsigned char[cmpDataSz];
-  CompressImageData(m_PixelData, dataSz, cmpData, cmpDataSz, settings);
-
-  outImg = new CompressedImage(GetWidth(), GetHeight(), settings.format, cmpData);
-  return outImg;
-}
-

@@ -1,12 +1,14 @@
-#include "BC7Compressor.h"
 #include "TexComp.h"
-#include "ThreadGroup.h"
-#include "ImageFile.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+
+#include "BC7Compressor.h"
+#include "ThreadGroup.h"
+#include "ImageFile.h"
+#include "Image.h"
 
 template <typename T>
 static T min(const T &a, const T &b) {
@@ -191,52 +193,4 @@ bool CompressImageData(
   }
 
   return true;
-}
-
-double ComputePSNR(const CompressedImage &ci, const ImageFile &file) {
-  unsigned int imageSz = 4 * file.GetWidth() * file.GetHeight();
-  unsigned char *unCompData = new unsigned char[imageSz];
-  if(!(ci.DecompressImage(unCompData, imageSz))) {
-    ReportError("Failed to decompress image.");
-    return -1.0f;
-  }
-
-  const unsigned char *rawData = file.RawData();
-
-  const double wr = 1.0;
-  const double wg = 1.0;
-  const double wb = 1.0;
-    
-  double MSE = 0.0;
-  for(int i = 0; i < imageSz; i+=4) {
-
-    const unsigned char *pixelDataRaw = rawData + i;
-    const unsigned char *pixelDataUncomp = unCompData + i;
-
-    double dr = double(sad(pixelDataRaw[0], pixelDataUncomp[0])) * wr;
-    double dg = double(sad(pixelDataRaw[1], pixelDataUncomp[1])) * wg;
-    double db = double(sad(pixelDataRaw[2], pixelDataUncomp[2])) * wb;
-
-    const double pixelMSE = 
-      (double(dr) * double(dr)) + 
-      (double(dg) * double(dg)) + 
-      (double(db) * double(db));
-
-    //fprintf(stderr, "Pixel MSE: %f\n", pixelMSE);
-    MSE += pixelMSE;
-  }
-
-  MSE /= (double(file.GetWidth()) * double(file.GetHeight()));
-
-  double MAXI = 
-    (255.0 * wr) * (255.0 * wr) + 
-    (255.0 * wg) * (255.0 * wg) + 
-    (255.0 * wb) * (255.0 * wb);
-
-  double PSNR = 10 * log10(MAXI/MSE);
-
-  // Cleanup
-  delete unCompData;
-  return PSNR;
-
 }

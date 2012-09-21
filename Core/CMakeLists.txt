@@ -2,12 +2,14 @@
 SET( SOURCES
 	"src/TexComp.cpp"
 	"src/CompressedImage.cpp"
+	"src/Image.cpp"
 )
 
 SET( HEADERS
 	"include/TexComp.h"
 	"include/CompressedImage.h"
 	"include/TexCompTypes.h"
+	"include/Image.h"
 )
 
 # Make sure to add the appropriate stopwatch files...

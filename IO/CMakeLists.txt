@@ -1,6 +1,7 @@
 
 SET( SOURCES
 	"src/ImageFile.cpp"
+	"src/ImageLoader.cpp"
 )
 
 SET( HEADERS
