@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "TexComp.h"
+#include "ImageFile.h"
 
 void PrintUsage() {
    fprintf(stderr, "Usage: tc [-s|-t <num>] <imagefile>\n");
@@ -82,7 +83,7 @@ int main(int argc, char **argv) {
   settings.iQuality = quality;
   settings.iNumCompressions = numCompressions;
 
-  CompressedImage *ci = CompressImage(file, settings);
+  CompressedImage *ci = file.Compress(settings);
   if(NULL == ci) {
     fprintf(stderr, "Error compressing image!\n");
     return 1;

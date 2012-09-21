@@ -52,14 +52,15 @@ void CmpThread::operator()() {
 }
 
 
-ThreadGroup::ThreadGroup( int numThreads, const ImageFile &image, CompressionFunc func, unsigned char *outBuf )
+ThreadGroup::ThreadGroup( int numThreads, const unsigned char *inBuf, unsigned int inBufSz, CompressionFunc func, unsigned char *outBuf )
   : m_StartBarrier(new boost::barrier(numThreads + 1))
   , m_FinishMutex(new boost::mutex())
   , m_FinishCV(new boost::condition_variable())
   , m_NumThreads(numThreads)
   , m_ActiveThreads(0)
   , m_Func(func)
-  , m_Image(image)
+  , m_ImageDataSz(inBufSz)
+  , m_ImageData(inBuf)
   , m_OutBuf(outBuf)
   , m_ThreadState(eThreadState_Done)
   , m_ExitFlag(false)
@@ -107,13 +108,9 @@ bool ThreadGroup::PrepareThreads() {
     return true;
   }
 
-  // Make sure that the image dimensions are multiples of 4
-  assert((m_Image.GetWidth() & 3) == 0);
-  assert((m_Image.GetHeight() & 3) == 0);
-
   // We can assume that the image data is in block stream order
   // so, the size of the data given to each thread will be (nb*4)x4
-  int numBlocks = (m_Image.GetWidth() * m_Image.GetHeight()) / 16;
+  int numBlocks = m_ImageDataSz / 64;
 
   int blocksProcessed = 0;
   int blocksPerThread = (numBlocks/m_NumThreads) + ((numBlocks % m_NumThreads)? 1 : 0);
@@ -135,7 +132,7 @@ bool ThreadGroup::PrepareThreads() {
     t.m_Width = numBlocksThisThread * 4;
     t.m_CmpFunc = m_Func;
     t.m_OutBuf = m_OutBuf + (blocksProcessed * GetCompressedBlockSize());
-    t.m_InBuf = m_Image.GetPixels() + (blocksProcessed * GetUncompressedBlockSize());
+    t.m_InBuf = m_ImageData + (blocksProcessed * GetUncompressedBlockSize());
 
     blocksProcessed += numBlocksThisThread;
     

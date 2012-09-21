@@ -42,7 +42,7 @@ public:
 
 class ThreadGroup {
  public:
-  ThreadGroup( int numThreads, const ImageFile &, CompressionFunc func, unsigned char *outBuf );
+  ThreadGroup( int numThreads, const unsigned char *inBuf, unsigned int inBufSz, CompressionFunc func, unsigned char *outBuf );
   ~ThreadGroup();
 
   bool PrepareThreads();
@@ -74,7 +74,8 @@ class ThreadGroup {
   boost::thread *m_ThreadHandles[kMaxNumThreads];
 
   // State variables.
-  const ImageFile &m_Image;
+  const unsigned int m_ImageDataSz;
+  const unsigned char *const m_ImageData;
   const CompressionFunc m_Func;
   unsigned char *m_OutBuf;
 

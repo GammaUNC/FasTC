@@ -4,8 +4,10 @@
 #include <limits.h>
 #include <assert.h>
 
+#include "TexComp.h"
 #include "ImageFile.h"
 #include "ImageLoader.h"
+#include "CompressedImage.h"
 
 #ifdef PNG_FOUND
 #  include "ImageLoaderPNG.h"
@@ -302,3 +304,25 @@ unsigned char *ImageFile::ReadFileData(const char *filename) {
   return rawData;
 }
 #endif
+
+CompressedImage *ImageFile::Compress(const SCompressionSettings &settings) const {
+  CompressedImage *outImg = NULL;
+  const unsigned int dataSz = GetWidth() * GetHeight() * 4;
+
+  assert(dataSz > 0);
+
+  // Allocate data based on the compression method
+  int cmpDataSz = 0;
+  switch(settings.format) {
+    case eCompressionFormat_DXT1: cmpDataSz = dataSz / 8;
+    case eCompressionFormat_DXT5: cmpDataSz = dataSz / 4;
+    case eCompressionFormat_BPTC: cmpDataSz = dataSz / 4;
+  }
+
+  unsigned char *cmpData = new unsigned char[cmpDataSz];
+  CompressImageData(m_PixelData, dataSz, cmpData, cmpDataSz, settings);
+
+  outImg = new CompressedImage(GetWidth(), GetHeight(), settings.format, cmpData);
+  return outImg;
+}
+

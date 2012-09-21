@@ -1,6 +1,7 @@
 #include "BC7Compressor.h"
 #include "TexComp.h"
 #include "ThreadGroup.h"
+#include "ImageFile.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -20,6 +21,11 @@ static T max(const T &a, const T &b) {
 template <typename T>
 static void clamp(T &x, const T &minX, const T &maxX) {
   x = max(min(maxX, x), minX);
+}
+
+template <typename T>
+static inline T sad(const T &a, const T &b) {
+  return (a > b)? a - b : b - a;
 }
 
 SCompressionSettings:: SCompressionSettings()
@@ -58,7 +64,8 @@ static void ReportError(const char *msg) {
 }
 
 static double CompressImageInSerial(
-  const ImageFile &img,
+  const unsigned char *imgData,
+  const unsigned int imgDataSz,
   const SCompressionSettings &settings,
   const CompressionFunc f,
   unsigned char *outBuf
@@ -71,7 +78,8 @@ static double CompressImageInSerial(
     stopWatch.Reset();
     stopWatch.Start();
 
-    (*f)(img.GetPixels(), outBuf, img.GetWidth(), img.GetHeight());
+    // !FIXME! We're assuming that we have 4x4 blocks here...
+    (*f)(imgData, outBuf, imgDataSz / 16, 4);
 
     stopWatch.Stop();
 
@@ -83,16 +91,17 @@ static double CompressImageInSerial(
 }
 
 static double CompressImageWithThreads(
-  const ImageFile &img,
+  const unsigned char *imgData,
+  const unsigned int imgDataSz,
   const SCompressionSettings &settings,
   const CompressionFunc f,
   unsigned char *outBuf
 ) {
 
-  ThreadGroup tgrp (settings.iNumThreads, img, f, outBuf);
+  ThreadGroup tgrp (settings.iNumThreads, imgData, imgDataSz, f, outBuf);
   if(!(tgrp.PrepareThreads())) {
     assert(!"Thread group failed to prepare threads?!");
-    return NULL;
+    return -1.0f;
   }
 
   double cmpTimeTotal = 0.0;
@@ -120,10 +129,13 @@ static double CompressImageWithWorkerQueue(
   unsigned char *outBuf
 ) {
   return 0.0;
-}                                             
+}
 
-CompressedImage * CompressImage(
-  const ImageFile &img, 
+bool CompressImageData(
+  const unsigned char *data, 
+  const unsigned int dataSz,
+  unsigned char *cmpData,
+  const unsigned int cmpDataSz,
   const SCompressionSettings &settings
 ) { 
 
@@ -132,27 +144,31 @@ CompressedImage * CompressImage(
   #ifndef HAS_SSE_41
   if(settings.bUseSIMD) {
     ReportError("Platform does not support SIMD!\n");
-    return NULL;
+    return false;
   }
   #endif
 
-  const unsigned int dataSz = img.GetWidth() * img.GetHeight() * 4;
+  if(dataSz <= 0) {
+    ReportError("No data sent to compress!");
+    return false;
+  }
 
   // Allocate data based on the compression method
-  int cmpDataSz = 0;
+  int cmpDataSzNeeded = 0;
   switch(settings.format) {
-    case eCompressionFormat_DXT1: cmpDataSz = dataSz / 8;
-    case eCompressionFormat_DXT5: cmpDataSz = dataSz / 4;
-    case eCompressionFormat_BPTC: cmpDataSz = dataSz / 4;
+    case eCompressionFormat_DXT1: cmpDataSzNeeded = dataSz / 8;
+    case eCompressionFormat_DXT5: cmpDataSzNeeded = dataSz / 4;
+    case eCompressionFormat_BPTC: cmpDataSzNeeded = dataSz / 4;
   }
 
-  if(cmpDataSz == 0) {
+  if(cmpDataSzNeeded == 0) {
     ReportError("Unknown compression format");
-    return NULL;
+    return false;
   }
-
-  CompressedImage *outImg = NULL;
-  unsigned char *cmpData = new unsigned char[cmpDataSz];
+  else if(cmpDataSzNeeded > cmpDataSz) {
+    ReportError("Not enough space for compressed data!");
+    return false;
+  }
 
   CompressionFunc f = ChooseFuncFromSettings(settings);
   if(f) {
@@ -160,32 +176,21 @@ CompressedImage * CompressImage(
     double cmpMSTime = 0.0;
 
     if(settings.iNumThreads > 1) {
-      cmpMSTime = CompressImageWithThreads(img, settings, f, cmpData);
+      cmpMSTime = CompressImageWithThreads(data, dataSz, settings, f, cmpData);
     }
     else {
-      cmpMSTime = CompressImageInSerial(img, settings, f, cmpData);
+      cmpMSTime = CompressImageInSerial(data, dataSz, settings, f, cmpData);
     }
-
-    outImg = new CompressedImage(img.GetWidth(), img.GetHeight(), settings.format, cmpData);
 
     // Report compression time
     fprintf(stdout, "Compression time: %0.3f ms\n", cmpMSTime);
   }
   else {
     ReportError("Could not find adequate compression function for specified settings");
-    delete [] cmpData;
-    return NULL;
+    return false;
   }
 
-  // Cleanup
-  delete [] cmpData;
-
-  return outImg;
-}
-
-template <typename T>
-static inline T sad(const T &a, const T &b) {
-  return (a > b)? a - b : b - a;
+  return true;
 }
 
 double ComputePSNR(const CompressedImage &ci, const ImageFile &file) {
@@ -196,7 +201,7 @@ double ComputePSNR(const CompressedImage &ci, const ImageFile &file) {
     return -1.0f;
   }
 
-  const unsigned char *rawData = file.GetPixels();
+  const unsigned char *rawData = file.RawData();
 
   const double wr = 1.0;
   const double wg = 1.0;

@@ -3,6 +3,10 @@
 
 #include "ImageFileFormat.h"
 
+// Forward declare
+class CompressedImage;
+
+// Class definition
 class ImageFile {
 
 public:
@@ -13,7 +17,9 @@ public:
 
   unsigned int GetWidth() const { return m_Width; }
   unsigned int GetHeight() const { return m_Height; }
-  const unsigned char *GetPixels() const { return m_PixelData; }
+  CompressedImage *Compress(const SCompressionSettings &) const;
+
+  const unsigned char *RawData() const { return m_PixelData; }
 
  private:
   unsigned int m_Handle;
