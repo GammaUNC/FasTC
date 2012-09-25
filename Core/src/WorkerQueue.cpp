@@ -41,16 +41,39 @@ void WorkerThread::operator()() {
     return;
   }
 
-  while(1) {
+  bool quitFlag = false;
+  while(!quitFlag) {
     
-    EAction action = m_Parent->AcceptThreadData(m_ThreadIdx);
-    if(eAction_Quit == action) {
-      break;
-    }
+    switch(m_Parent->AcceptThreadData(m_ThreadIdx)) 
+    {
 
-    const uint8 *src = m_Parent->GetSrcForThread(m_ThreadIdx);
-    uint8 *dst = m_Parent->GetDstForThread(m_ThreadIdx);
-    (*f)(src, dst, 4 * m_Parent->GetNumBlocksForThread(m_ThreadIdx), 4);
+      case eAction_Quit:
+      {
+	quitFlag = true;
+	break;
+      }
+
+      case eAction_Wait:
+      {
+	boost::thread::yield();
+	break;
+      }
+
+      case eAction_DoWork:
+      {
+	const uint8 *src = m_Parent->GetSrcForThread(m_ThreadIdx);
+	uint8 *dst = m_Parent->GetDstForThread(m_ThreadIdx);
+	(*f)(src, dst, 4 * m_Parent->GetNumBlocksForThread(m_ThreadIdx), 4);
+	break;
+      }
+
+      default:
+      {
+	fprintf(stderr, "Unrecognized thread command!\n");
+	quitFlag = true;
+	break;
+      }
+    }
   }
 
   m_Parent->NotifyWorkerFinished();
@@ -70,6 +93,7 @@ WorkerQueue::WorkerQueue(
   : m_NumCompressions(0)
   , m_TotalNumCompressions(max(uint32(1), numCompressions))
   , m_NumThreads(numThreads)
+  , m_WaitingThreads(0)
   , m_ActiveThreads(0)
   , m_JobSize(max(uint32(1), jobSize))
   , m_InBufSz(inBufSz)
@@ -98,6 +122,8 @@ void WorkerQueue::Run() {
 
   m_StopWatch.Reset();
   m_StopWatch.Start();
+
+  m_WaitingThreads = 0;
 
   // Wait for them to finish...
   while(m_ActiveThreads > 0) {
@@ -134,8 +160,18 @@ WorkerThread::EAction WorkerQueue::AcceptThreadData(uint32 threadIdx) {
   
   // If we've completed all blocks, then mark the thread for 
   // completion.
-  if(m_NextBlock >= totalBlocks) {
-    return WorkerThread::eAction_Quit;
+  if(m_NextBlock == totalBlocks) {
+    if(m_NumCompressions < m_TotalNumCompressions) {
+      if(++m_WaitingThreads == m_ActiveThreads) {
+	m_NextBlock = 0;
+	m_WaitingThreads = 0;
+      } else {
+	return WorkerThread::eAction_Wait;
+      }
+    }
+    else {
+      return WorkerThread::eAction_Quit;
+    }
   }
 
   // Otherwise, this thread's offset is the current block...
@@ -149,8 +185,8 @@ WorkerThread::EAction WorkerQueue::AcceptThreadData(uint32 threadIdx) {
   // Make sure the next block is updated.
   m_NextBlock += blocksProcessed;
 
-  if(m_NextBlock == totalBlocks && ++m_NumCompressions < m_TotalNumCompressions) {
-    m_NextBlock = 0;
+  if(m_NextBlock == totalBlocks) {
+    ++m_NumCompressions;
   }
 
   return WorkerThread::eAction_DoWork;

@@ -22,6 +22,7 @@ public:
   void operator ()();
 
   enum EAction {
+    eAction_Wait,
     eAction_DoWork,
     eAction_Quit,
 
@@ -53,10 +54,10 @@ class WorkerQueue {
   const StopWatch &GetStopWatch() const { return m_StopWatch; }
 
  private:
-
   uint32 m_NumCompressions;
   const uint32 m_TotalNumCompressions;
   uint32 m_NumThreads;
+  uint32 m_WaitingThreads;
   uint32 m_ActiveThreads;
   uint32 m_JobSize;
   uint32 m_InBufSz;
@@ -65,6 +66,7 @@ class WorkerQueue {
 
   boost::condition_variable m_CV;
   boost::mutex m_Mutex;
+
   uint32 m_NextBlock;
 
   static const int kMaxNumWorkerThreads = 256;
