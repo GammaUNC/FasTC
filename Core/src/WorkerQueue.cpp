@@ -99,6 +99,7 @@ WorkerQueue::WorkerQueue(
   , m_InBufSz(inBufSz)
   , m_InBuf(inBuf)
   , m_OutBuf(outBuf)
+  , m_NextBlock(0)
   , m_CompressionFunc(func)
 {
   clamp(m_NumThreads, uint32(1), uint32(kMaxNumWorkerThreads));
@@ -123,6 +124,7 @@ void WorkerQueue::Run() {
   m_StopWatch.Reset();
   m_StopWatch.Start();
 
+  m_NextBlock = 0;
   m_WaitingThreads = 0;
 
   // Wait for them to finish...
