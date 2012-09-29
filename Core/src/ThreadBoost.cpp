@@ -63,11 +63,22 @@ TCThreadBase::~TCThreadBase() {
 ////////////////////////////////////////////////////////////////////////////////
 
 class TCThreadImpl : public TCThreadBaseImpl {
+private:
+  class Instance {
+  private:
+    TCCallable &m_Callable;
+  public:
+    Instance(TCCallable &c) : m_Callable(c) { }
+
+    void operator()() {
+      m_Callable();
+    }
+  };
+
   boost::thread m_Thread;
 public:
-  template<typename C>
-  TCThreadImpl(C &callable)
-    : m_Thread(callable)
+  TCThreadImpl(TCCallable &callable)
+    : m_Thread(Instance(callable))
   { }
 
   void Join() {
@@ -75,25 +86,27 @@ public:
   }
 };
 
-template<typename C>
 class TCThreadImplFactory : public TCThreadBaseImplFactory {
-  C &m_Callable;
+  TCCallable &m_Callable;
 public:
-  TCThreadImplFactory(C &callable) : m_Callable(callable) { }
+  TCThreadImplFactory(TCCallable &callable) : m_Callable(callable) { }
   virtual ~TCThreadImplFactory() { }
   virtual TCThreadBaseImpl *CreateImpl() const {
     return new TCThreadImpl(m_Callable);
   }
 };
 
-template<typename C>
-TCThread::TCThread(C &callable)
-  : TCThreadBase(TCThreadImplFactory<C>(callable))
+TCThread::TCThread(TCCallable &callable)
+  : TCThreadBase(TCThreadImplFactory(callable))
 { }
 
 void TCThread::Join() {
   assert(m_Impl->GetReferenceCount() > 0);
   ((TCThreadImpl *)m_Impl)->Join();
+}
+
+void TCThread::Yield() {
+  boost::thread::yield();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

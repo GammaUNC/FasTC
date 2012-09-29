@@ -3,23 +3,20 @@
 
 // Forward declare...
 class WorkerQueue;
-namespace boost {
-  class thread;
-}
 
 // Necessary includes...
 #include "TexCompTypes.h"
 #include "TexComp.h"
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/condition_variable.hpp>
+#include "Thread.h"
 #include "StopWatch.h"
 
-struct WorkerThread {
+struct WorkerThread : public TCCallable {
   friend class WorkerQueue;
 public:
 
   WorkerThread(WorkerQueue *, uint32 idx);
-  void operator ()();
+  virtual ~WorkerThread() { }
+  virtual void operator ()();
 
   enum EAction {
     eAction_Wait,
@@ -64,8 +61,8 @@ class WorkerQueue {
   const uint8 *m_InBuf;
   uint8 *m_OutBuf;
 
-  boost::condition_variable m_CV;
-  boost::mutex m_Mutex;
+  TCConditionVariable m_CV;
+  TCMutex m_Mutex;
 
   uint32 m_NextBlock;
 
@@ -73,7 +70,8 @@ class WorkerQueue {
   uint32 m_Offsets[kMaxNumWorkerThreads];
   uint32 m_NumBlocks[kMaxNumWorkerThreads];
 
-  boost::thread *m_ThreadHandles[kMaxNumWorkerThreads];
+  WorkerThread *m_Workers[kMaxNumWorkerThreads];
+  TCThread *m_ThreadHandles[kMaxNumWorkerThreads];
 
   const uint8 *GetSrcForThread(const int threadIdx) const;
   uint8 *GetDstForThread(const int threadIdx) const;

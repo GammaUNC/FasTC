@@ -4,8 +4,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-
-#include <boost/thread/thread.hpp>
+#include <assert.h>
 
 template <typename T>
 static inline T max(const T &a, const T &b) {
@@ -24,7 +23,8 @@ static inline void clamp(T &x, const T &min, const T &max) {
 }
 
 WorkerThread::WorkerThread(WorkerQueue * parent, uint32 idx) 
-  : m_ThreadIdx(idx)
+  : TCCallable()
+  , m_ThreadIdx(idx)
   , m_Parent(parent)
 { }
 
@@ -55,7 +55,7 @@ void WorkerThread::operator()() {
 
       case eAction_Wait:
       {
-	boost::thread::yield();
+	TCThread::Yield();
 	break;
       }
 
@@ -114,10 +114,10 @@ WorkerQueue::WorkerQueue(
 void WorkerQueue::Run() {
   
   // Spawn a bunch of threads...
-  boost::unique_lock<boost::mutex> lock(m_Mutex);
+  TCLock lock(m_Mutex);
   for(int i = 0; i < m_NumThreads; i++) {
-    WorkerThread t (this, i);
-    m_ThreadHandles[m_ActiveThreads] = new boost::thread(t);
+    m_Workers[i] = new WorkerThread(this, i);
+    m_ThreadHandles[m_ActiveThreads] = new TCThread(*m_Workers[i]);
     m_ActiveThreads++;
   }
 
@@ -129,24 +129,25 @@ void WorkerQueue::Run() {
 
   // Wait for them to finish...
   while(m_ActiveThreads > 0) {
-    m_CV.wait(lock);
+    m_CV.Wait(lock);
   }
 
   m_StopWatch.Stop();
 
   // Join them all together..
   for(int i = 0; i < m_NumThreads; i++) {
-    m_ThreadHandles[i]->join();
+    m_ThreadHandles[i]->Join();
     delete m_ThreadHandles[i];
+    delete m_Workers[i];
   }
 }
 
 void WorkerQueue::NotifyWorkerFinished() {
   {
-    boost::lock_guard<boost::mutex> lock(m_Mutex);
+    TCLock lock(m_Mutex);
     m_ActiveThreads--;
   }
-  m_CV.notify_one();
+  m_CV.NotifyOne();
 }
 
 WorkerThread::EAction WorkerQueue::AcceptThreadData(uint32 threadIdx) {
@@ -158,7 +159,7 @@ WorkerThread::EAction WorkerQueue::AcceptThreadData(uint32 threadIdx) {
   const uint32 totalBlocks = m_InBufSz / 64;
   
   // Make sure we have exclusive access...
-  boost::lock_guard<boost::mutex> lock(m_Mutex);
+  TCLock lock(m_Mutex);
   
   // If we've completed all blocks, then mark the thread for 
   // completion.

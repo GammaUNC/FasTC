@@ -21,6 +21,15 @@ class TCThreadBase {
   TCThreadBaseImpl *m_Impl;
 };
 
+// The base class for a thread implementation
+class TCCallable {
+ protected:
+  TCCallable() { }
+ public:
+  virtual ~TCCallable() { }
+  virtual void operator()() = 0;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Thread implementation
@@ -30,12 +39,10 @@ class TCThreadBase {
 class TCThread : public TCThreadBase {
 
  public:
-  template<typename C>
-  TCThread(C &);
-  ~TCThread();
+  TCThread(TCCallable &);
 
   void Join();
-  
+  static void Yield();
 };
 
 ////////////////////////////////////////////////////////////////////////////////
