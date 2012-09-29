@@ -38,12 +38,14 @@ int main(int argc, char **argv) {
 
       fileArg++;
       knowArg = true;
+      continue;
     }
     
     if(strcmp(argv[fileArg], "-s") == 0) {
       fileArg++;
       bUseSIMD = true;
       knowArg = true;
+      continue;
     }
 
     if(strcmp(argv[fileArg], "-t") == 0) {
@@ -56,6 +58,7 @@ int main(int argc, char **argv) {
 
       fileArg++;
       knowArg = true;
+      continue;
     }
 
     if(strcmp(argv[fileArg], "-q") == 0) {
@@ -68,6 +71,7 @@ int main(int argc, char **argv) {
 
       fileArg++;
       knowArg = true;
+      continue;
     }
 
     if(strcmp(argv[fileArg], "-j") == 0) {
@@ -80,9 +84,10 @@ int main(int argc, char **argv) {
 
       fileArg++;
       knowArg = true;
+      continue;
     }
 
-  } while(knowArg);
+  } while(knowArg && fileArg < argc);
 
   if(fileArg == argc) {
     PrintUsage();
