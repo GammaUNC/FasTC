@@ -34,17 +34,27 @@ INCLUDE_DIRECTORIES( ${TexC_BINARY_DIR}/IO/include )
 
 INCLUDE_DIRECTORIES( ${TexC_SOURCE_DIR}/Core/include )
 
+SET( THREAD_API "None" )
 FIND_PACKAGE( Boost COMPONENTS thread system ) 
 IF( Boost_FOUND )
 	INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 
+	SET( THREAD_API "Boost" )
+	SET( SOURCES ${SOURCES} "src/ThreadBoost.cpp" )
+
+	LINK_DIRECTORIES( ${Boost_LIBRARY_DIR} )
+ENDIF()
+
+IF( NOT THREAD_API MATCHES "None")
+
 	SET( SOURCES ${SOURCES} "src/ThreadGroup.cpp" )
 	SET( SOURCES ${SOURCES} "src/WorkerQueue.cpp" )
 
+	SET( HEADERS ${HEADERS} "src/Thread.h" )
 	SET( HEADERS ${HEADERS} "src/ThreadGroup.h" )
 	SET( HEADERS ${HEADERS} "src/WorkerQueue.h" )
-
-	LINK_DIRECTORIES( ${Boost_LIBRARY_DIR} )
+ELSE()
+  MESSAGE( FATAL_ERROR "Could not find suitable threading library." )
 ENDIF()
 
 ADD_LIBRARY( TexCompCore
