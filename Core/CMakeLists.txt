@@ -34,19 +34,44 @@ INCLUDE_DIRECTORIES( ${TexC_BINARY_DIR}/IO/include )
 
 INCLUDE_DIRECTORIES( ${TexC_SOURCE_DIR}/Core/include )
 
-SET( THREAD_API "None" )
+SET( THREAD_API "None" CACHE STRING "API used to implement threading operations")
+SET( THREAD_APIS_AVAILABLE "None" )
+
 FIND_PACKAGE( Boost COMPONENTS thread system ) 
 IF( Boost_FOUND )
+
+    SET( THREAD_APIS_AVAILABLE ${THREAD_APIS_AVAILABLE} "Boost" )
+    IF( THREAD_API MATCHES "None" )
+        SET( THREAD_API "Boost" )
+    ENDIF()
+
+ENDIF()
+
+FIND_PACKAGE( Threads )
+IF( CMAKE_USE_PTHREADS_INIT )
+    
+    SET( THREAD_APIS_AVAILABLE ${THREAD_APIS_AVAILABLE} "PThread" )
+    IF( THREAD_API MATCHES "None" )
+        SET( THREAD_API "Boost" )
+    ENDIF()
+    
+ENDIF()
+
+SET_PROPERTY( CACHE THREAD_API PROPERTY STRINGS ${THREAD_APIS_AVAILABLE} )
+
+IF( THREAD_API MATCHES "Boost")
 	INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
-
-	SET( THREAD_API "Boost" )
 	SET( SOURCES ${SOURCES} "src/ThreadBoost.cpp" )
-
 	LINK_DIRECTORIES( ${Boost_LIBRARY_DIR} )
 ENDIF()
 
-IF( NOT THREAD_API MATCHES "None")
+IF( THREAD_API MATCHES "PThread" )
+	SET( SOURCES ${SOURCES} "src/ThreadPThread.cpp" )
+ENDIF()
 
+IF( THREAD_API MATCHES "None")
+  MESSAGE( FATAL_ERROR "Could not find suitable threading library." )
+ELSE()
 	SET( SOURCES ${SOURCES} "src/Thread.cpp" )
 	SET( SOURCES ${SOURCES} "src/ThreadGroup.cpp" )
 	SET( SOURCES ${SOURCES} "src/WorkerQueue.cpp" )
@@ -54,8 +79,6 @@ IF( NOT THREAD_API MATCHES "None")
 	SET( HEADERS ${HEADERS} "src/Thread.h" )
 	SET( HEADERS ${HEADERS} "src/ThreadGroup.h" )
 	SET( HEADERS ${HEADERS} "src/WorkerQueue.h" )
-ELSE()
-  MESSAGE( FATAL_ERROR "Could not find suitable threading library." )
 ENDIF()
 
 ADD_LIBRARY( TexCompCore
@@ -66,8 +89,12 @@ ADD_LIBRARY( TexCompCore
 TARGET_LINK_LIBRARIES( TexCompCore TexCompIO )
 TARGET_LINK_LIBRARIES( TexCompCore BPTCEncoder )
 
-IF( Boost_FOUND )
+IF( THREAD_API MATCHES "Boost" )
 	TARGET_LINK_LIBRARIES( TexCompCore ${Boost_LIBRARIES} )
+ENDIF()
+
+IF( THREAD_API MATCHES "PThread" )
+    TARGET_LINK_LIBRARIES( TexCompCore ${CMAKE_THREAD_LIBS_INIT} )
 ENDIF()
 
 IF( NOT WIN32 AND NOT APPLE )
