@@ -111,4 +111,16 @@ class TCConditionVariable : public TCThreadBase {
   void NotifyAll();
 };
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// Barrier implementation
+//
+////////////////////////////////////////////////////////////////////////////////
+
+class TCBarrier : public TCThreadBase {
+ public:
+  TCBarrier(int threads);
+  void Wait();
+};
+
 #endif //__TEX_COMP_THREAD_H__
