@@ -71,7 +71,7 @@ public:
     unsigned int times = m_Times;
 
     if(--m_ThreadCount == 0) {
-      m_Times = 0;
+      m_Times++;
       m_ThreadCount = m_ThreadLimit;
       m_CV.NotifyAll();
       return true;

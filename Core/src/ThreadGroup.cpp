@@ -3,11 +3,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-
-#include <boost/thread/thread.hpp>
-#include <boost/thread/barrier.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/condition_variable.hpp>
+#include <assert.h>
 
 CmpThread::CmpThread() 
   : m_StartBarrier(NULL)
@@ -34,7 +30,7 @@ void CmpThread::operator()() {
 
   while(1) {
     // Wait for signal to start work...
-    m_StartBarrier->wait();
+    m_StartBarrier->Wait();
 
     if(*m_ParentExitFlag) {
       return;
@@ -43,19 +39,19 @@ void CmpThread::operator()() {
     (*m_CmpFunc)(m_InBuf, m_OutBuf, m_Width, m_Height);
 
     {
-      boost::lock_guard<boost::mutex> lock(*m_ParentCounterLock);
+      TCLock lock(*m_ParentCounterLock);
       (*m_ParentCounter)++;
     }
 
-    m_FinishCV->notify_one();
+    m_FinishCV->NotifyOne();
   }
 }
 
 
 ThreadGroup::ThreadGroup( int numThreads, const unsigned char *inBuf, unsigned int inBufSz, CompressionFunc func, unsigned char *outBuf )
-  : m_StartBarrier(new boost::barrier(numThreads + 1))
-  , m_FinishMutex(new boost::mutex())
-  , m_FinishCV(new boost::condition_variable())
+  : m_StartBarrier(new TCBarrier(numThreads + 1))
+  , m_FinishMutex(new TCMutex())
+  , m_FinishCV(new TCConditionVariable())
   , m_NumThreads(numThreads)
   , m_ActiveThreads(0)
   , m_Func(func)
@@ -136,7 +132,7 @@ bool ThreadGroup::PrepareThreads() {
 
     blocksProcessed += numBlocksThisThread;
     
-    m_ThreadHandles[m_ActiveThreads] = new boost::thread(t);
+    m_ThreadHandles[m_ActiveThreads] = new TCThread(t);
 
     m_ActiveThreads++;
   }
@@ -160,7 +156,7 @@ bool ThreadGroup::Start() {
 
   // Last thread to activate the barrier is this one.
   m_ThreadState = eThreadState_Running;
-  m_StartBarrier->wait();
+  m_StartBarrier->Wait();
 
   return true;
 }
@@ -179,11 +175,11 @@ bool ThreadGroup::CleanUpThreads() {
   m_ExitFlag = true;
 
   // Hit the barrier to signal them to go.
-  m_StartBarrier->wait();
+  m_StartBarrier->Wait();
 
   // Clean up.
   for(int i = 0; i < m_ActiveThreads; i++) {
-    m_ThreadHandles[i]->join();
+    m_ThreadHandles[i]->Join();
     delete m_ThreadHandles[i];
   }
 
@@ -194,9 +190,9 @@ bool ThreadGroup::CleanUpThreads() {
 
 void ThreadGroup::Join() {
 
-  boost::unique_lock<boost::mutex> lock(*m_FinishMutex);
+  TCLock lock(*m_FinishMutex);
   while(m_ThreadsFinished != m_ActiveThreads) {
-    m_FinishCV->wait(lock);
+    m_FinishCV->Wait(lock);
   }
 
   m_StopWatch.Stop();

@@ -2,26 +2,19 @@
 #define _THREAD_GROUP_H_
 
 #include "TexComp.h"
+#include "Thread.h"
 #include "StopWatch.h"
 
-// forward declare
-namespace boost {
-  class thread;
-  class mutex;
-  class barrier;
-  class condition_variable;
-}
-
-struct CmpThread {
+struct CmpThread : public TCCallable {
   friend class ThreadGroup;  
 
 private:
-  boost::barrier *m_StartBarrier;
+  TCBarrier *m_StartBarrier;
 
   int *m_ParentCounter;
   
-  boost::mutex *m_ParentCounterLock;
-  boost::condition_variable *m_FinishCV;
+  TCMutex *m_ParentCounterLock;
+  TCConditionVariable *m_FinishCV;
 
   int m_Width;
   int m_Height;
@@ -65,10 +58,10 @@ class ThreadGroup {
   };
 
  private:
-  boost::barrier *const m_StartBarrier;
+  TCBarrier *const m_StartBarrier;
 
-  boost::mutex *const m_FinishMutex;
-  boost::condition_variable *const m_FinishCV;
+  TCMutex *const m_FinishMutex;
+  TCConditionVariable *const m_FinishCV;
 
   static const int kMaxNumThreads = 256;
   const int m_NumThreads;
@@ -77,7 +70,7 @@ class ThreadGroup {
   int m_ThreadsFinished;
 
   CmpThread m_Threads[kMaxNumThreads];
-  boost::thread *m_ThreadHandles[kMaxNumThreads];
+  TCThread *m_ThreadHandles[kMaxNumThreads];
 
   // State variables.
   const unsigned int m_ImageDataSz;
