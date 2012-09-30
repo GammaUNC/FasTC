@@ -47,6 +47,7 @@ ENDIF()
 
 IF( NOT THREAD_API MATCHES "None")
 
+	SET( SOURCES ${SOURCES} "src/Thread.cpp" )
 	SET( SOURCES ${SOURCES} "src/ThreadGroup.cpp" )
 	SET( SOURCES ${SOURCES} "src/WorkerQueue.cpp" )
 

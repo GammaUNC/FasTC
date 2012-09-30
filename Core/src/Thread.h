@@ -9,8 +9,31 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-class TCThreadBaseImpl;
-class TCThreadBaseImplFactory;
+class TCThreadBaseImpl {
+  friend class TCThreadBase;
+ private:
+  int m_ReferenceCount;
+
+  void IncreaseReferenceCount() { m_ReferenceCount++; }
+  void DecreaseReferenceCount() { m_ReferenceCount--; }
+
+  int GetReferenceCount() const { return m_ReferenceCount; }
+ protected:
+  TCThreadBaseImpl()
+    : m_ReferenceCount(1)
+  { }
+
+  virtual ~TCThreadBaseImpl() { }
+};
+
+class TCThreadBaseImplFactory {
+ protected:
+  TCThreadBaseImplFactory() { }
+  virtual ~TCThreadBaseImplFactory() { }
+ public:
+  virtual TCThreadBaseImpl *CreateImpl() const = 0;
+};
+
 class TCThreadBase {
  protected:
   TCThreadBase(const TCThreadBaseImplFactory &);
@@ -19,7 +42,18 @@ class TCThreadBase {
   ~TCThreadBase();
 
   TCThreadBaseImpl *m_Impl;
+#ifndef NDEBUG
+  void CheckReferenceCount();
+#else
+  void CheckReferenceCount() { }
+#endif
 };
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Thread implementation
+//
+////////////////////////////////////////////////////////////////////////////////
 
 // The base class for a thread implementation
 class TCCallable {
@@ -29,12 +63,6 @@ class TCCallable {
   virtual ~TCCallable() { }
   virtual void operator()() = 0;
 };
-
-////////////////////////////////////////////////////////////////////////////////
-//
-// Thread implementation
-//
-////////////////////////////////////////////////////////////////////////////////
 
 class TCThread : public TCThreadBase {
 

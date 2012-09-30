@@ -8,59 +8,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Base Implementation
-//
-////////////////////////////////////////////////////////////////////////////////
-
-class TCThreadBaseImpl {
-  int m_ReferenceCount;
-public:
-  TCThreadBaseImpl()
-    : m_ReferenceCount(1)
-  { }
-
-  virtual ~TCThreadBaseImpl() { }
-
-  void IncreaseReferenceCount() { m_ReferenceCount++; }
-  void DecreaseReferenceCount() { m_ReferenceCount--; }
-
-  int GetReferenceCount() const { return m_ReferenceCount; }
-};
-
-class TCThreadBaseImplFactory {
-public:
-  TCThreadBaseImplFactory() { }
-  virtual ~TCThreadBaseImplFactory() { }
-  virtual TCThreadBaseImpl *CreateImpl() const = 0;
-};
-
-TCThreadBase::TCThreadBase(const TCThreadBaseImplFactory &factory)
-  : m_Impl(factory.CreateImpl())
-{ }
-
-TCThreadBase::TCThreadBase(const TCThreadBase &other)
-  : m_Impl(other.m_Impl)
-{
-  assert(m_Impl->GetReferenceCount() > 0);
-  m_Impl->IncreaseReferenceCount();
-}
-
-TCThreadBase &TCThreadBase::operator=(const TCThreadBase &other) {
-  assert(m_Impl->GetReferenceCount() > 0);
-  m_Impl->DecreaseReferenceCount();
-  m_Impl = other.m_Impl;
-  m_Impl->IncreaseReferenceCount();
-}
-
-TCThreadBase::~TCThreadBase() {
-  if(m_Impl->GetReferenceCount() <= 1) {
-    assert(m_Impl->GetReferenceCount() >= 0);
-    delete m_Impl;
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//
 // Thread Implementation
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -105,7 +52,7 @@ TCThread::TCThread(TCCallable &callable)
 { }
 
 void TCThread::Join() {
-  assert(m_Impl->GetReferenceCount() > 0);
+  CheckReferenceCount();
   ((TCThreadImpl *)m_Impl)->Join();
 }
 
@@ -213,21 +160,21 @@ TCConditionVariable::TCConditionVariable()
 { }
 
 void TCConditionVariable::Wait(TCLock &lock) {
-  assert(m_Impl->GetReferenceCount() > 0);
+  CheckReferenceCount();
 
   TCConditionVariableImpl *impl = (TCConditionVariableImpl *)m_Impl;
   impl->Wait(lock);
 }
 
 void TCConditionVariable::NotifyOne() {
-  assert(m_Impl->GetReferenceCount() > 0);
+  CheckReferenceCount();
 
   TCConditionVariableImpl *impl = (TCConditionVariableImpl *)m_Impl;
   impl->NotifyOne();
 }
 
 void TCConditionVariable::NotifyAll() {
-  assert(m_Impl->GetReferenceCount() > 0);
+  CheckReferenceCount();
 
   TCConditionVariableImpl *impl = (TCConditionVariableImpl *)m_Impl;
   impl->NotifyAll();
