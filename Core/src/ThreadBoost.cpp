@@ -19,6 +19,8 @@ public:
     : m_ReferenceCount(1)
   { }
 
+  virtual ~TCThreadBaseImpl() { }
+
   void IncreaseReferenceCount() { m_ReferenceCount++; }
   void DecreaseReferenceCount() { m_ReferenceCount--; }
 
@@ -52,6 +54,7 @@ TCThreadBase &TCThreadBase::operator=(const TCThreadBase &other) {
 
 TCThreadBase::~TCThreadBase() {
   if(m_Impl->GetReferenceCount() <= 1) {
+    assert(m_Impl->GetReferenceCount() >= 0);
     delete m_Impl;
   }
 }
@@ -80,6 +83,7 @@ public:
   TCThreadImpl(TCCallable &callable)
     : m_Thread(Instance(callable))
   { }
+  virtual ~TCThreadImpl() { }
 
   void Join() {
     m_Thread.join();
@@ -121,6 +125,7 @@ private:
 
 public:
   boost::mutex &GetMutex() { return m_Mutex; }
+  virtual ~TCMutexImpl() { }
 };
 
 class TCMutexImplFactory : public TCThreadBaseImplFactory {
@@ -148,6 +153,7 @@ public:
   TCLockImpl(TCMutex &mutex)
     : lock(((TCMutexImpl *)(mutex.m_Impl))->GetMutex())
   { }
+  virtual ~TCLockImpl() { }
 
   boost::unique_lock<boost::mutex> &GetLock() { return lock; }
 };
@@ -177,6 +183,8 @@ private:
   boost::condition_variable m_CV;
 public:
   TCConditionVariableImpl() { }
+  virtual ~TCConditionVariableImpl() { }
+
   void Wait(TCLock &lock) {
     TCLockImpl *lockImpl = (TCLockImpl *)(lock.m_Impl);
     m_CV.wait(lockImpl->GetLock());
