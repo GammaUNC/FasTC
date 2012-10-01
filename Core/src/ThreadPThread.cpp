@@ -8,6 +8,10 @@
 #include <pthread.h>
 #include <errno.h>
 
+#ifdef __APPLE__
+#include <sched.h>
+#endif
+
 static void ReportErrorAndExit(int err, const char *msg) {
   char errMsg[1024];
   sprintf(errMsg, "Thread error -- %s: ", msg);
@@ -77,7 +81,11 @@ void TCThread::Join() {
 }
 
 void TCThread::Yield() {
+#ifdef __APPLE__
+  int result = sched_yield();
+#else
   int result = pthread_yield();
+#endif
   if(result != 0) {
     ReportErrorAndExit(result, "pthread_yield");
   }
