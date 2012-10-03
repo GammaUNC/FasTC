@@ -1,11 +1,13 @@
 #ifndef _IMAGE_FILE_H_ 
 #define _IMAGE_FILE_H_ 
 
+#include "TexCompTypes.h"
 #include "ImageFileFormat.h"
 
 // Forward declare
 class Image;
 class CompressedImage;
+struct SCompressionSettings;
 
 // Class definition
 class ImageFile {
@@ -30,8 +32,8 @@ public:
   
   const EImageFileFormat m_FileFormat;
 
-  static unsigned char *ReadFileData(const char *filename);
-  static EImageFileFormat DetectFileFormat(const char *filename);
+  static unsigned char *ReadFileData(const CHAR *filename);
+  static EImageFileFormat DetectFileFormat(const CHAR *filename);
 
   Image *LoadImage(const unsigned char *rawImageData) const;
 };

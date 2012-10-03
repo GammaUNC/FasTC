@@ -1,14 +1,15 @@
+#include "ImageFile.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
 #include <assert.h>
 
-#include "TexComp.h"
-#include "ImageFile.h"
 #include "ImageLoader.h"
 #include "CompressedImage.h"
 #include "Image.h"
+#include "FileStream.h"
 
 #ifdef PNG_FOUND
 #  include "ImageLoaderPNG.h"
@@ -20,7 +21,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-static inline void ReportError(const char *msg) {
+static inline void ReportError(const CHAR *msg) {
   fprintf(stderr, "ImageFile -- %s\n", msg);
 }
 
@@ -40,7 +41,7 @@ static inline T min(const T &a, const T &b) {
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-ImageFile::ImageFile(const char *filename)
+ImageFile::ImageFile(const CHAR *filename)
   : m_FileFormat(  DetectFileFormat(filename) )
   , m_Image(NULL)
 {
@@ -51,7 +52,7 @@ ImageFile::ImageFile(const char *filename)
   }
 }
 
-ImageFile::ImageFile(const char *filename, EImageFileFormat format)
+ImageFile::ImageFile(const CHAR *filename, EImageFileFormat format)
   : m_FileFormat(format)
   , m_Image(NULL)
 {
@@ -102,7 +103,7 @@ Image *ImageFile::LoadImage(const unsigned char *rawImageData) const {
   return i;
 }
 
-EImageFileFormat ImageFile::DetectFileFormat(const char *filename) {
+EImageFileFormat ImageFile::DetectFileFormat(const CHAR *filename) {
 
   int len = strlen(filename);
   if(len >= 256) {
@@ -122,7 +123,7 @@ EImageFileFormat ImageFile::DetectFileFormat(const char *filename) {
   // consume the last character...
   dotPos++;
 
-  const char *ext = &filename[dotPos];
+  const CHAR *ext = &filename[dotPos];
 
   if(strcmp(ext, ".png") == 0) {
     return eFileFormat_PNG;
@@ -130,43 +131,33 @@ EImageFileFormat ImageFile::DetectFileFormat(const char *filename) {
   return kNumImageFileFormats;
 }
 
-#ifdef _MSC_VER
-unsigned char *ImageFile::ReadFileData(const char *filename) {
-  //!FIXME! - Actually, implement me
-  assert(!"Not implemented!");
-}
-#else
-unsigned char *ImageFile::ReadFileData(const char *filename) {
-  FILE *fp = fopen(filename, "rb");
-  if(!fp) {
+unsigned char *ImageFile::ReadFileData(const CHAR *filename) {
+  FileStream fstr (filename, eFileMode_ReadBinary);
+  if(fstr.Tell() < 0) {
     fprintf(stderr, "Error opening file for reading: %s\n", filename);
     return 0;
   }
 
-  // Check filesize
-  long fileSize = 0;
-  fseek(fp, 0, SEEK_END);
-  fileSize = ftell(fp);
+  // Figure out the filesize.
+  fstr.Seek(0, FileStream::eSeekPosition_End);
+  uint64 fileSize = fstr.Tell();
 
   // Allocate data for file contents
   unsigned char *rawData = new unsigned char[fileSize];
 
   // Return stream to beginning of file
-  fseek(fp, 0, SEEK_SET);
-  assert(ftell(fp) == 0);
+  fstr.Seek(0, FileStream::eSeekPosition_Beginning);
+  assert(fstr.Tell() == 0);
 
   // Read all of the data
-  size_t bytesRead = fread(rawData, 1, fileSize, fp);
+  int32 bytesRead = fstr.Read(rawData, fileSize);
   if(bytesRead != fileSize) {
     assert(!"We didn't read as much data as we thought we had!");
     fprintf(stderr, "Internal error: Incorrect file size assumption\n");
     return 0;
   }
 
-  // Close the file pointer
-  fclose(fp);
-
   // Return the data..
   return rawData;
 }
-#endif
+

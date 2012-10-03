@@ -2,11 +2,13 @@
 SET( SOURCES
 	"src/ImageFile.cpp"
 	"src/ImageLoader.cpp"
+	"src/FileStream.cpp"
 )
 
 SET( HEADERS
 	"config/ImageLoader.h.in"
 	"include/ImageFile.h"
+	"include/FileStream.h"
 )
 
 FIND_PACKAGE( PNG )

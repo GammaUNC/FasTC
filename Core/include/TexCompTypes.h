@@ -39,6 +39,7 @@ typedef uint32_t uint32;
 typedef uint64_t uint64;
 
 typedef uintptr_t int32_ptr;
+typedef char CHAR;
 
 #endif // _MSC_VER
 
