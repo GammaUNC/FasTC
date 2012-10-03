@@ -21,14 +21,29 @@ TCThreadBase::TCThreadBase(const TCThreadBase &other)
 
 TCThreadBase &TCThreadBase::operator=(const TCThreadBase &other) {
   assert(m_Impl->GetReferenceCount() > 0);
+
+  // We are no longer referencing this implementation...
   m_Impl->DecreaseReferenceCount();
+
+  // If we're the last ones to reference it, then it should be destroyed.
+  if(m_Impl->GetReferenceCount() <= 0) {
+    delete m_Impl;
+    m_Impl = 0;
+  }
+
+  // Our implementation is now the same as the other.
   m_Impl = other.m_Impl;
   m_Impl->IncreaseReferenceCount();
 }
 
 TCThreadBase::~TCThreadBase() {
-  if(m_Impl->GetReferenceCount() <= 1) {
-    assert(m_Impl->GetReferenceCount() >= 0);
+
+  // We are no longer referencing this implementation...
+  m_Impl->DecreaseReferenceCount();
+
+  // If we're the last ones to reference it, then it should be destroyed.
+  if(m_Impl->GetReferenceCount() <= 0) {
+    assert(m_Impl->GetReferenceCount() == 0);
     delete m_Impl;
   }
 }
