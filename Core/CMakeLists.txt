@@ -3,6 +3,7 @@ SET( SOURCES
 	"src/TexComp.cpp"
 	"src/CompressedImage.cpp"
 	"src/Image.cpp"
+	"src/BlockStats.cpp"
 )
 
 SET( HEADERS
@@ -10,6 +11,7 @@ SET( HEADERS
 	"include/CompressedImage.h"
 	"include/TexCompTypes.h"
 	"include/Image.h"
+	"include/BlockStats.h"
 )
 
 # Make sure to add the appropriate stopwatch files...
@@ -82,7 +84,7 @@ ELSE()
 	SET( SOURCES ${SOURCES} "src/ThreadGroup.cpp" )
 	SET( SOURCES ${SOURCES} "src/WorkerQueue.cpp" )
 
-	SET( HEADERS ${HEADERS} "src/Thread.h" )
+	SET( HEADERS ${HEADERS} "include/Thread.h" )
 	SET( HEADERS ${HEADERS} "src/ThreadGroup.h" )
 	SET( HEADERS ${HEADERS} "src/WorkerQueue.h" )
 ENDIF()
