@@ -64,7 +64,25 @@ enum EBlockStats {
 
 static const char *kBlockStatString[kNumBlockStats] = {
   "BlockStat_Path",
-  "BlockStat_Mode"
+  "BlockStat_Mode",
+
+  "eBlockStat_ModeZeroEstimate",
+  "eBlockStat_ModeOneEstimate",
+  "eBlockStat_ModeTwoEstimate",
+  "eBlockStat_ModeThreeEstimate",
+  "eBlockStat_ModeFourEstimate",
+  "eBlockStat_ModeFiveEstimate",
+  "eBlockStat_ModeSixEstimate",
+  "eBlockStat_ModeSevenEstimate",
+
+  "eBlockStat_ModeZeroError",
+  "eBlockStat_ModeOneError",
+  "eBlockStat_ModeTwoError",
+  "eBlockStat_ModeThreeError",
+  "eBlockStat_ModeFourError",
+  "eBlockStat_ModeFiveError",
+  "eBlockStat_ModeSixError",
+  "eBlockStat_ModeSevenError",
 };
 
 static const uint32 kNumShapes2 = 64;
