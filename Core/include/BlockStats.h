@@ -16,7 +16,7 @@ public:
   
 private:
   static const int kStatNameSz = 32;
-  char m_StatName[kStatNameSz];
+  CHAR m_StatName[kStatNameSz];
   union {
     uint64 m_IntStat;
     double m_FloatStat;
@@ -31,6 +31,7 @@ class BlockStatManager {
 
   uint32 BeginBlock();
   void AddStat(uint32 blockIdx, const BlockStat &stat);
+  void ToFile(const CHAR *filename);
   
  private:
   
@@ -40,6 +41,8 @@ class BlockStatManager {
     ~BlockStatList();
 
     void AddStat(const BlockStat &stat);
+    BlockStat GetStat() const { return m_Stat; }
+    const BlockStatList *GetTail() const { return m_Tail; }
 
   private:
     BlockStatList(const BlockStat &stat);

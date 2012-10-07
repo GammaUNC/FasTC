@@ -1466,7 +1466,7 @@ namespace BC7C
     }
   }
 
-  void CompressImageBC7(
+  void CompressImageBC7Stats(
     const unsigned char *inBuf, 
     unsigned char *outBuf, 
     unsigned int width, 
@@ -1655,6 +1655,10 @@ namespace BC7C
     uint32 blockIdx = 0;
     if(statManager) {
       blockIdx = statManager->BeginBlock();
+
+      for(int i = 0; i < kNumBlockStats; i++) {
+        statManager->AddStat(blockIdx, BlockStat(kBlockStatString[i], 0));
+      }
     }
 
     // All a single color?

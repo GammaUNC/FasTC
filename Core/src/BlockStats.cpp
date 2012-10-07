@@ -5,6 +5,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include "FileStream.h"
+
 template <typename T>
 static T max(const T &a, const T &b) {
   return (a > b)? a : b;
@@ -59,10 +61,10 @@ BlockStatManager::~BlockStatManager() {
 }
 
 uint32 BlockStatManager::BeginBlock() {
-  if((m_NextBlock + 1) == m_BlockStatListSz) {
+  if(m_NextBlock == m_BlockStatListSz) {
     fprintf(stderr, "WARNING -- BlockStatManager::BeginBlock(), reached end of block list.\n");
     assert(false);
-    return m_NextBlock;
+    return m_NextBlock-1;
   }
 
   TCLock lock(m_Mutex);
@@ -108,7 +110,7 @@ void BlockStatManager::BlockStatList::AddStat(const BlockStat &stat) {
   if(strncmp(stat.m_StatName, m_Stat.m_StatName, BlockStat::kStatNameSz) == 0) {
     m_Stat = stat;
   }
-  else if(!m_Tail) {
+  else if(m_Tail) {
     m_Tail->AddStat(stat);
   }
   else {
@@ -119,4 +121,29 @@ void BlockStatManager::BlockStatList::AddStat(const BlockStat &stat) {
       m_Tail = new BlockStatList(stat);
     }
   }
+}
+
+void BlockStatManager::ToFile(const CHAR *filename) {
+  
+  FileStream fstr (filename, eFileMode_Write);
+
+  for(int i = 0; i < m_BlockStatListSz; i++) {
+    const BlockStatList *head = &(m_BlockStatList[i]);
+    while(head) {
+      BlockStat s = head->GetStat();
+
+      CHAR statStr[256];
+      snprintf(statStr, 256, "%d: %s, %llu, %f\n", i, s.m_StatName, s.m_IntStat, s.m_FloatStat);
+      
+      int statStrLen = strlen(statStr);
+      if(statStrLen > 255) {
+        statStr[255] = '\n';
+        statStrLen = 255;
+      }
+      fstr.Write((uint8 *)statStr, statStrLen);
+
+      head = head->GetTail();
+    }
+  }
+
 }

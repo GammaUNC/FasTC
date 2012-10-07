@@ -6,6 +6,7 @@
 // Forward declarations
 class ImageFile;
 class CompressedImage;
+class BlockStatManager;
 
 struct SCompressionSettings {
   SCompressionSettings(); // defaults
@@ -34,6 +35,12 @@ struct SCompressionSettings {
   // number of threads, and each thread will do it's job and 
   // exit.
   int iJobSize; 
+
+  // This is an optinal pointer to a stat manager class. If
+  // instantiated and the proper function pointer is defined
+  // then the compression routine that collects the stats will
+  // be called.
+  BlockStatManager *pStatManager;
 };
 
 extern bool CompressImageData(
@@ -53,6 +60,18 @@ typedef void (* CompressionFunc)(
   unsigned char *outData,      // Buffer to store compressed data.
   unsigned int width,          // Image width
   unsigned int height          // Image height
+);
+
+// A compression function format. It takes the raw data and image dimensions and 
+// returns the compressed image data into outData. It is assumed that there is
+// enough space allocated for outData to store the compressed data. Allocation
+// is dependent on the compression format.
+typedef void (* CompressionFuncWithStats)(
+  const unsigned char *inData, // Raw image data
+  unsigned char *outData,      // Buffer to store compressed data.
+  unsigned int width,          // Image width
+  unsigned int height,         // Image height
+  BlockStatManager &statManager// Stat manager
 );
 
 // This function computes the Peak Signal to Noise Ratio between a 

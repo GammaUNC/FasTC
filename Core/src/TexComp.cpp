@@ -43,6 +43,17 @@ SCompressionSettings:: SCompressionSettings()
   clamp(iQuality, 0, 256);
 }
 
+static  CompressionFuncWithStats ChooseFuncFromSettingsWithStats(const SCompressionSettings &s) {
+  switch(s.format) {
+    case eCompressionFormat_BPTC:
+    {
+       return BC7C::CompressImageBC7Stats;
+    }
+    break;
+  }
+  return NULL;
+}
+
 static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
   switch(s.format) {
     case eCompressionFormat_BPTC:
@@ -54,7 +65,7 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
       }
       else {
 #endif
-	return BC7C::CompressImageBC7;
+        return BC7C::CompressImageBC7;
 #ifdef HAS_SSE_41
       }
 #endif
@@ -72,9 +83,11 @@ static double CompressImageInSerial(
   const unsigned char *imgData,
   const unsigned int imgDataSz,
   const SCompressionSettings &settings,
-  const CompressionFunc f,
   unsigned char *outBuf
 ) {
+  CompressionFunc f = ChooseFuncFromSettings(settings);
+  CompressionFuncWithStats fStats = ChooseFuncFromSettingsWithStats(settings);
+
   double cmpTimeTotal = 0.0;
 
   for(int i = 0; i < settings.iNumCompressions; i++) {
@@ -84,7 +97,12 @@ static double CompressImageInSerial(
     stopWatch.Start();
 
     // !FIXME! We're assuming that we have 4x4 blocks here...
-    (*f)(imgData, outBuf, imgDataSz / 16, 4);
+    if(fStats && settings.pStatManager) {
+      (*fStats)(imgData, outBuf, imgDataSz / 16, 4, *(settings.pStatManager));
+    }
+    else {
+      (*f)(imgData, outBuf, imgDataSz / 16, 4);
+    }
 
     stopWatch.Stop();
 
@@ -99,9 +117,10 @@ static double CompressImageWithThreads(
   const unsigned char *imgData,
   const unsigned int imgDataSz,
   const SCompressionSettings &settings,
-  const CompressionFunc f,
   unsigned char *outBuf
 ) {
+
+  CompressionFunc f = ChooseFuncFromSettings(settings);
 
   ThreadGroup tgrp (settings.iNumThreads, imgData, imgDataSz, f, outBuf);
   if(!(tgrp.PrepareThreads())) {
@@ -121,7 +140,7 @@ static double CompressImageWithThreads(
     cmpTimeTotal += tgrp.GetStopWatch().TimeInMilliseconds();
   }
 
-  tgrp.CleanUpThreads();  
+  tgrp.CleanUpThreads();
 
   double cmpTime = cmpTimeTotal / double(settings.iNumCompressions);
   return cmpTime;
@@ -131,9 +150,10 @@ static double CompressImageWithWorkerQueue(
   const unsigned char *imgData,
   const unsigned int imgDataSz,
   const SCompressionSettings &settings,
-  const CompressionFunc f,
   unsigned char *outBuf
 ) {
+  CompressionFunc f = ChooseFuncFromSettings(settings);
+
   WorkerQueue wq (
     settings.iNumCompressions,
     settings.iNumThreads,
@@ -196,12 +216,12 @@ bool CompressImageData(
 
     if(settings.iNumThreads > 1) {
       if(settings.iJobSize > 0)
-	cmpMSTime = CompressImageWithWorkerQueue(data, dataSz, settings, f, cmpData);
+	cmpMSTime = CompressImageWithWorkerQueue(data, dataSz, settings, cmpData);
       else
-	cmpMSTime = CompressImageWithThreads(data, dataSz, settings, f, cmpData);
+	cmpMSTime = CompressImageWithThreads(data, dataSz, settings, cmpData);
     }
     else {
-      cmpMSTime = CompressImageInSerial(data, dataSz, settings, f, cmpData);
+      cmpMSTime = CompressImageInSerial(data, dataSz, settings, cmpData);
     }
 
     // Report compression time

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "BlockStats.h"
 #include "TexComp.h"
 #include "ImageFile.h"
 #include "Image.h"
@@ -99,7 +100,12 @@ int main(int argc, char **argv) {
   if(NULL == img) {
     fprintf(stderr, "Error loading file: %s\n", argv[fileArg]);
     return 1;
-  }
+	}
+
+  const Image *img = file.GetImage();
+
+  int numBlocks = (img->GetWidth() * img->GetHeight())/16;
+  BlockStatManager *statManager = new BlockStatManager(numBlocks);
   
   SCompressionSettings settings;
   settings.bUseSIMD = bUseSIMD;
@@ -107,6 +113,7 @@ int main(int argc, char **argv) {
   settings.iQuality = quality;
   settings.iNumCompressions = numCompressions;
   settings.iJobSize = numJobs;
+  settings.pStatManager = statManager;
 
   CompressedImage *ci = img->Compress(settings);
   if(NULL == ci) {
@@ -122,8 +129,11 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Error computing PSNR\n");
   }
 
+  statManager->ToFile(strcat(argv[fileArg], "-log.txt"));
+
   // Cleanup 
   delete ci;
+  delete statManager;
 
   return 0;
 }
