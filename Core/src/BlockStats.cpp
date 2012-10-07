@@ -16,8 +16,12 @@ static T max(const T &a, const T &b) {
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-BlockStat::BlockStat(const CHAR *statName, double stat) :
-  m_FloatStat(stat)
+BlockStat::BlockStat(const CHAR *statName, int stat) : m_IntStat(stat)
+{
+  strncpy(m_StatName, statName, kStatNameSz);
+}
+
+BlockStat::BlockStat(const CHAR *statName, double stat) : m_FloatStat(stat)
 {
   strncpy(m_StatName, statName, kStatNameSz);
 }
@@ -101,7 +105,10 @@ BlockStatManager::BlockStatList::~BlockStatList() {
 }
 
 void BlockStatManager::BlockStatList::AddStat(const BlockStat &stat) {
-  if(!m_Tail) {
+  if(strncmp(stat.m_StatName, m_Stat.m_StatName, BlockStat::kStatNameSz) == 0) {
+    m_Stat = stat;
+  }
+  else if(!m_Tail) {
     m_Tail->AddStat(stat);
   }
   else {

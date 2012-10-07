@@ -22,6 +22,8 @@
 #include "RGBAEndpoints.h"
 #include "BitStream.h"
 
+#include "BlockStats.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -34,6 +36,18 @@
 #else
 #define ALIGN_SSE __attribute__((aligned(16)))
 #endif
+
+enum EBlockStats {
+  eBlockStat_Path,
+  eBlockStat_Mode,
+
+  kNumBlockStats
+};
+
+static const char *kBlockStatString[kNumBlockStats] = {
+  "BlockStat_Path",
+  "BlockStat_Mode"
+};
 
 static const uint32 kNumShapes2 = 64;
 static const uint16 kShapeMask2[kNumShapes2] = {
@@ -1343,7 +1357,7 @@ namespace BC7C
 
   // Function prototypes
   static void ExtractBlock(const uint8* inPtr, int width, uint32* colorBlock);
-  static void CompressBC7Block(const uint32 *block, uint8 *outBuf);
+  static void CompressBC7Block(const uint32 *block, uint8 *outBuf, BlockStatManager *statManager);
 
   static int gQualityLevel = 50;
   void SetQualityLevel(int q) {
@@ -1427,7 +1441,48 @@ namespace BC7C
       for(int i = 0; i < width; i += 4)
       {
         // ExtractBlock(inBuf + i * 4, width, block);
-        CompressBC7Block((const uint32 *)inBuf, outBuf);
+        CompressBC7Block((const uint32 *)inBuf, outBuf, NULL);
+        BC7CompressionMode::NumUses[gBestMode]++;
+
+#ifndef NDEBUG
+        uint8 *block = (uint8 *)outBuf;
+        uint32 unComp[16];
+        DecompressBC7Block(block, unComp);
+        uint8* unCompData = (uint8 *)unComp;
+
+        int diffSum = 0;
+        for(int i = 0; i < 64; i++) {
+          diffSum += sad(unCompData[i], inBuf[i]);
+        }
+        double blockError = double(diffSum) / 64.0;
+        if(blockError > 50.0) {
+          fprintf(stderr, "WARNING: Block error very high (%.2f)\n", blockError);
+        }
+#endif
+
+        outBuf += 16;
+        inBuf += 64;
+      }
+    }
+  }
+
+  void CompressImageBC7(
+    const unsigned char *inBuf, 
+    unsigned char *outBuf, 
+    unsigned int width, 
+    unsigned int height,
+    BlockStatManager &statManager
+  ) {
+    uint32 block[16];
+    BC7CompressionMode::ResetNumUses();
+    BC7CompressionMode::MaxAnnealingIterations = min(BC7CompressionMode::kMaxAnnealingIterations, GetQualityLevel());
+
+    for(int j = 0; j < height; j += 4)
+    {
+      for(int i = 0; i < width; i += 4)
+      {
+        // ExtractBlock(inBuf + i * 4, width, block);
+        CompressBC7Block((const uint32 *)inBuf, outBuf, &statManager);
         BC7CompressionMode::NumUses[gBestMode]++;
 
 #ifndef NDEBUG
@@ -1595,13 +1650,27 @@ namespace BC7C
   }
 
   // Compress a single block.
-  static void CompressBC7Block(const uint32 *block, uint8 *outBuf) {
+  static void CompressBC7Block(const uint32 *block, uint8 *outBuf, BlockStatManager *statManager) {
+
+    uint32 blockIdx = 0;
+    if(statManager) {
+      blockIdx = statManager->BeginBlock();
+    }
 
     // All a single color?
     if(AllOneColor(block)) {
       BitStream bStrm(outBuf, 128, 0);
       CompressOptimalColorBC7(*block, bStrm);
       gBestMode = 5;
+      
+      if(statManager) {
+        BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 0);
+        statManager->AddStat(blockIdx, s);
+
+        s = BlockStat(kBlockStatString[eBlockStat_Mode], 5);
+        statManager->AddStat(blockIdx, s);
+      }
+
       return;
     }
 
@@ -1624,6 +1693,15 @@ namespace BC7C
       BitStream bStrm(outBuf, 128, 0);
       WriteTransparentBlock(bStrm);
       gBestMode = 6;
+
+      if(statManager) {
+        BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 1);
+        statManager->AddStat(blockIdx, s);
+        
+        s = BlockStat(kBlockStatString[eBlockStat_Mode], gBestMode);
+        statManager->AddStat(blockIdx, s);
+      }
+
       return;
     }
 
@@ -1647,6 +1725,14 @@ namespace BC7C
       if(err < 1e-9) {
         CompressTwoClusters(i, clusters, outBuf, opaque);
         gBestMode = gModeChosen;
+
+        if(statManager) {
+          BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 2);
+          statManager->AddStat(blockIdx, s);
+
+          s = BlockStat(kBlockStatString[eBlockStat_Mode], gBestMode);
+          statManager->AddStat(blockIdx, s);
+        }
         return;
       }
       
@@ -1675,6 +1761,15 @@ namespace BC7C
         if(err < 1e-9) {
           CompressThreeClusters(i, clusters, outBuf, opaque);
           gBestMode = gModeChosen;
+
+          if(statManager) {
+            BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 2);
+            statManager->AddStat(blockIdx, s);
+
+            s = BlockStat(kBlockStatString[eBlockStat_Mode], gBestMode);
+            statManager->AddStat(blockIdx, s);
+          }
+
           return;
         }
 
@@ -1688,6 +1783,11 @@ namespace BC7C
       }
     }
                 
+    if(statManager) {
+      BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 3);
+      statManager->AddStat(blockIdx, s);
+    }
+
     uint8 tempBuf1[16], tempBuf2[16];
 
     BitStream tempStream1 (tempBuf1, 128, 0);
@@ -1695,6 +1795,12 @@ namespace BC7C
     double best = compressor.Compress(tempStream1, 0, &blockCluster);
     gBestMode = 6;
     if(best == 0.0f) {
+
+      if(statManager) {
+        BlockStat s = BlockStat(kBlockStatString[eBlockStat_Mode], gBestMode);
+        statManager->AddStat(blockIdx, s);
+      }
+
       memcpy(outBuf, tempBuf1, 16);
       return;
     }
@@ -1731,6 +1837,12 @@ namespace BC7C
       
       if(error == 0.0f) {
         memcpy(outBuf, tempBuf2, 16);
+
+        if(statManager) {
+          BlockStat s = BlockStat(kBlockStatString[eBlockStat_Mode], gBestMode);
+          statManager->AddStat(blockIdx, s);
+        }
+
         return;
       }
       else {
@@ -1744,17 +1856,27 @@ namespace BC7C
         gBestMode = gModeChosen;
         memcpy(outBuf, tempBuf2, 16);
 
+        if(statManager) {
+          BlockStat s = BlockStat(kBlockStatString[eBlockStat_Mode], gBestMode);
+          statManager->AddStat(blockIdx, s);
+        }
+
         return;
       }
     }
 
     memcpy(outBuf, tempBuf1, 16);
+
+    if(statManager) {
+      BlockStat s = BlockStat(kBlockStatString[eBlockStat_Mode], gBestMode);
+      statManager->AddStat(blockIdx, s);
+    }
   }
 
   static void DecompressBC7Block(const uint8 block[16], uint32 outBuf[16]) {
 
     BitStreamReadOnly strm(block);
-
+    
     uint32 mode = 0;
     while(!strm.ReadBit()) {
       mode++;

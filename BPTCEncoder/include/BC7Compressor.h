@@ -17,6 +17,8 @@
 
 #include "BC7Config.h"
 
+class BlockStatManager;
+
 namespace BC7C
 {
 	// This is the error metric that is applied to our error measurement algorithm
@@ -52,7 +54,20 @@ namespace BC7C
 
 	// Compress the image given as RGBA data to BC7 format. Width and Height are the dimensions of
 	// the image in pixels.
-	void CompressImageBC7(const unsigned char *inBuf, unsigned char *outBuf, unsigned int width, unsigned int height);
+	void CompressImageBC7(
+          const unsigned char *inBuf, 
+          unsigned char *outBuf, 
+          unsigned int width, 
+          unsigned int height
+        );
+	
+        void CompressImageBC7Stats(
+          const unsigned char *inBuf, 
+          unsigned char *outBuf, 
+          unsigned int width, 
+          unsigned int height,
+          BlockStatManager &statManager
+        );
 
 #ifdef HAS_SSE_41
 	// Compress the image given as RGBA data to BC7 format using an algorithm optimized for SIMD

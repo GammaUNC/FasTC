@@ -8,7 +8,7 @@
 struct BlockStat {
   friend class BlockStatManager;
 public:
-  BlockStat(const CHAR *statName, uint64 stat);
+  BlockStat(const CHAR *statName, int);
   BlockStat(const CHAR *statName, double stat);
 
   BlockStat(const BlockStat &);
