@@ -37,9 +37,15 @@
 #define ALIGN_SSE __attribute__((aligned(16)))
 #endif
 
+#define USE_PCA_FOR_SHAPE_ESTIMATION
+
 enum EBlockStats {
   eBlockStat_Path,
   eBlockStat_Mode,
+
+  eBlockStat_SingleShapeEstimate,
+  eBlockStat_TwoShapeEstimate,
+  eBlockStat_ThreeShapeEstimate,
 
   eBlockStat_ModeZeroEstimate,
   eBlockStat_ModeOneEstimate,
@@ -65,6 +71,10 @@ enum EBlockStats {
 static const char *kBlockStatString[kNumBlockStats] = {
   "BlockStat_Path",
   "BlockStat_Mode",
+
+  "BlockStat_SingleShapeEstimate",
+  "BlockStat_TwoShapeEstimate",
+  "BlockStat_ThreeShapeEstimate",
 
   "BlockStat_ModeZeroEstimate",
   "BlockStat_ModeOneEstimate",
@@ -707,7 +717,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
       bestIndices[i] = 1;
       alphaIndices[i] = 1;
     }
-    
+
     return bestErr;
   }
 
@@ -972,7 +982,8 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
 #if 1
   RGBAVector avg = cluster.GetTotal() / float(cluster.GetNumPoints());
   RGBADir axis;
-  ::GetPrincipalAxis(cluster.GetNumPoints(), cluster.GetPoints(), axis);
+  double eigOne;
+  ::GetPrincipalAxis(cluster.GetNumPoints(), cluster.GetPoints(), axis, eigOne, NULL);
 
   float mindp = FLT_MAX, maxdp = -FLT_MAX;
   for(int i = 0 ; i < cluster.GetNumPoints(); i++) {
@@ -1677,55 +1688,91 @@ namespace BC7C
     assert(!(clusters[0].GetPointBitString() & clusters[2].GetPointBitString()));
   }
 
-  static double EstimateTwoClusterError(RGBACluster &c) {
+  static double EstimateTwoClusterError(RGBACluster &c, double (&estimates)[2]) {
     RGBAVector Min, Max, v;
     c.GetBoundingBox(Min, Max);
     v = Max - Min;
     if(v * v == 0) {
-      gModeEstimate[1] = gModeEstimate[3] = 0.0;
+      estimates[0] = estimates[1] = 0.0;
       return 0.0;
     }
 
     const float *w = BC7C::GetErrorMetric();
 
-    const double err1 = 0.0001 + c.QuantizedError(Min, Max, 8, 0xFFFCFCFC, RGBAVector(w[0], w[1], w[2], w[3]));
+    const double err1 = c.QuantizedError(Min, Max, 8, 0xFFFCFCFC, RGBAVector(w[0], w[1], w[2], w[3]));
     if(err1 >= 0.0)
-      gModeEstimate[1] = err1;
+      estimates[0] = err1;
     else
-      gModeEstimate[1] = min(gModeEstimate[1], err1);
+      estimates[0] = min(estimates[0], err1);
 
-    const double err3 = 0.0001 + c.QuantizedError(Min, Max, 8, 0xFFFEFEFE, RGBAVector(w[0], w[1], w[2], w[3]));
+    const double err3 = c.QuantizedError(Min, Max, 8, 0xFFFEFEFE, RGBAVector(w[0], w[1], w[2], w[3]));
     if(err3 >= 0.0)
-      gModeEstimate[3] = err3;
+      estimates[1] = err3;
     else
-      gModeEstimate[3] = min(gModeEstimate[3], err3);
+      estimates[1] = min(estimates[1], err3);
 
-    return min(err1, err3);
+    double error = 0.0001;
+#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
+    double eigOne = c.GetPrincipalEigenvalue();
+    double eigTwo = c.GetSecondEigenvalue();
+    if(eigOne != 0.0) {
+      error += eigTwo / eigOne;
+    }
+    else {
+      error += 1.0;
+    }
+#else
+    error += min(err1, err3);
+#endif
+    return error;
   }
 
-  static double EstimateThreeClusterError(RGBACluster &c) {
+  static double EstimateThreeClusterError(RGBACluster &c, double (&estimates)[2]) {
     RGBAVector Min, Max, v;
     c.GetBoundingBox(Min, Max);
     v = Max - Min;
     if(v * v == 0) {
-      gModeEstimate[0] = gModeEstimate[2] = 0.0;
+      estimates[0] = estimates[1] = 0.0;
       return 0.0;
     }
 
     const float *w = BC7C::GetErrorMetric();
     const double err0 = 0.0001 + c.QuantizedError(Min, Max, 4, 0xFFF0F0F0, RGBAVector(w[0], w[1], w[2], w[3]));
     if(err0 >= 0.0)
-      gModeEstimate[0] = err0;
+      estimates[0] = err0;
     else
-      gModeEstimate[0] = min(gModeEstimate[0], err0);
+      estimates[0] = min(estimates[0], err0);
 
     const double err2 = 0.0001 + c.QuantizedError(Min, Max, 4, 0xFFF8F8F8, RGBAVector(w[0], w[1], w[2], w[3]));
     if(err2 >= 0.0)
-      gModeEstimate[2] = err2;
+      estimates[1] = err2;
     else
-      gModeEstimate[2] = min(gModeEstimate[2], err2);
+      estimates[1] = min(estimates[1], err2);
 
-    return min(err0, err2);
+    double error = 0.0001;
+#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
+    double eigOne = c.GetPrincipalEigenvalue();
+    double eigTwo = c.GetSecondEigenvalue();
+
+    //    printf("EigOne: %08.3f\tEigTwo: %08.3f\n", eigOne, eigTwo);
+    if(eigOne != 0.0) {
+      error += eigTwo / eigOne;
+    }
+    else {
+      error += 1.0;
+    }
+#else
+    error += min(err0, err2);
+#endif
+    return error;
+  }
+
+  static void UpdateErrorEstimate(uint32 mode, double est) {
+    assert(mode >= 0);
+    assert(mode < BC7CompressionMode::kNumModes);
+    if(gModeEstimate[mode] == -1.0 || est < gModeEstimate[mode]) {
+      gModeEstimate[mode] = est;
+    }
   }
 
   // Compress a single block.
@@ -1825,12 +1872,31 @@ namespace BC7C
       }
       else {
 	const float *w = GetErrorMetric();
-	gModeEstimate[6] = 0.0001 + blockCluster.QuantizedError(Min, Max, 4, 0xFFF0F0F0, RGBAVector(w[0], w[1], w[2], w[3]));
+	const double err = 0.0001 + blockCluster.QuantizedError(Min, Max, 4, 0xFEFEFEFE, RGBAVector(w[0], w[1], w[2], w[3]));
+	UpdateErrorEstimate(6, err);
+
+#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
+	if(statManager) {
+	  double eigOne = blockCluster.GetPrincipalEigenvalue();
+	  double eigTwo = blockCluster.GetSecondEigenvalue();
+	  double error;
+	  if(eigOne != 0.0) {
+	    error = eigTwo / eigOne;
+	  }
+	  else {
+	    error = 1.0;
+	  }
+
+	  BlockStat s (kBlockStatString[eBlockStat_SingleShapeEstimate], error);
+	  statManager->AddStat(blockIdx, s);
+	}
+#endif
       }
     }
 
     // First we must figure out which shape to use. To do this, simply
     // see which shape has the smallest sum of minimum bounding spheres.
+    double estimates[2] = { -1.0, -1.0 };
     double bestError[2] = { DBL_MAX, DBL_MAX };
     int bestShapeIdx[2] = { -1, -1 };
     RGBACluster bestClusters[2][3];
@@ -1841,8 +1907,38 @@ namespace BC7C
       PopulateTwoClustersForShape(blockCluster, i, clusters);
 
       double err = 0.0;
+      double errEstimate[2] = { -1.0, -1.0 };
       for(int ci = 0; ci < 2; ci++) {
-        err += EstimateTwoClusterError(clusters[ci]);
+	double shapeEstimate[2] = { -1.0, -1.0 };
+        err += EstimateTwoClusterError(clusters[ci], shapeEstimate);
+
+	for(int ei = 0; ei < 2; ei++) {
+	  if(shapeEstimate[ei] >= 0.0) {
+	    if(errEstimate[ei] == -1.0) {
+	      errEstimate[ei] = shapeEstimate[ei];
+	    }
+	    else {
+	      errEstimate[ei] += shapeEstimate[ei];
+	    }
+	  }
+	}
+      }
+
+#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
+      err /= 2.0;
+#endif
+
+      if(errEstimate[0] != -1.0) {
+	UpdateErrorEstimate(1, errEstimate[0]);
+      }
+
+      if(errEstimate[1] != -1.0) {
+	UpdateErrorEstimate(3, errEstimate[1]);
+      }
+
+      if(statManager && err < bestError[0]) {
+	BlockStat s = BlockStat(kBlockStatString[eBlockStat_TwoShapeEstimate], err);
+        statManager->AddStat(blockIdx, s);	
       }
 
       // If it's small, we'll take it!
@@ -1874,9 +1970,39 @@ namespace BC7C
         PopulateThreeClustersForShape(blockCluster, i, clusters);
 
         double err = 0.0;
-        for(int ci = 0; ci < 3; ci++) {
-          err += EstimateThreeClusterError(clusters[ci]);
-        }
+	double errEstimate[2] = { -1.0, -1.0 };
+	for(int ci = 0; ci < 3; ci++) {
+	  double shapeEstimate[2] = { -1.0, -1.0 };
+          err += EstimateThreeClusterError(clusters[ci], shapeEstimate);
+
+	  for(int ei = 0; ei < 2; ei++) {
+	    if(shapeEstimate[ei] >= 0.0) {
+	      if(errEstimate[ei] == -1.0) {
+		errEstimate[ei] = shapeEstimate[ei];
+	      }
+	      else {
+		errEstimate[ei] += shapeEstimate[ei];
+	      }
+	    }
+	  }
+	}
+
+#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
+	err /= 3.0;
+#endif
+
+	if(errEstimate[0] != -1.0) {
+	  UpdateErrorEstimate(0, errEstimate[0]);
+	}
+	
+	if(errEstimate[1] != -1.0) {
+	  UpdateErrorEstimate(2, errEstimate[1]);
+	}
+
+	if(statManager && err < bestError[1]) {
+	  BlockStat s = BlockStat(kBlockStatString[eBlockStat_ThreeShapeEstimate], err);
+	  statManager->AddStat(blockIdx, s);	
+	}
 
         // If it's small, we'll take it!
         if(err < 1e-9) {

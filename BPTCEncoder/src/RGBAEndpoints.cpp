@@ -307,10 +307,50 @@ void RGBACluster::GetPrincipalAxis(RGBADir &axis) {
 	}
 
 	RGBAVector avg = m_Total / float(m_NumPoints);
-	::GetPrincipalAxis(m_NumPoints, m_DataPoints, m_PrincipalAxis);
+	m_PowerMethodIterations = ::GetPrincipalAxis(
+	    m_NumPoints, 
+	    m_DataPoints, 
+	    m_PrincipalAxis, 
+	    m_PrincipalEigenvalue, 
+	    &m_SecondEigenvalue
+	);
+
 	m_PrincipalAxisCached = true;
 
 	GetPrincipalAxis(axis);
+}
+
+double RGBACluster::GetPrincipalEigenvalue() {
+
+  if(!m_PrincipalAxisCached) {
+    RGBADir dummy;
+    GetPrincipalAxis(dummy);
+  }
+  
+  assert(m_PrincipalAxisCached);
+  return m_PrincipalEigenvalue;
+}
+
+double RGBACluster::GetSecondEigenvalue() {
+
+  if(!m_PrincipalAxisCached) {
+    RGBADir dummy;
+    GetPrincipalAxis(dummy);
+  }
+  
+  assert(m_PrincipalAxisCached);
+  return m_SecondEigenvalue;
+}
+
+uint32 RGBACluster::GetPowerMethodIterations() {
+
+  if(!m_PrincipalAxisCached) {
+    RGBADir dummy;
+    GetPrincipalAxis(dummy);
+  }
+  
+  assert(m_PrincipalAxisCached);
+  return m_PowerMethodIterations;
 }
 
 double RGBACluster::QuantizedError(const RGBAVector &p1, const RGBAVector &p2, uint8 nBuckets, uint32 bitMask, const RGBAVector &errorMetricVec, const int pbits[2], int *indices) const {
@@ -403,7 +443,58 @@ void ClampEndpoints(RGBAVector &p1, RGBAVector &p2) {
 	clamp(p2.a, 0.0f, 255.0f);
 }
 
-void GetPrincipalAxis(int nPts, const RGBAVector *pts, RGBADir &axis) {
+static uint32 PowerIteration(const RGBAMatrix &mat, RGBADir &eigVec, double &eigVal) {
+
+	int numIterations = 0;
+	const int kMaxNumIterations = 200;
+
+	for(int nTries = 0; nTries < 3; nTries++) {
+	// !SPEED! Find eigenvectors by using the power method. This is good because the
+	// matrix is only 4x4, which allows us to use SIMD...
+  RGBAVector b = RGBAVector(rand());
+	assert(b.Length() > 0);
+	b /= b.Length();
+
+	bool fixed = false;
+	numIterations = 0;
+	while(!fixed && ++numIterations < kMaxNumIterations) {
+
+		RGBAVector newB = mat * b;
+
+		// !HACK! If the principal eigenvector of the covariance matrix
+		// converges to zero, that means that the points lie equally 
+		// spaced on a sphere in this space. In this (extremely rare)
+		// situation, just choose a point and use it as the principal 
+		// direction.
+		const float newBlen = newB.Length();
+		if(newBlen < 1e-10) {
+			eigVec = b;
+			eigVal = 0.0;
+			return numIterations;
+		}
+
+		eigVal = newB.Length();
+		newB /= eigVal;
+
+		if(fabs(1.0f - (b * newB)) < 1e-5)
+			fixed = true;
+
+		b = newB;
+	}
+
+	eigVec = b;  
+	if(numIterations < kMaxNumIterations) {
+	  break;
+	}
+  }
+
+	if(numIterations == kMaxNumIterations) {
+	  eigVal = 0.0;
+	}
+	return numIterations;
+}
+
+uint32 GetPrincipalAxis(int nPts, const RGBAVector *pts, RGBADir &axis, double &eigOne, double *eigTwo) {
 
 	assert(nPts > 0);
 	assert(nPts <= kMaxNumDataPoints);
@@ -445,7 +536,7 @@ void GetPrincipalAxis(int nPts, const RGBAVector *pts, RGBADir &axis) {
 
 	if(uptsIdx == 1) {
 		axis.r = axis.g = axis.b = axis.a = 0.0f;
-		return;
+		return 0;
 	}
 	// Collinear?
 	else {
@@ -462,7 +553,7 @@ void GetPrincipalAxis(int nPts, const RGBAVector *pts, RGBADir &axis) {
 
 		if(collinear) {
 			axis = dir;
-			return;
+			return 0;
 		}
 	}
 
@@ -481,39 +572,37 @@ void GetPrincipalAxis(int nPts, const RGBAVector *pts, RGBADir &axis) {
 			covMatrix(j, i) = covMatrix(i, j);
 		}
 	}
+	
+	uint32 iters = PowerIteration(covMatrix, axis, eigOne);
 
-	// !SPEED! Find eigenvectors by using the power method. This is good because the
-	// matrix is only 4x4, which allows us to use SIMD...
-	RGBAVector b = toPtsMax;
-	assert(b.Length() > 0);
-	b /= b.Length();
+	if(NULL != eigTwo) {
+	  if(eigOne != 0.0) {
+	    RGBAMatrix reduced = covMatrix - eigOne * RGBAMatrix(
+	      axis.c[0] * axis.c[0], axis.c[0] * axis.c[1], axis.c[0] * axis.c[2], axis.c[0] * axis.c[3], 
+	      axis.c[1] * axis.c[0], axis.c[1] * axis.c[1], axis.c[1] * axis.c[2], axis.c[1] * axis.c[3],
+	      axis.c[2] * axis.c[0], axis.c[2] * axis.c[1], axis.c[2] * axis.c[2], axis.c[2] * axis.c[3],
+	      axis.c[3] * axis.c[0], axis.c[3] * axis.c[1], axis.c[3] * axis.c[2], axis.c[3] * axis.c[3]
+	    );
+	    
+	    bool allZero = true;
+	    for(int i = 0; i < 16; i++) {
+	      if(fabs(reduced[i]) > 0.0005) {
+		allZero = false;
+	      }
+	    }
 
-	bool fixed = false;
-	int infLoopPrevention = 0;
-	const int kMaxNumIterations = 200;
-	while(!fixed && ++infLoopPrevention < kMaxNumIterations) {
+	    if(allZero) {
+	      *eigTwo = 0.0;
+	    }
+	    else {
+	      RGBADir dummyDir;
+	      iters += PowerIteration(reduced, dummyDir, *eigTwo);
+	    }
+	  }
+	  else {
+	    *eigTwo = 0.0;
+	  }
+        }
 
-		RGBAVector newB = covMatrix * b;
-
-		// !HACK! If the principal eigenvector of the covariance matrix
-		// converges to zero, that means that the points lie equally 
-		// spaced on a sphere in this space. In this (extremely rare)
-		// situation, just choose a point and use it as the principal 
-		// direction.
-		const float newBlen = newB.Length();
-		if(newBlen < 1e-10) {
-			axis = toPts[0];
-			return;
-		}
-
-		newB /= newB.Length();
-
-		if(fabs(1.0f - (b * newB)) < 1e-5)
-			fixed = true;
-
-		b = newB;
-	}
-
-	assert(infLoopPrevention < kMaxNumIterations);
-	axis = b;
+	return iters;
 }

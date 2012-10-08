@@ -161,6 +161,18 @@ private:
 	}
 
 public:
+
+	RGBAMatrix(
+	  float _m1, float _m2, float _m3, float _m4,
+	  float _m5, float _m6, float _m7, float _m8,
+	  float _m9, float _m10, float _m11, float _m12,
+	  float _m13, float _m14, float _m15, float _m16
+        ) :
+	  m1(_m1), m2(_m2), m3(_m3), m4(_m4),
+	  m5(_m5), m6(_m6), m7(_m7), m8(_m8),
+	  m9(_m9), m10(_m10), m11(_m11), m12(_m12),
+	  m13(_m13), m14(_m14), m15(_m15), m16(_m16)
+	{ }
 	
 	RGBAMatrix() : 
 		m1(1.0f), m2(0.0f), m3(0.0f), m4(0.0f),
@@ -294,7 +306,10 @@ public:
 		m_PointBitString(c.m_PointBitString), 
 		m_Min(c.m_Min),
 		m_Max(c.m_Max),
-		m_PrincipalAxisCached(false)
+		m_PrincipalAxisCached(c.m_PrincipalAxisCached),
+		m_SecondEigenvalue(c.m_SecondEigenvalue),
+		m_PowerMethodIterations(c.m_PowerMethodIterations),
+		m_PrincipalAxis(c.m_PrincipalAxis)
 	{ 
 		memcpy(this->m_DataPoints, c.m_DataPoints, m_NumPoints * sizeof(RGBAVector));
 	}
@@ -327,6 +342,9 @@ public:
 	double QuantizedError(const RGBAVector &p1, const RGBAVector &p2, uint8 nBuckets, uint32 bitMask, const RGBAVector &errorMetricVec, const int pbits[2] = NULL, int *indices = NULL) const;
 
 	// Returns the principal axis for this point cluster.
+	double GetPrincipalEigenvalue();
+	double GetSecondEigenvalue();
+	uint32 GetPowerMethodIterations();
 	void GetPrincipalAxis(RGBADir &axis);
 
 	bool AllSamePoint() const { return m_Max == m_Min; }
@@ -345,11 +363,14 @@ private:
 	RGBAVector m_Min, m_Max;
 	int m_PointBitString;
 
+	double m_PrincipalEigenvalue;
+	double m_SecondEigenvalue;
+	uint32 m_PowerMethodIterations;
 	RGBADir m_PrincipalAxis;
 	bool m_PrincipalAxisCached;
 };
 
 extern uint8 QuantizeChannel(const uint8 val, const uint8 mask, const int pBit = -1);
-extern void GetPrincipalAxis(int nPts, const RGBAVector *pts, RGBADir &axis);
+extern uint32 GetPrincipalAxis(int nPts, const RGBAVector *pts, RGBADir &axis, double &eigOne, double *eigTwo);
 
 #endif //__RGBA_ENDPOINTS_H__
