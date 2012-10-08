@@ -37,7 +37,7 @@
 #define ALIGN_SSE __attribute__((aligned(16)))
 #endif
 
-#define USE_PCA_FOR_SHAPE_ESTIMATION
+// #define USE_PCA_FOR_SHAPE_ESTIMATION
 
 enum EBlockStats {
   eBlockStat_Path,
@@ -1710,7 +1710,7 @@ namespace BC7C
       error += 1.0;
     }
 #else
-    error += c.QuantizedError(Min, Max, 4, 0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
+    error += c.QuantizedError(Min, Max, 8, 0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
 #endif
     return error;
   }
@@ -1730,7 +1730,6 @@ namespace BC7C
     double eigOne = c.GetPrincipalEigenvalue();
     double eigTwo = c.GetSecondEigenvalue();
 
-    //    printf("EigOne: %08.3f\tEigTwo: %08.3f\n", eigOne, eigTwo);
     if(eigOne != 0.0) {
       error += eigTwo / eigOne;
     }
@@ -1738,7 +1737,7 @@ namespace BC7C
       error += 1.0;
     }
 #else
-    error += c.QuantizedError(Min, Max, 4, 0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
+    error += c.QuantizedError(Min, Max, 2, 0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
 #endif
     return error;
   }

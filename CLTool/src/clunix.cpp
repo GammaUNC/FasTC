@@ -8,7 +8,7 @@
 #include "Image.h"
 
 void PrintUsage() {
-   fprintf(stderr, "Usage: tc [-s|-t <num>] <imagefile>\n");
+   fprintf(stderr, "Usage: tc [-l] [-q <quality>] [-n <num>] [-simd] [-t <threads> [-j <jobs>]] <imagefile>\n");
 }
 
 int main(int argc, char **argv) {
@@ -24,6 +24,7 @@ int main(int argc, char **argv) {
   int numThreads = 1;
   int numCompressions = 1;
   bool bUseSIMD = false;
+  bool bSaveLog = false;
   
   bool knowArg = false;
   do {
@@ -41,8 +42,15 @@ int main(int argc, char **argv) {
       knowArg = true;
       continue;
     }
+
+    if(strcmp(argv[fileArg], "-l") == 0) {
+      fileArg++;
+      bSaveLog = true;
+      knowArg = true;
+      continue;
+    }
     
-    if(strcmp(argv[fileArg], "-s") == 0) {
+    if(strcmp(argv[fileArg], "-simd") == 0) {
       fileArg++;
       bUseSIMD = true;
       knowArg = true;
@@ -90,6 +98,12 @@ int main(int argc, char **argv) {
 
   } while(knowArg && fileArg < argc);
 
+  if(numThreads > 1 && bSaveLog) {
+    bSaveLog = false;
+    fprintf(stderr, "WARNING: Will not save log because implementation is not thread safe.\n"
+	    "If you'd like, send a complaint to pavel@cs.unc.edu to get this done faster.\n");
+  }
+
   if(fileArg == argc) {
     PrintUsage();
     exit(1);
@@ -105,7 +119,10 @@ int main(int argc, char **argv) {
   const Image *img = file.GetImage();
 
   int numBlocks = (img->GetWidth() * img->GetHeight())/16;
-  BlockStatManager *statManager = new BlockStatManager(numBlocks);
+  BlockStatManager *statManager = NULL;
+  if(bSaveLog) {
+    statManager = new BlockStatManager(numBlocks);
+  }
   
   SCompressionSettings settings;
   settings.bUseSIMD = bUseSIMD;
@@ -129,11 +146,14 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Error computing PSNR\n");
   }
 
-  statManager->ToFile(strcat(argv[fileArg], "-log.txt"));
+  if(bSaveLog) {
+    statManager->ToFile(strcat(argv[fileArg], ".log"));
+  }
 
   // Cleanup 
   delete ci;
-  delete statManager;
+  if(statManager)
+    delete statManager;
 
   return 0;
 }
