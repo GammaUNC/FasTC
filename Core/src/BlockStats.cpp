@@ -18,17 +18,21 @@ static T max(const T &a, const T &b) {
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-BlockStat::BlockStat(const CHAR *statName, int stat) : m_IntStat(stat)
+BlockStat::BlockStat(const CHAR *statName, int stat) 
+  : m_IntStat(stat)
+  , m_Type(eType_Int)
 {
   strncpy(m_StatName, statName, kStatNameSz);
 }
 
-BlockStat::BlockStat(const CHAR *statName, double stat) : m_FloatStat(stat)
+BlockStat::BlockStat(const CHAR *statName, double stat) 
+  : m_FloatStat(stat)
+  , m_Type(eType_Float)
 {
   strncpy(m_StatName, statName, kStatNameSz);
 }
 
-BlockStat::BlockStat(const BlockStat &other) {
+BlockStat::BlockStat(const BlockStat &other) : m_Type(other.m_Type) {
   memcpy(this, &other, sizeof(*this));
 }
 
@@ -133,12 +137,24 @@ void BlockStatManager::ToFile(const CHAR *filename) {
       BlockStat s = head->GetStat();
 
       CHAR statStr[256];
-      snprintf(statStr, 256, "%d: %s, %llu, %f\n", i, s.m_StatName, s.m_IntStat, s.m_FloatStat);
-      
+      switch(s.m_Type) {
+        case BlockStat::eType_Float:
+          snprintf(statStr, 256, "%d,%s,%f\n", i, s.m_StatName, s.m_FloatStat);
+        break;
+
+        case BlockStat::eType_Int:
+          snprintf(statStr, 256, "%d,%s,%llu\n", i, s.m_StatName, s.m_IntStat);
+        break;
+
+        default:
+          assert(false);
+        break;
+      }
+
       int statStrLen = strlen(statStr);
       if(statStrLen > 255) {
         statStr[255] = '\n';
-        statStrLen = 255;
+        statStrLen = 256;
       }
       fstr.Write((uint8 *)statStr, statStrLen);
 

@@ -15,6 +15,13 @@ public:
   BlockStat &operator=(const BlockStat &);
   
 private:
+  const enum Type {
+    eType_Float,
+    eType_Int,
+    
+    kNumTypes
+  } m_Type;
+
   static const int kStatNameSz = 32;
   CHAR m_StatName[kStatNameSz];
   union {

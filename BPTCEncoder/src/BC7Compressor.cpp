@@ -66,23 +66,23 @@ static const char *kBlockStatString[kNumBlockStats] = {
   "BlockStat_Path",
   "BlockStat_Mode",
 
-  "eBlockStat_ModeZeroEstimate",
-  "eBlockStat_ModeOneEstimate",
-  "eBlockStat_ModeTwoEstimate",
-  "eBlockStat_ModeThreeEstimate",
-  "eBlockStat_ModeFourEstimate",
-  "eBlockStat_ModeFiveEstimate",
-  "eBlockStat_ModeSixEstimate",
-  "eBlockStat_ModeSevenEstimate",
+  "BlockStat_ModeZeroEstimate",
+  "BlockStat_ModeOneEstimate",
+  "BlockStat_ModeTwoEstimate",
+  "BlockStat_ModeThreeEstimate",
+  "BlockStat_ModeFourEstimate",
+  "BlockStat_ModeFiveEstimate",
+  "BlockStat_ModeSixEstimate",
+  "BlockStat_ModeSevenEstimate",
 
-  "eBlockStat_ModeZeroError",
-  "eBlockStat_ModeOneError",
-  "eBlockStat_ModeTwoError",
-  "eBlockStat_ModeThreeError",
-  "eBlockStat_ModeFourError",
-  "eBlockStat_ModeFiveError",
-  "eBlockStat_ModeSixError",
-  "eBlockStat_ModeSevenError",
+  "BlockStat_ModeZeroError",
+  "BlockStat_ModeOneError",
+  "BlockStat_ModeTwoError",
+  "BlockStat_ModeThreeError",
+  "BlockStat_ModeFourError",
+  "BlockStat_ModeFiveError",
+  "BlockStat_ModeSixError",
+  "BlockStat_ModeSevenError",
 };
 
 static const uint32 kNumShapes2 = 64;
@@ -1614,8 +1614,15 @@ namespace BC7C
     BC7CompressionMode compressor0(0, opaque);
     BC7CompressionMode compressor2(2, opaque);
       
-    double error, bestError = (shapeIdx < 16)? compressor0.Compress(tmpStream0, shapeIdx, clusters) : DBL_MAX;
-    gModeError[0] = bestError;
+    double error, bestError;
+    if(shapeIdx < 16) {
+      bestError = compressor0.Compress(tmpStream0, shapeIdx, clusters);
+      gModeError[0] = bestError;
+    }
+    else {
+      bestError = DBL_MAX;
+      gModeError[0] = -1.0;
+    }
     gModeChosen = 0;
     memcpy(outBuf, tempBuf0, 16);
     if(bestError == 0.0) {
@@ -1680,11 +1687,18 @@ namespace BC7C
     }
 
     const float *w = BC7C::GetErrorMetric();
+
     const double err1 = 0.0001 + c.QuantizedError(Min, Max, 8, 0xFFFCFCFC, RGBAVector(w[0], w[1], w[2], w[3]));
-    gModeEstimate[1] = min(gModeEstimate[1], err1);
+    if(err1 >= 0.0)
+      gModeEstimate[1] = err1;
+    else
+      gModeEstimate[1] = min(gModeEstimate[1], err1);
 
     const double err3 = 0.0001 + c.QuantizedError(Min, Max, 8, 0xFFFEFEFE, RGBAVector(w[0], w[1], w[2], w[3]));
-    gModeEstimate[3] = min(gModeEstimate[3], err3);
+    if(err3 >= 0.0)
+      gModeEstimate[3] = err3;
+    else
+      gModeEstimate[3] = min(gModeEstimate[3], err3);
 
     return min(err1, err3);
   }
@@ -1700,10 +1714,16 @@ namespace BC7C
 
     const float *w = BC7C::GetErrorMetric();
     const double err0 = 0.0001 + c.QuantizedError(Min, Max, 4, 0xFFF0F0F0, RGBAVector(w[0], w[1], w[2], w[3]));
-    gModeEstimate[0] = min(gModeEstimate[0], err0);
+    if(err0 >= 0.0)
+      gModeEstimate[0] = err0;
+    else
+      gModeEstimate[0] = min(gModeEstimate[0], err0);
 
     const double err2 = 0.0001 + c.QuantizedError(Min, Max, 4, 0xFFF8F8F8, RGBAVector(w[0], w[1], w[2], w[3]));
-    gModeEstimate[2] = min(gModeEstimate[2], err2);
+    if(err2 >= 0.0)
+      gModeEstimate[2] = err2;
+    else
+      gModeEstimate[2] = min(gModeEstimate[2], err2);
 
     return min(err0, err2);
   }
@@ -1740,7 +1760,7 @@ namespace BC7C
       // reset global variables...
       gBestMode = 0;
       for(int i = 0; i < BC7CompressionMode::kNumModes; i++){
-	gModeError[i] = gModeEstimate[i] = DBL_MAX;
+	gModeError[i] = gModeEstimate[i] = -1.0;
       }
 
       blockIdx = statManager->BeginBlock();
@@ -1832,9 +1852,6 @@ namespace BC7C
 
         if(statManager) {
           BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 2);
-          statManager->AddStat(blockIdx, s);
-
-          s = BlockStat(kBlockStatString[eBlockStat_Mode], gBestMode);
           statManager->AddStat(blockIdx, s);
         }
         return;
