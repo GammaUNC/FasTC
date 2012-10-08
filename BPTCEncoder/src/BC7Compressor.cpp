@@ -1404,7 +1404,8 @@ namespace BC7C
 
   // Function prototypes
   static void ExtractBlock(const uint8* inPtr, int width, uint32* colorBlock);
-  static void CompressBC7Block(const uint32 *block, uint8 *outBuf, BlockStatManager *statManager);
+  static void CompressBC7Block(const uint32 *block, uint8 *outBuf);
+  static void CompressBC7Block(const uint32 *block, uint8 *outBuf, BlockStatManager &statManager);
 
   static int gQualityLevel = 50;
   void SetQualityLevel(int q) {
@@ -1490,7 +1491,7 @@ namespace BC7C
       for(int i = 0; i < width; i += 4)
       {
         // ExtractBlock(inBuf + i * 4, width, block);
-        CompressBC7Block((const uint32 *)inBuf, outBuf, NULL);
+        CompressBC7Block((const uint32 *)inBuf, outBuf);
         BC7CompressionMode::NumUses[gBestMode]++;
 
 #ifndef NDEBUG
@@ -1531,7 +1532,7 @@ namespace BC7C
       for(int i = 0; i < width; i += 4)
       {
         // ExtractBlock(inBuf + i * 4, width, block);
-        CompressBC7Block((const uint32 *)inBuf, outBuf, &statManager);
+        CompressBC7Block((const uint32 *)inBuf, outBuf, statManager);
         BC7CompressionMode::NumUses[gBestMode]++;
 
 #ifndef NDEBUG
@@ -1688,7 +1689,207 @@ namespace BC7C
     assert(!(clusters[0].GetPointBitString() & clusters[2].GetPointBitString()));
   }
 
-  static double EstimateTwoClusterError(RGBACluster &c, double (&estimates)[2]) {
+  static double EstimateTwoClusterError(RGBACluster &c) {
+    RGBAVector Min, Max, v;
+    c.GetBoundingBox(Min, Max);
+    v = Max - Min;
+    if(v * v == 0) {
+      return 0.0;
+    }
+
+    const float *w = BC7C::GetErrorMetric();
+
+    double error = 0.0001;
+#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
+    double eigOne = c.GetPrincipalEigenvalue();
+    double eigTwo = c.GetSecondEigenvalue();
+    if(eigOne != 0.0) {
+      error += eigTwo / eigOne;
+    }
+    else {
+      error += 1.0;
+    }
+#else
+    error += c.QuantizedError(Min, Max, 4, 0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
+#endif
+    return error;
+  }
+
+  static double EstimateThreeClusterError(RGBACluster &c) {
+    RGBAVector Min, Max, v;
+    c.GetBoundingBox(Min, Max);
+    v = Max - Min;
+    if(v * v == 0) {
+      return 0.0;
+    }
+
+    const float *w = BC7C::GetErrorMetric();
+
+    double error = 0.0001;
+#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
+    double eigOne = c.GetPrincipalEigenvalue();
+    double eigTwo = c.GetSecondEigenvalue();
+
+    //    printf("EigOne: %08.3f\tEigTwo: %08.3f\n", eigOne, eigTwo);
+    if(eigOne != 0.0) {
+      error += eigTwo / eigOne;
+    }
+    else {
+      error += 1.0;
+    }
+#else
+    error += c.QuantizedError(Min, Max, 4, 0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
+#endif
+    return error;
+  }
+
+  static void CompressBC7Block(const uint32 *block, uint8 *outBuf) {
+
+    // All a single color?
+    if(AllOneColor(block)) {
+      BitStream bStrm(outBuf, 128, 0);
+      CompressOptimalColorBC7(*block, bStrm);
+      return;
+    }
+
+    RGBACluster blockCluster;
+    bool opaque = true;
+    bool transparent = true;
+
+    for(int i = 0; i < kMaxNumDataPoints; i++) {
+      RGBAVector p = RGBAVector(i, block[i]);
+      blockCluster.AddPoint(p);
+      if(fabs(p.a - 255.0f) > 1e-10)
+        opaque = false;
+
+      if(p.a > 0.0f)
+        transparent = false;
+    }
+
+    // The whole block is transparent?
+    if(transparent) {
+      BitStream bStrm(outBuf, 128, 0);
+      WriteTransparentBlock(bStrm);
+      return;
+    }
+
+    // First we must figure out which shape to use. To do this, simply
+    // see which shape has the smallest sum of minimum bounding spheres.
+    double bestError[2] = { DBL_MAX, DBL_MAX };
+    int bestShapeIdx[2] = { -1, -1 };
+    RGBACluster bestClusters[2][3];
+
+    for(int i = 0; i < kNumShapes2; i++) 
+    {
+      RGBACluster clusters[2];
+      PopulateTwoClustersForShape(blockCluster, i, clusters);
+
+      double err = 0.0;
+      for(int ci = 0; ci < 2; ci++) {
+        err += EstimateTwoClusterError(clusters[ci]);
+      }
+
+      // If it's small, we'll take it!
+      if(err < 1e-9) {
+        CompressTwoClusters(i, clusters, outBuf, opaque);
+        return;
+      }
+      
+      if(err < bestError[0]) {
+        bestError[0] = err;
+        bestShapeIdx[0] = i;
+        bestClusters[0][0] = clusters[0];
+        bestClusters[0][1] = clusters[1];
+      }
+    }
+
+    // There are not 3 subset blocks that support alpha, so only check these
+    // if the entire block is opaque.
+    if(opaque) {
+      for(int i = 0; i < kNumShapes3; i++) {
+
+        RGBACluster clusters[3];
+        PopulateThreeClustersForShape(blockCluster, i, clusters);
+
+        double err = 0.0;
+        for(int ci = 0; ci < 3; ci++) {
+          err += EstimateThreeClusterError(clusters[ci]);
+        }
+
+        // If it's small, we'll take it!
+        if(err < 1e-9) {
+          CompressThreeClusters(i, clusters, outBuf, opaque);
+          return;
+        }
+
+        if(err < bestError[1]) {
+          bestError[1] = err;
+          bestShapeIdx[1] = i;
+          bestClusters[1][0] = clusters[0];
+          bestClusters[1][1] = clusters[1];
+          bestClusters[1][2] = clusters[2];
+        }
+      }
+    }
+                
+    uint8 tempBuf1[16], tempBuf2[16];
+
+    BitStream tempStream1 (tempBuf1, 128, 0);
+    BC7CompressionMode compressor(6, opaque);
+    double best = compressor.Compress(tempStream1, 0, &blockCluster);
+    if(best == 0.0f) {
+      memcpy(outBuf, tempBuf1, 16);
+      return;
+    }
+
+    // Check modes 4 and 5 if the block isn't opaque...
+    if(!opaque) {
+      for(int mode = 4; mode <= 5; mode++) {
+
+        BitStream tempStream2(tempBuf2, 128, 0);
+        BC7CompressionMode compressorTry(mode, opaque);
+
+        double error = compressorTry.Compress(tempStream2, 0, &blockCluster);
+        if(error < best) {
+
+          best = error;
+
+          if(best == 0.0f) {
+            memcpy(outBuf, tempBuf2, 16);
+            return;
+          }
+          else {
+            memcpy(tempBuf1, tempBuf2, 16);
+          }
+        }
+      }
+    }
+
+    double error = CompressTwoClusters(bestShapeIdx[0], bestClusters[0], tempBuf2, opaque);
+    if(error < best) {
+
+      best = error;
+      if(error == 0.0f) {
+        memcpy(outBuf, tempBuf2, 16);
+        return;
+      }
+      else {
+        memcpy(tempBuf1, tempBuf2, 16);
+      }
+    }
+
+    if(opaque) {
+      if(CompressThreeClusters(bestShapeIdx[1], bestClusters[1], tempBuf2, opaque) < best) {
+
+        memcpy(outBuf, tempBuf2, 16);
+        return;
+      }
+    }
+
+    memcpy(outBuf, tempBuf1, 16);
+  }
+
+  static double EstimateTwoClusterErrorStats(RGBACluster &c, double (&estimates)[2]) {
     RGBAVector Min, Max, v;
     c.GetBoundingBox(Min, Max);
     v = Max - Min;
@@ -1727,7 +1928,7 @@ namespace BC7C
     return error;
   }
 
-  static double EstimateThreeClusterError(RGBACluster &c, double (&estimates)[2]) {
+  static double EstimateThreeClusterErrorStats(RGBACluster &c, double (&estimates)[2]) {
     RGBAVector Min, Max, v;
     c.GetBoundingBox(Min, Max);
     v = Max - Min;
@@ -1775,46 +1976,41 @@ namespace BC7C
     }
   }
 
-  // Compress a single block.
-  static void CompressBC7Block(const uint32 *block, uint8 *outBuf, BlockStatManager *statManager) {
+  // Compress a single block but collect statistics as well...
+  static void CompressBC7Block(const uint32 *block, uint8 *outBuf, BlockStatManager &statManager) {
 
     class RAIIStatSaver {
     private:
       uint32 m_BlockIdx;
-      BlockStatManager *m_BSM;
+      BlockStatManager &m_BSM;
     public:
-      RAIIStatSaver(uint32 blockIdx, BlockStatManager *m) : m_BlockIdx(blockIdx), m_BSM(m) { }
+      RAIIStatSaver(uint32 blockIdx, BlockStatManager &m) : m_BlockIdx(blockIdx), m_BSM(m) { }
       ~RAIIStatSaver() {
-	if(!m_BSM)
-	  return;
 
 	BlockStat s (kBlockStatString[eBlockStat_Mode], gBestMode);
-	m_BSM->AddStat(m_BlockIdx, s);
+	m_BSM.AddStat(m_BlockIdx, s);
 
 	for(int i = 0; i < BC7CompressionMode::kNumModes; i++) {
 	  s = BlockStat(kBlockStatString[eBlockStat_ModeZeroEstimate + i], gModeEstimate[i]);
-	  m_BSM->AddStat(m_BlockIdx, s);
+	  m_BSM.AddStat(m_BlockIdx, s);
 
 	  s = BlockStat(kBlockStatString[eBlockStat_ModeZeroError + i], gModeError[i]);
-	  m_BSM->AddStat(m_BlockIdx, s);	  
+	  m_BSM.AddStat(m_BlockIdx, s);	  
 	}
       }
     };
 
     uint32 blockIdx = 0;
-    if(statManager) {
+    // reset global variables...
+    gBestMode = 0;
+    for(int i = 0; i < BC7CompressionMode::kNumModes; i++){
+      gModeError[i] = gModeEstimate[i] = -1.0;
+    }
 
-      // reset global variables...
-      gBestMode = 0;
-      for(int i = 0; i < BC7CompressionMode::kNumModes; i++){
-	gModeError[i] = gModeEstimate[i] = -1.0;
-      }
+    blockIdx = statManager.BeginBlock();
 
-      blockIdx = statManager->BeginBlock();
-
-      for(int i = 0; i < kNumBlockStats; i++) {
-       statManager->AddStat(blockIdx, BlockStat(kBlockStatString[i], 0));
-      }
+    for(int i = 0; i < kNumBlockStats; i++) {
+      statManager.AddStat(blockIdx, BlockStat(kBlockStatString[i], 0));
     }
 
     RAIIStatSaver __statsaver__(blockIdx, statManager);
@@ -1825,10 +2021,8 @@ namespace BC7C
       CompressOptimalColorBC7(*block, bStrm);
       gBestMode = 5;
       
-      if(statManager) {
-        BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 0);
-        statManager->AddStat(blockIdx, s);
-      }
+      BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 0);
+      statManager.AddStat(blockIdx, s);
 
       return;
     }
@@ -1853,10 +2047,8 @@ namespace BC7C
       WriteTransparentBlock(bStrm);
       gBestMode = 6;
 
-      if(statManager) {
-        BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 1);
-        statManager->AddStat(blockIdx, s);
-      }
+      BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 1);
+      statManager.AddStat(blockIdx, s);
 
       return;
     }
@@ -1876,20 +2068,18 @@ namespace BC7C
 	UpdateErrorEstimate(6, err);
 
 #ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-	if(statManager) {
-	  double eigOne = blockCluster.GetPrincipalEigenvalue();
-	  double eigTwo = blockCluster.GetSecondEigenvalue();
-	  double error;
-	  if(eigOne != 0.0) {
-	    error = eigTwo / eigOne;
-	  }
-	  else {
-	    error = 1.0;
-	  }
-
-	  BlockStat s (kBlockStatString[eBlockStat_SingleShapeEstimate], error);
-	  statManager->AddStat(blockIdx, s);
+	double eigOne = blockCluster.GetPrincipalEigenvalue();
+	double eigTwo = blockCluster.GetSecondEigenvalue();
+	double error;
+	if(eigOne != 0.0) {
+	  error = eigTwo / eigOne;
 	}
+	else {
+	  error = 1.0;
+	}
+
+	BlockStat s (kBlockStatString[eBlockStat_SingleShapeEstimate], error);
+	statManager.AddStat(blockIdx, s);
 #endif
       }
     }
@@ -1910,7 +2100,7 @@ namespace BC7C
       double errEstimate[2] = { -1.0, -1.0 };
       for(int ci = 0; ci < 2; ci++) {
 	double shapeEstimate[2] = { -1.0, -1.0 };
-        err += EstimateTwoClusterError(clusters[ci], shapeEstimate);
+        err += EstimateTwoClusterErrorStats(clusters[ci], shapeEstimate);
 
 	for(int ei = 0; ei < 2; ei++) {
 	  if(shapeEstimate[ei] >= 0.0) {
@@ -1936,9 +2126,9 @@ namespace BC7C
 	UpdateErrorEstimate(3, errEstimate[1]);
       }
 
-      if(statManager && err < bestError[0]) {
+      if(err < bestError[0]) {
 	BlockStat s = BlockStat(kBlockStatString[eBlockStat_TwoShapeEstimate], err);
-        statManager->AddStat(blockIdx, s);	
+        statManager.AddStat(blockIdx, s);	
       }
 
       // If it's small, we'll take it!
@@ -1946,10 +2136,8 @@ namespace BC7C
         CompressTwoClusters(i, clusters, outBuf, opaque);
         gBestMode = gModeChosen;
 
-        if(statManager) {
-          BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 2);
-          statManager->AddStat(blockIdx, s);
-        }
+        BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 2);
+        statManager.AddStat(blockIdx, s);
         return;
       }
       
@@ -1973,7 +2161,7 @@ namespace BC7C
 	double errEstimate[2] = { -1.0, -1.0 };
 	for(int ci = 0; ci < 3; ci++) {
 	  double shapeEstimate[2] = { -1.0, -1.0 };
-          err += EstimateThreeClusterError(clusters[ci], shapeEstimate);
+          err += EstimateThreeClusterErrorStats(clusters[ci], shapeEstimate);
 
 	  for(int ei = 0; ei < 2; ei++) {
 	    if(shapeEstimate[ei] >= 0.0) {
@@ -1999,9 +2187,9 @@ namespace BC7C
 	  UpdateErrorEstimate(2, errEstimate[1]);
 	}
 
-	if(statManager && err < bestError[1]) {
+	if(err < bestError[1]) {
 	  BlockStat s = BlockStat(kBlockStatString[eBlockStat_ThreeShapeEstimate], err);
-	  statManager->AddStat(blockIdx, s);	
+	  statManager.AddStat(blockIdx, s);	
 	}
 
         // If it's small, we'll take it!
@@ -2009,10 +2197,8 @@ namespace BC7C
           CompressThreeClusters(i, clusters, outBuf, opaque);
           gBestMode = gModeChosen;
 
-          if(statManager) {
-            BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 2);
-            statManager->AddStat(blockIdx, s);
-          }
+          BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 2);
+          statManager.AddStat(blockIdx, s);
 
           return;
         }
@@ -2027,10 +2213,8 @@ namespace BC7C
       }
     }
                 
-    if(statManager) {
-      BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 3);
-      statManager->AddStat(blockIdx, s);
-    }
+    BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 3);
+    statManager.AddStat(blockIdx, s);
 
     uint8 tempBuf1[16], tempBuf2[16];
 
