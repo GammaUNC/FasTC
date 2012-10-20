@@ -116,8 +116,6 @@ int main(int argc, char **argv) {
     return 1;
 	}
 
-  const Image *img = file.GetImage();
-
   int numBlocks = (img->GetWidth() * img->GetHeight())/16;
   BlockStatManager *statManager = NULL;
   if(bSaveLog) {
