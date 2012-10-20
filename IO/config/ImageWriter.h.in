@@ -35,11 +35,13 @@ class ImageWriter {
   uint32 GetWidth() const { return m_Width; }
   uint32 GetHeight() const { return m_Height; }
   uint32 GetImageDataSz() const { return m_Width * m_Height * 4; }
-	uint32 GetRawImageDataSz() const { return m_RawFileDataSz; }
-	uint8 *GetRawImageData() const { return m_RawFileData; }
+	uint32 GetRawFileDataSz() const { return m_RawFileDataSz; }
+	uint8 *GetRawFileData() const { return m_RawFileData; }
   virtual bool WriteImage() = 0;
 };
 
+#ifndef PNG_FOUND
 #cmakedefine PNG_FOUND
+#endif // PNG_FOUND
 
 #endif // _IMAGE_LOADER_H_

@@ -6,6 +6,7 @@
 #include <limits.h>
 #include <assert.h>
 
+#include "ImageWriter.h"
 #include "ImageLoader.h"
 #include "CompressedImage.h"
 #include "Image.h"
@@ -13,6 +14,7 @@
 
 #ifdef PNG_FOUND
 #  include "ImageLoaderPNG.h"
+#  include "ImageWriterPNG.h"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -84,6 +86,39 @@ bool ImageFile::Load() {
 
 	return m_Image != NULL;
 }
+
+bool ImageFile::Write() {
+
+	ImageWriter *writer = NULL;
+  switch(m_FileFormat) {
+
+#ifdef PNG_FOUND
+    case eFileFormat_PNG:
+      {
+				writer = new ImageWriterPNG(*m_Image);
+      }
+      break;
+#endif // PNG_FOUND
+
+    default:
+      fprintf(stderr, "Unable to write image: unknown file format.\n");
+      return false;
+  }
+
+	if(NULL == writer)
+		return false;
+
+	if(!writer->WriteImage()) {
+		delete writer;
+		return false;
+	}
+
+	WriteImageDataToFile(writer->GetRawFileData(), writer->GetRawFileDataSz(), m_Filename);
+
+	delete writer;
+	return true;
+}
+
 Image *ImageFile::LoadImage(const unsigned char *rawImageData) const {
 
   ImageLoader *loader = NULL;
@@ -175,3 +210,16 @@ unsigned char *ImageFile::ReadFileData(const CHAR *filename) {
   return rawData;
 }
 
+bool ImageFile::WriteImageDataToFile(const uint8 *data, const uint32 dataSz, const CHAR *filename) {
+	
+	// Open a file stream and write out the data...
+	FileStream fstr (filename, eFileMode_WriteBinary);
+  if(fstr.Tell() < 0) {
+    fprintf(stderr, "Error opening file for reading: %s\n", filename);
+    return 0;
+  }
+
+	fstr.Write(data, dataSz);
+	fstr.Flush();
+	return true;
+}

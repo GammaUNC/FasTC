@@ -8,7 +8,7 @@ class Image;
 class ImageWriterPNG : public ImageWriter {
  public:
   ImageWriterPNG(const Image &);
-  virtual ~ImageWriterPNG();
+  virtual ~ImageWriterPNG() { }
 
   virtual bool WriteImage();
  private:
