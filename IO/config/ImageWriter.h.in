@@ -1,0 +1,45 @@
+#ifndef _IMAGE_WRITER_H_
+#define _IMAGE_WRITER_H_
+
+#include "ImageFileFormat.h"
+#include "TexCompTypes.h"
+
+class ImageWriter {
+
+ protected:
+
+  uint32 m_Width;
+  uint32 m_Height;
+
+  const uint8 *m_PixelData;
+	uint32 m_RawFileDataSz;
+	uint8 *m_RawFileData;
+
+  ImageWriter(const int width, const int height, const uint8 *rawData) 
+  : m_PixelData(rawData)
+  , m_Width(width), m_Height(height)
+	, m_RawFileDataSz(256)
+	, m_RawFileData(new uint8[m_RawFileDataSz])
+    { }
+
+  uint32 GetChannelForPixel(uint32 x, uint32 y, uint32 ch);
+
+ public:
+  virtual ~ImageWriter() {
+		if(m_RawFileData) {
+			delete m_RawFileData;
+			m_RawFileData = 0;
+		}
+  }
+
+  uint32 GetWidth() const { return m_Width; }
+  uint32 GetHeight() const { return m_Height; }
+  uint32 GetImageDataSz() const { return m_Width * m_Height * 4; }
+	uint32 GetRawImageDataSz() const { return m_RawFileDataSz; }
+	uint8 *GetRawImageData() const { return m_RawFileData; }
+  virtual bool WriteImage() = 0;
+};
+
+#cmakedefine PNG_FOUND
+
+#endif // _IMAGE_LOADER_H_
