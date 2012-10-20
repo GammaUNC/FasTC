@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Error compressing image!\n");
     return 1;
   }
-  
+
   double PSNR = img->ComputePSNR(*ci);
   if(PSNR > 0.0) {
     fprintf(stdout, "PSNR: %.3f\n", PSNR);
@@ -148,6 +148,10 @@ int main(int argc, char **argv) {
   if(bSaveLog) {
     statManager->ToFile(strcat(argv[fileArg], ".log"));
   }
+
+	Image cImg (*ci);
+	ImageFile cImgFile (strcat(argv[fileArg], "-bc7.png"), eFileFormat_PNG, cImg);
+	cImgFile.Write();
 
   // Cleanup 
   delete ci;
