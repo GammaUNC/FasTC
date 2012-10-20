@@ -28,6 +28,9 @@ class CompressedImage {
     const unsigned char *data
   );
 
+	unsigned int GetHeight() const { return m_Height; }
+	unsigned int GetWidth() const { return m_Width; }
+
   CompressedImage( const CompressedImage &other );
   ~CompressedImage();
 

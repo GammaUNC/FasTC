@@ -11,6 +11,7 @@ class ImageLoader;
 class Image {
 
  public:
+	Image(const CompressedImage &);
   Image(const ImageLoader &);
   const uint8 *RawData() const { return m_PixelData; }
 

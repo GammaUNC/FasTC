@@ -16,6 +16,7 @@ public:
 
   ImageFile(const char *filename);
   ImageFile(const char *filename, EImageFileFormat format);
+	ImageFile(const char *filename, EImageFileFormat format, const Image &);
   ~ImageFile();
 
   unsigned int GetWidth() const { return m_Width; }
@@ -23,7 +24,12 @@ public:
   CompressedImage *Compress(const SCompressionSettings &) const;
   Image *GetImage() const { return m_Image; }
 
+	bool Load();
+	bool Write();
+
  private:
+	static const unsigned int kMaxFilenameSz = 256;
+	char m_Filename[kMaxFilenameSz];
   unsigned int m_Handle;
   unsigned int m_Width;
   unsigned int m_Height;

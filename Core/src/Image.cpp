@@ -12,6 +12,17 @@ static inline T sad( const T &a, const T &b ) {
   return (a > b)? a - b : b - a;
 }
 
+Image::Image(const CompressedImage &ci) {
+	unsigned int bufSz = ci.GetWidth() * ci.GetHeight() * 4;
+	m_PixelData = new uint8[ bufSz ];
+	if(!m_PixelData) { fprintf(stderr, "%s\n", "Out of memory!"); return; }
+
+	if(!ci.DecompressImage(m_PixelData, bufSz)) {
+		fprintf(stderr, "Error decompressing image!\n");
+		return;
+	}
+}
+
 Image::Image(const ImageLoader &loader) 
   : m_PixelData(0)
   , m_Width(loader.GetWidth())

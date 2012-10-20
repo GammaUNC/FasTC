@@ -44,23 +44,22 @@ static inline T min(const T &a, const T &b) {
 ImageFile::ImageFile(const CHAR *filename)
   : m_FileFormat(  DetectFileFormat(filename) )
   , m_Image(NULL)
-{
-  unsigned char *rawData = ReadFileData(filename);
-  if(rawData) {
-    m_Image = LoadImage(rawData);
-    delete [] rawData;
-  }
+{ 
+	strncpy(m_Filename, filename, kMaxFilenameSz);
 }
 
 ImageFile::ImageFile(const CHAR *filename, EImageFileFormat format)
   : m_FileFormat(format)
   , m_Image(NULL)
+{ 
+	strncpy(m_Filename, filename, kMaxFilenameSz);
+}
+
+ImageFile::ImageFile(const char *filename, EImageFileFormat format, const Image &image)
+	: m_FileFormat(format)
+	, m_Image(new Image(image))
 {
-  unsigned char *rawData = ReadFileData(filename);
-  if(rawData) {
-    m_Image = LoadImage(rawData);
-    delete [] rawData;
-  }
+	strncpy(m_Filename, filename, kMaxFilenameSz);
 }
 
 ImageFile::~ImageFile() { 
@@ -70,6 +69,21 @@ ImageFile::~ImageFile() {
   }
 }
 
+bool ImageFile::Load() {
+
+	if(m_Image) {
+		delete m_Image;
+		m_Image = NULL;
+	}
+	
+	unsigned char *rawData = ReadFileData(m_Filename);
+  if(rawData) {
+    m_Image = LoadImage(rawData);
+    delete [] rawData;
+  }
+
+	return m_Image != NULL;
+}
 Image *ImageFile::LoadImage(const unsigned char *rawImageData) const {
 
   ImageLoader *loader = NULL;

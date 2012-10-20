@@ -110,8 +110,7 @@ int main(int argc, char **argv) {
   }
 
   ImageFile file (argv[fileArg]);
-  const Image *img = file.GetImage();
-  if(NULL == img) {
+	if(!file.Load()) {
     fprintf(stderr, "Error loading file: %s\n", argv[fileArg]);
     return 1;
 	}
