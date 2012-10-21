@@ -679,6 +679,7 @@ double BC7CompressionMode::OptimizeEndpointsForCluster(const RGBACluster &cluste
       bestPbitCombo = nPbitCombo;
       bestError = error;
 
+			lastVisitedState = 0;
       visitedStates[lastVisitedState].p1 = np1;
       visitedStates[lastVisitedState].p2 = np2; 
       visitedStates[lastVisitedState].pBitCombo = nPbitCombo;
@@ -925,7 +926,8 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
     const uint8 a2b = ::QuantizeChannel(uint8(a2), (((char)0x80) >> (GetAlphaChannelPrecision() - 1)));
 
     // Compute error
-    for(int i = 0; i < kMaxNumDataPoints; i++) {
+    alphaError = 0.0;
+		for(int i = 0; i < kMaxNumDataPoints; i++) {
 
       uint8 val = uint8(alphaVals[i]);
 
@@ -1737,7 +1739,7 @@ namespace BC7C
       error += 1.0;
     }
 #else
-    error += c.QuantizedError(Min, Max, 2, 0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
+    error += c.QuantizedError(Min, Max, 4, 0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
 #endif
     return error;
   }
