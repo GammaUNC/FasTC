@@ -140,8 +140,14 @@ uint8 QuantizeChannel(const uint8 val, const uint8 mask, const int pBit) {
 
 	// If the mask is all the bits, then we can just return the value.
 	if(mask == 0xFF) {
-		return val;
+          return val;
 	}
+
+        // Otherwise if the mask is no bits then we'll assume that they want
+        // all the bits ... this is only really relevant for alpha...
+        if(mask == 0x0) {
+          return 0xFF;
+        }
 
 	uint32 prec = CountBitsInMask(mask);
 	const uint32 step = 1 << (8 - prec);

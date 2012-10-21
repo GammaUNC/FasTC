@@ -111,8 +111,7 @@ private:
 	// If we handle alpha separately, then we will consider the alpha channel
 	// to be not used whenever we do any calculations...
 	int GetAlphaChannelPrecision() const { 
-		if(m_Attributes->hasRotation) return 0;
-		else return m_Attributes->alphaChannelPrecision;  
+          return m_Attributes->alphaChannelPrecision;  
 	}
 
 	RGBAVector GetErrorMetric() const {
@@ -130,12 +129,23 @@ private:
 
 	unsigned int GetQuantizationMask() const {	
 		const int maskSeed = 0x80000000;
-		return (
-			(maskSeed >> (24 + m_Attributes->colorChannelPrecision - 1) & 0xFF) |
-			(maskSeed >> (16 + m_Attributes->colorChannelPrecision - 1) & 0xFF00) |
-			(maskSeed >> (8 + m_Attributes->colorChannelPrecision - 1) & 0xFF0000) |
-			(maskSeed >> (GetAlphaChannelPrecision() - 1) & 0xFF000000)
-		);
+                const uint32 alphaPrec = GetAlphaChannelPrecision();
+                if(alphaPrec > 0) {
+                  return (
+                    (maskSeed >> (24 + m_Attributes->colorChannelPrecision - 1) & 0xFF) |
+                    (maskSeed >> (16 + m_Attributes->colorChannelPrecision - 1) & 0xFF00) |
+                    (maskSeed >> (8 + m_Attributes->colorChannelPrecision - 1) & 0xFF0000) |
+                    (maskSeed >> (GetAlphaChannelPrecision() - 1) & 0xFF000000)
+                  );
+                }
+                else {
+                  return (
+                    (maskSeed >> (24 + m_Attributes->colorChannelPrecision - 1) & 0xFF) |
+                    (maskSeed >> (16 + m_Attributes->colorChannelPrecision - 1) & 0xFF00) |
+                    (maskSeed >> (8 + m_Attributes->colorChannelPrecision - 1) & 0xFF0000) &
+                    (0x00FFFFFF)
+                  );
+                }
 	}
 
 	int GetNumPbitCombos() const {

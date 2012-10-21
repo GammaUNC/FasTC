@@ -1502,9 +1502,13 @@ namespace BC7C
         DecompressBC7Block(block, unComp);
         uint8* unCompData = (uint8 *)unComp;
 
-        int diffSum = 0;
-        for(int i = 0; i < 64; i++) {
-          diffSum += sad(unCompData[i], inBuf[i]);
+        double diffSum = 0.0;
+        for(int i = 0; i < 64; i+=4) {
+          double rdiff = sad(unCompData[i], inBuf[i]);
+          double gdiff = sad(unCompData[i+1], inBuf[i+1]);
+          double bdiff = sad(unCompData[i+2], inBuf[i+2]);
+          double adiff = sad(unCompData[i+3], inBuf[i+3]);
+          diffSum += (rdiff + gdiff + bdiff + adiff) * ((unCompData[i+3] + inBuf[i+3])*0.5);
         }
         double blockError = double(diffSum) / 64.0;
         if(blockError > 50.0) {
@@ -2320,9 +2324,16 @@ namespace BC7C
     uint32 ap = attrs->alphaChannelPrecision;
     const uint32 ash = 8 - ap;
 
-    for(uint32 i = 0; i < nSubsets; i++)
-    for(uint32 ep = 0; ep < 2; ep++) 
-      eps[i][ep][3] = strm.ReadBits(ap) << ash;
+    if(ap == 0) {
+      for(uint32 i = 0; i < nSubsets; i++)
+      for(uint32 ep = 0; ep < 2; ep++) 
+        eps[i][ep][3] = 0xFF;
+    }
+    else {
+      for(uint32 i = 0; i < nSubsets; i++)
+      for(uint32 ep = 0; ep < 2; ep++) 
+        eps[i][ep][3] = strm.ReadBits(ap) << ash;
+    }
 
     // Handle pbits
     switch(attrs->pbitType) {
@@ -2431,24 +2442,22 @@ namespace BC7C
       
       pixel = 0;
       for(int ch = 0; ch < 4; ch++) {
-        uint32 i0 = kBC7InterpolationValues[nBitsPerColor - 1][colorIndices[i]][0];
-        uint32 i1 = kBC7InterpolationValues[nBitsPerColor - 1][colorIndices[i]][1];
+        if(ch == 3 && nBitsPerAlpha > 0) {
+          uint32 i0 = kBC7InterpolationValues[nBitsPerAlpha - 1][alphaIndices[i]][0];
+          uint32 i1 = kBC7InterpolationValues[nBitsPerAlpha - 1][alphaIndices[i]][1];
 
-        const uint8 ip = (((uint32(eps[subset][0][ch]) * i0) + (uint32(eps[subset][1][ch]) * i1) + 32) >> 6) & 0xFF;
-        pixel |= ip << (8*ch);
+          const uint8 ip = (((uint32(eps[subset][0][3]) * i0) + (uint32(eps[subset][1][3]) * i1) + 32) >> 6) & 0xFF;
+          pixel |= ip << 24;
+        }
+        else {
+          uint32 i0 = kBC7InterpolationValues[nBitsPerColor - 1][colorIndices[i]][0];
+          uint32 i1 = kBC7InterpolationValues[nBitsPerColor - 1][colorIndices[i]][1];
+
+          const uint8 ip = (((uint32(eps[subset][0][ch]) * i0) + (uint32(eps[subset][1][ch]) * i1) + 32) >> 6) & 0xFF;
+          pixel |= ip << (8*ch);
+        }
       }
 
-      if(attrs->alphaChannelPrecision > 0) {
-        uint32 i0 = kBC7InterpolationValues[nBitsPerAlpha - 1][alphaIndices[i]][0];
-        uint32 i1 = kBC7InterpolationValues[nBitsPerAlpha - 1][alphaIndices[i]][1];
-
-        const uint8 ip = (((uint32(eps[subset][0][3]) * i0) + (uint32(eps[subset][1][3]) * i1) + 32) >> 6) & 0xFF;
-        pixel |= ip << 24;
-      }
-      else {
-        pixel |= 0xFF000000;
-      }
-      
       // Swap colors if necessary...
       uint8 *pb = (uint8 *)&pixel;
       switch(rotMode) {
