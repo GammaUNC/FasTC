@@ -11,6 +11,21 @@ void PrintUsage() {
    fprintf(stderr, "Usage: tc [-l] [-q <quality>] [-n <num>] [-simd] [-t <threads> [-j <jobs>]] <imagefile>\n");
 }
 
+void ExtractBasename(const char *filename, char *buf, int bufSz) {
+	int len = strlen(filename);
+	const char *end = filename + len;
+	while(--end != filename) {
+		if(*end == '.')
+		{
+			int numChars = end - filename + 1;
+			int toCopy = (numChars > bufSz)? bufSz : numChars;
+			memcpy(buf, filename, toCopy);
+			buf[toCopy - 1] = '\0';
+			return;
+		}
+	}
+}
+
 int main(int argc, char **argv) {
 
   int fileArg = 1;
@@ -109,6 +124,9 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+	char basename[256];
+	ExtractBasename(argv[fileArg], basename, 256);
+
   ImageFile file (argv[fileArg]);
 	if(!file.Load()) {
     fprintf(stderr, "Error loading file: %s\n", argv[fileArg]);
@@ -146,11 +164,11 @@ int main(int argc, char **argv) {
   }
 
   if(bSaveLog) {
-    statManager->ToFile(strcat(argv[fileArg], ".log"));
+    statManager->ToFile(strcat(basename, ".log"));
   }
 
 	Image cImg (*ci);
-	ImageFile cImgFile (strcat(argv[fileArg], "-bc7.png"), eFileFormat_PNG, cImg);
+	ImageFile cImgFile (strcat(basename, "-bc7.png"), eFileFormat_PNG, cImg);
 	cImgFile.Write();
 
   // Cleanup 
