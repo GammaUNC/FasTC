@@ -12,7 +12,10 @@ static inline T sad( const T &a, const T &b ) {
   return (a > b)? a - b : b - a;
 }
 
-Image::Image(const CompressedImage &ci) {
+Image::Image(const CompressedImage &ci) 
+  : m_Width(ci.GetWidth())
+  , m_Height(ci.GetHeight())
+{
 	unsigned int bufSz = ci.GetWidth() * ci.GetHeight() * 4;
 	m_PixelData = new uint8[ bufSz ];
 	if(!m_PixelData) { fprintf(stderr, "%s\n", "Out of memory!"); return; }
