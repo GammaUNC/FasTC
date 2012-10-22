@@ -80,15 +80,17 @@ double Image::ComputePSNR(const CompressedImage &ci) const {
     const unsigned char *pixelDataRaw = m_PixelData + i;
     const unsigned char *pixelDataUncomp = unCompData + i;
 
-    double dr = double(sad(pixelDataRaw[0], pixelDataUncomp[0])) * wr;
-    double dg = double(sad(pixelDataRaw[1], pixelDataUncomp[1])) * wg;
-    double db = double(sad(pixelDataRaw[2], pixelDataUncomp[2])) * wb;
-
+    double rawAlphaScale = double(pixelDataRaw[3]) / 255.0;
+    double uncompAlphaScale = double(pixelDataUncomp[3]) / 255.0;
+    double dr = double(sad(rawAlphaScale * pixelDataRaw[0], uncompAlphaScale * pixelDataUncomp[0])) * wr;
+    double dg = double(sad(rawAlphaScale * pixelDataRaw[1], uncompAlphaScale * pixelDataUncomp[1])) * wg;
+    double db = double(sad(rawAlphaScale * pixelDataRaw[2], uncompAlphaScale * pixelDataUncomp[2])) * wb;
+    
     const double pixelMSE = 
       (double(dr) * double(dr)) + 
       (double(dg) * double(dg)) + 
       (double(db) * double(db));
-
+    
     //fprintf(stderr, "Pixel MSE: %f\n", pixelMSE);
     MSE += pixelMSE;
   }
