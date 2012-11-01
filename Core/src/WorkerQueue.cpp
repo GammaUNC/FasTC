@@ -1,20 +1,11 @@
 #include "WorkerQueue.h"
 
-#include "BC7Compressor.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <algorithm>
 
-template <typename T>
-static inline T max(const T &a, const T &b) {
-  return (a > b)? a : b;
-}
-
-template <typename T>
-static inline T min(const T &a, const T &b) {
-  return (a < b)? a : b;
-}
+#include "BC7Compressor.h"
 
 template <typename T>
 static inline void clamp(T &x, const T &min, const T &max) {
@@ -36,7 +27,10 @@ void WorkerThread::operator()() {
   }
 
   CompressionFunc f = m_Parent->GetCompressionFunc();
-  if(!f) {
+  CompressionFuncWithStats fStat = m_Parent->GetCompressionFuncWithStats();
+  BlockStatManager *statManager = m_Parent->GetBlockStatManager();
+
+  if(!(f || (fStat && statManager))) {
     fprintf(stderr, "%s\n", "Illegal worker queue initialization -- compression func is NULL.");
     return;
   }
@@ -63,7 +57,11 @@ void WorkerThread::operator()() {
       {
 	const uint8 *src = m_Parent->GetSrcForThread(m_ThreadIdx);
 	uint8 *dst = m_Parent->GetDstForThread(m_ThreadIdx);
-	(*f)(src, dst, 4 * m_Parent->GetNumBlocksForThread(m_ThreadIdx), 4);
+	if(f)
+	  (*f)(src, dst, 4 * m_Parent->GetNumBlocksForThread(m_ThreadIdx), 4);
+	else
+	  (*fStat)(src, dst, 4 * m_Parent->GetNumBlocksForThread(m_ThreadIdx), 4, *statManager);
+
 	break;
       }
 
@@ -91,22 +89,57 @@ WorkerQueue::WorkerQueue(
   uint8 *outBuf
 )
   : m_NumCompressions(0)
-  , m_TotalNumCompressions(max(uint32(1), numCompressions))
+  , m_TotalNumCompressions(std::max(uint32(1), numCompressions))
   , m_NumThreads(numThreads)
   , m_WaitingThreads(0)
   , m_ActiveThreads(0)
-  , m_JobSize(max(uint32(1), jobSize))
+  , m_JobSize(std::max(uint32(1), jobSize))
   , m_InBufSz(inBufSz)
   , m_InBuf(inBuf)
   , m_OutBuf(outBuf)
   , m_NextBlock(0)
   , m_CompressionFunc(func)
+  , m_CompressionFuncWithStats(NULL)
+  , m_BlockStatManager(NULL)
 {
   clamp(m_NumThreads, uint32(1), uint32(kMaxNumWorkerThreads));
 
 #ifndef NDEBUG
   if(m_InBufSz % 64) {
-    fprintf(stderr, "WorkerQueue.cpp -- WARNING: InBufSz not a multiple of 64. Are you sure that your image dimensions are correct?");
+    fprintf(stderr, "WorkerQueue.cpp -- WARNING: InBufSz not a multiple of 64. Are you sure that your image dimensions are correct?\n");
+  }
+#endif
+}
+
+WorkerQueue::WorkerQueue(
+  uint32 numCompressions,
+  uint32 numThreads, 
+  uint32 jobSize,
+  const uint8 *inBuf, 
+  uint32 inBufSz, 
+  CompressionFuncWithStats func, 
+  BlockStatManager &blockStatManager,
+  uint8 *outBuf
+)
+  : m_NumCompressions(0)
+  , m_TotalNumCompressions(std::max(uint32(1), numCompressions))
+  , m_NumThreads(numThreads)
+  , m_WaitingThreads(0)
+  , m_ActiveThreads(0)
+  , m_JobSize(std::max(uint32(1), jobSize))
+  , m_InBufSz(inBufSz)
+  , m_InBuf(inBuf)
+  , m_OutBuf(outBuf)
+  , m_NextBlock(0)
+  , m_CompressionFunc(NULL)
+  , m_CompressionFuncWithStats(func)
+  , m_BlockStatManager(&blockStatManager)
+{
+  clamp(m_NumThreads, uint32(1), uint32(kMaxNumWorkerThreads));
+
+#ifndef NDEBUG
+  if(m_InBufSz % 64) {
+    fprintf(stderr, "WorkerQueue.cpp -- WARNING: InBufSz not a multiple of 64. Are you sure that your image dimensions are correct?\n");
   }
 #endif
 }
@@ -182,7 +215,7 @@ WorkerThread::EAction WorkerQueue::AcceptThreadData(uint32 threadIdx) {
   
   // The number of blocks to process is either the job size
   // or the number of blocks remaining.
-  int blocksProcessed = min(m_JobSize, totalBlocks - m_NextBlock);
+  int blocksProcessed = std::min(m_JobSize, totalBlocks - m_NextBlock);
   m_NumBlocks[threadIdx] = blocksProcessed;
 
   // Make sure the next block is updated.

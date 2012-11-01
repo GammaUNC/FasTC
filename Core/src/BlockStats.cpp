@@ -40,6 +40,22 @@ BlockStat &BlockStat::operator=(const BlockStat &other) {
   memcpy(this, &other, sizeof(*this));
 }
 
+void BlockStat::ToString(char *buf, int bufSz) const {
+  switch(m_Type) {
+    case BlockStat::eType_Float:
+      snprintf(buf, bufSz, "%s,%f", m_StatName, m_FloatStat);
+    break;
+
+    case BlockStat::eType_Int:
+      snprintf(buf, bufSz, "%s,%llu", m_StatName, m_IntStat);
+    break;
+
+    default:
+      assert(!"Unknown stat type!");
+    break;
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // BlockStat Manager Implementation
@@ -71,7 +87,7 @@ uint32 BlockStatManager::BeginBlock() {
     return m_NextBlock-1;
   }
 
-  TCLock lock(m_Mutex);
+  TCLock lock (m_Mutex);
   return m_NextBlock++;
 }
 
@@ -82,7 +98,36 @@ void BlockStatManager::AddStat(uint32 blockIdx, const BlockStat &stat) {
     return;
   }
 
+  TCLock lock (m_Mutex);
   m_BlockStatList[blockIdx].AddStat(stat);
+}
+
+void BlockStatManager::ToFile(const CHAR *filename) {
+  
+  FileStream fstr (filename, eFileMode_Write);
+
+  for(int i = 0; i < m_BlockStatListSz; i++) {
+    const BlockStatList *head = &(m_BlockStatList[i]);
+    while(head) {
+      BlockStat s = head->GetStat();
+
+      CHAR statStr[256];
+      s.ToString(statStr, 256);
+
+      CHAR str[256];
+      snprintf(str, 256, "%d,%s\n", i, statStr);
+      
+      int strLen = strlen(str);
+      if(strLen > 255) {
+	str[255] = '\n';
+	strLen = 256;
+      }
+ 
+      fstr.Write((uint8 *)str, strLen);
+
+      head = head->GetTail();
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -111,6 +156,7 @@ BlockStatManager::BlockStatList::~BlockStatList() {
 }
 
 void BlockStatManager::BlockStatList::AddStat(const BlockStat &stat) {
+
   if(strncmp(stat.m_StatName, m_Stat.m_StatName, BlockStat::kStatNameSz) == 0) {
     m_Stat = stat;
   }
@@ -125,41 +171,4 @@ void BlockStatManager::BlockStatList::AddStat(const BlockStat &stat) {
       m_Tail = new BlockStatList(stat);
     }
   }
-}
-
-void BlockStatManager::ToFile(const CHAR *filename) {
-  
-  FileStream fstr (filename, eFileMode_Write);
-
-  for(int i = 0; i < m_BlockStatListSz; i++) {
-    const BlockStatList *head = &(m_BlockStatList[i]);
-    while(head) {
-      BlockStat s = head->GetStat();
-
-      CHAR statStr[256];
-      switch(s.m_Type) {
-        case BlockStat::eType_Float:
-          snprintf(statStr, 256, "%d,%s,%f\n", i, s.m_StatName, s.m_FloatStat);
-        break;
-
-        case BlockStat::eType_Int:
-          snprintf(statStr, 256, "%d,%s,%llu\n", i, s.m_StatName, s.m_IntStat);
-        break;
-
-        default:
-          assert(false);
-        break;
-      }
-
-      int statStrLen = strlen(statStr);
-      if(statStrLen > 255) {
-        statStr[255] = '\n';
-        statStrLen = 256;
-      }
-      fstr.Write((uint8 *)statStr, statStrLen);
-
-      head = head->GetTail();
-    }
-  }
-
 }

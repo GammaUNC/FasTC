@@ -286,7 +286,6 @@ const uint32 kBC7InterpolationValues[4][16][2] = {
 };
 
 int BC7CompressionMode::MaxAnnealingIterations = 50; // This is a setting.
-int BC7CompressionMode::NumUses[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 BC7CompressionMode::Attributes BC7CompressionMode::kModeAttributes[kNumModes] = {
   { 0, 4, 3, 3, 0, 4, 0, false, false, BC7CompressionMode::ePBitType_NotShared },
@@ -1471,11 +1470,6 @@ namespace BC7C
     stream.WriteBits(kWMValues[gWMVal = (gWMVal+1) % kNumWMVals], 31); 
   }
 
-  static int gModeChosen = -1;
-  static int gBestMode = -1;
-  static double gModeEstimate[ BC7CompressionMode::kNumModes ];
-  static double gModeError[ BC7CompressionMode::kNumModes ];
-
   static void DecompressBC7Block(const uint8 block[16], uint32 outBuf[16]);
 
   // Compress an image using BC7 compression. Use the inBuf parameter to point to an image in
@@ -1485,7 +1479,6 @@ namespace BC7C
   void CompressImageBC7(const unsigned char *inBuf, unsigned char *outBuf, unsigned int width, unsigned int height)
   {
     uint32 block[16];
-    BC7CompressionMode::ResetNumUses();
     BC7CompressionMode::MaxAnnealingIterations = min(BC7CompressionMode::kMaxAnnealingIterations, GetQualityLevel());
 
     for(int j = 0; j < height; j += 4)
@@ -1494,7 +1487,6 @@ namespace BC7C
       {
         // ExtractBlock(inBuf + i * 4, width, block);
         CompressBC7Block((const uint32 *)inBuf, outBuf);
-        BC7CompressionMode::NumUses[gBestMode]++;
 
 #ifndef NDEBUG
         uint8 *block = (uint8 *)outBuf;
@@ -1530,7 +1522,6 @@ namespace BC7C
     BlockStatManager &statManager
   ) {
     uint32 block[16];
-    BC7CompressionMode::ResetNumUses();
     BC7CompressionMode::MaxAnnealingIterations = min(BC7CompressionMode::kMaxAnnealingIterations, GetQualityLevel());
 
     for(int j = 0; j < height; j += 4)
@@ -1539,7 +1530,6 @@ namespace BC7C
       {
         // ExtractBlock(inBuf + i * 4, width, block);
         CompressBC7Block((const uint32 *)inBuf, outBuf, statManager);
-        BC7CompressionMode::NumUses[gBestMode]++;
 
 #ifndef NDEBUG
         uint8 *block = (uint8 *)outBuf;
@@ -1574,16 +1564,25 @@ namespace BC7C
     }
   }
 
-  static double CompressTwoClusters(int shapeIdx, const RGBACluster *clusters, uint8 *outBuf, bool opaque) {
+  static double CompressTwoClusters(
+    int shapeIdx, 
+    const RGBACluster *clusters, 
+    uint8 *outBuf, 
+    bool opaque, 
+    double *errors = NULL,
+    int *modeChosen = NULL
+  ) {
 
     uint8 tempBuf1[16];
     BitStream tmpStream1(tempBuf1, 128, 0);
     BC7CompressionMode compressor1(1, opaque);
       
     double bestError = compressor1.Compress(tmpStream1, shapeIdx, clusters);
-    gModeError[1] = bestError;
+
+    if(errors) errors[1] = bestError;
+    if(modeChosen) *modeChosen = 1;
+
     memcpy(outBuf, tempBuf1, 16);
-    gModeChosen = 1;
     if(bestError == 0.0) {
       return 0.0;
     }
@@ -1593,9 +1592,9 @@ namespace BC7C
     BC7CompressionMode compressor3(3, opaque);
 
     double error = compressor3.Compress(tmpStream3, shapeIdx, clusters);
-    gModeError[3] = error;
+    if(errors) errors[3] = error;
     if(error < bestError) {
-      gModeChosen = 3;
+      if(modeChosen) *modeChosen = 3;
       bestError = error;
       memcpy(outBuf, tempBuf3, 16);
       if(bestError == 0.0) {
@@ -1610,10 +1609,10 @@ namespace BC7C
       BitStream tmpStream7(tempBuf7, 128, 0);
       BC7CompressionMode compressor7(7, opaque);    
       error = compressor7.Compress(tmpStream7, shapeIdx, clusters);
-      gModeError[7] = error;
+      if(errors) errors[7] = error;
       if(error < bestError) {
-        gModeChosen = 7;
-        memcpy(outBuf, tempBuf7, 16);
+	if(modeChosen) *modeChosen = 7;
+	memcpy(outBuf, tempBuf7, 16);
         return error;
       }
     }
@@ -1621,8 +1620,14 @@ namespace BC7C
     return bestError;
   }
 
-  static double CompressThreeClusters(int shapeIdx, const RGBACluster *clusters, uint8 *outBuf, bool opaque) {
-
+  static double CompressThreeClusters(
+    int shapeIdx, 
+    const RGBACluster *clusters, 
+    uint8 *outBuf, 
+    bool opaque, 
+    double *errors = NULL,
+    int *modeChosen = NULL
+  ) {
     uint8 tempBuf0[16];
     BitStream tmpStream0(tempBuf0, 128, 0);
 
@@ -1635,22 +1640,23 @@ namespace BC7C
     double error, bestError;
     if(shapeIdx < 16) {
       bestError = compressor0.Compress(tmpStream0, shapeIdx, clusters);
-      gModeError[0] = bestError;
+      if(errors) errors[0] = bestError;
     }
     else {
       bestError = DBL_MAX;
-      gModeError[0] = -1.0;
+      if(errors) errors[0] = -1.0;
     }
-    gModeChosen = 0;
+    
+    if(modeChosen) *modeChosen = 0;
     memcpy(outBuf, tempBuf0, 16);
     if(bestError == 0.0) {
       return 0.0;
     }
 
     error = compressor2.Compress(tmpStream2, shapeIdx, clusters);
-    gModeError[2] = error;
+    if(errors) errors[2] = error;
     if(error < bestError) {
-      gModeChosen = 2;
+      if(modeChosen) *modeChosen = 2;
       memcpy(outBuf, tempBuf2, 16);
       return error;
     }
@@ -1973,11 +1979,12 @@ namespace BC7C
     return error;
   }
 
-  static void UpdateErrorEstimate(uint32 mode, double est) {
+  static void UpdateErrorEstimate(double *estimates, uint32 mode, double est) {
+    assert(estimates);
     assert(mode >= 0);
     assert(mode < BC7CompressionMode::kNumModes);
-    if(gModeEstimate[mode] == -1.0 || est < gModeEstimate[mode]) {
-      gModeEstimate[mode] = est;
+    if(estimates[mode] == -1.0 || est < estimates[mode]) {
+      estimates[mode] = est;
     }
   }
 
@@ -1988,43 +1995,62 @@ namespace BC7C
     private:
       uint32 m_BlockIdx;
       BlockStatManager &m_BSM;
+
+      int *m_ModePtr;
+      double *m_Estimates;
+      double *m_Errors;
+
     public:
-      RAIIStatSaver(uint32 blockIdx, BlockStatManager &m) : m_BlockIdx(blockIdx), m_BSM(m) { }
+      RAIIStatSaver(uint32 blockIdx, BlockStatManager &m) : m_BlockIdx(blockIdx), m_BSM(m) 
+							  , m_ModePtr(NULL), m_Estimates(NULL), m_Errors(NULL) { }
+      void SetMode(int *modePtr) { m_ModePtr = modePtr; }
+      void SetEstimates(double *estimates) { m_Estimates = estimates; }
+      void SetErrors(double *errors) { m_Errors = errors; }
+
       ~RAIIStatSaver() {
 
-	BlockStat s (kBlockStatString[eBlockStat_Mode], gBestMode);
+	assert(m_ModePtr);
+	assert(m_Estimates);
+	assert(m_Errors);
+
+	BlockStat s (kBlockStatString[eBlockStat_Mode], *m_ModePtr);
 	m_BSM.AddStat(m_BlockIdx, s);
 
 	for(int i = 0; i < BC7CompressionMode::kNumModes; i++) {
-	  s = BlockStat(kBlockStatString[eBlockStat_ModeZeroEstimate + i], gModeEstimate[i]);
+	  s = BlockStat(kBlockStatString[eBlockStat_ModeZeroEstimate + i], m_Estimates[i]);
 	  m_BSM.AddStat(m_BlockIdx, s);
 
-	  s = BlockStat(kBlockStatString[eBlockStat_ModeZeroError + i], gModeError[i]);
+	  s = BlockStat(kBlockStatString[eBlockStat_ModeZeroError + i], m_Errors[i]);
 	  m_BSM.AddStat(m_BlockIdx, s);	  
 	}
       }
     };
 
-    uint32 blockIdx = 0;
+    int bestMode = 0;
+    double modeEstimate[BC7CompressionMode::kNumModes];
+    double modeError[BC7CompressionMode::kNumModes];
+
     // reset global variables...
-    gBestMode = 0;
+    bestMode = 0;
     for(int i = 0; i < BC7CompressionMode::kNumModes; i++){
-      gModeError[i] = gModeEstimate[i] = -1.0;
+      modeError[i] = modeEstimate[i] = -1.0;
     }
 
-    blockIdx = statManager.BeginBlock();
-
+    uint32 blockIdx = statManager.BeginBlock();
     for(int i = 0; i < kNumBlockStats; i++) {
       statManager.AddStat(blockIdx, BlockStat(kBlockStatString[i], 0));
     }
 
     RAIIStatSaver __statsaver__(blockIdx, statManager);
+    __statsaver__.SetMode(&bestMode);
+    __statsaver__.SetEstimates(modeEstimate);
+    __statsaver__.SetErrors(modeError);
 
     // All a single color?
     if(AllOneColor(block)) {
       BitStream bStrm(outBuf, 128, 0);
       CompressOptimalColorBC7(*block, bStrm);
-      gBestMode = 5;
+      bestMode = 5;
       
       BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 0);
       statManager.AddStat(blockIdx, s);
@@ -2050,7 +2076,7 @@ namespace BC7C
     if(transparent) {
       BitStream bStrm(outBuf, 128, 0);
       WriteTransparentBlock(bStrm);
-      gBestMode = 6;
+      bestMode = 6;
 
       BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 1);
       statManager.AddStat(blockIdx, s);
@@ -2065,12 +2091,12 @@ namespace BC7C
       blockCluster.GetBoundingBox(Min, Max);
       v = Max - Min;
       if(v * v == 0) {
-	gModeEstimate[6] = 0.0;
+	modeEstimate[6] = 0.0;
       }
       else {
 	const float *w = GetErrorMetric();
 	const double err = 0.0001 + blockCluster.QuantizedError(Min, Max, 4, 0xFEFEFEFE, RGBAVector(w[0], w[1], w[2], w[3]));
-	UpdateErrorEstimate(6, err);
+	UpdateErrorEstimate(modeEstimate, 6, err);
 
 #ifdef USE_PCA_FOR_SHAPE_ESTIMATION
 	double eigOne = blockCluster.GetPrincipalEigenvalue();
@@ -2124,11 +2150,11 @@ namespace BC7C
 #endif
 
       if(errEstimate[0] != -1.0) {
-	UpdateErrorEstimate(1, errEstimate[0]);
+	UpdateErrorEstimate(modeEstimate, 1, errEstimate[0]);
       }
 
       if(errEstimate[1] != -1.0) {
-	UpdateErrorEstimate(3, errEstimate[1]);
+	UpdateErrorEstimate(modeEstimate, 3, errEstimate[1]);
       }
 
       if(err < bestError[0]) {
@@ -2138,8 +2164,9 @@ namespace BC7C
 
       // If it's small, we'll take it!
       if(err < 1e-9) {
-        CompressTwoClusters(i, clusters, outBuf, opaque);
-        gBestMode = gModeChosen;
+	int modeChosen;
+        CompressTwoClusters(i, clusters, outBuf, opaque, modeError, &modeChosen);
+        bestMode = modeChosen;
 
         BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 2);
         statManager.AddStat(blockIdx, s);
@@ -2185,11 +2212,11 @@ namespace BC7C
 #endif
 
 	if(errEstimate[0] != -1.0) {
-	  UpdateErrorEstimate(0, errEstimate[0]);
+	  UpdateErrorEstimate(modeEstimate, 0, errEstimate[0]);
 	}
 	
 	if(errEstimate[1] != -1.0) {
-	  UpdateErrorEstimate(2, errEstimate[1]);
+	  UpdateErrorEstimate(modeEstimate, 2, errEstimate[1]);
 	}
 
 	if(err < bestError[1]) {
@@ -2199,8 +2226,9 @@ namespace BC7C
 
         // If it's small, we'll take it!
         if(err < 1e-9) {
-          CompressThreeClusters(i, clusters, outBuf, opaque);
-          gBestMode = gModeChosen;
+	  int modeChosen;
+          CompressThreeClusters(i, clusters, outBuf, opaque, modeError, &modeChosen);
+          bestMode = modeChosen;
 
           BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 2);
           statManager.AddStat(blockIdx, s);
@@ -2226,8 +2254,8 @@ namespace BC7C
     BitStream tempStream1 (tempBuf1, 128, 0);
     BC7CompressionMode compressor(6, opaque);
     double best = compressor.Compress(tempStream1, 0, &blockCluster); 
-    gModeError[6] = best;
-    gBestMode = 6;
+    modeError[6] = best;
+    bestMode = 6;
     if(best == 0.0f) {
       memcpy(outBuf, tempBuf1, 16);
       return;
@@ -2243,7 +2271,7 @@ namespace BC7C
         double error = compressorTry.Compress(tempStream2, 0, &blockCluster);
         if(error < best) {
 
-          gBestMode = mode;
+          bestMode = mode;
           best = error;
 
           if(best == 0.0f) {
@@ -2257,10 +2285,11 @@ namespace BC7C
       }
     }
 
-    double error = CompressTwoClusters(bestShapeIdx[0], bestClusters[0], tempBuf2, opaque);
+    int modeChosen;
+    double error = CompressTwoClusters(bestShapeIdx[0], bestClusters[0], tempBuf2, opaque, modeError, &modeChosen);
     if(error < best) {
 
-      gBestMode = gModeChosen;
+      bestMode = modeChosen;
       best = error;
       
       if(error == 0.0f) {
@@ -2273,9 +2302,9 @@ namespace BC7C
     }
 
     if(opaque) {
-      if(CompressThreeClusters(bestShapeIdx[1], bestClusters[1], tempBuf2, opaque) < best) {
+      if(CompressThreeClusters(bestShapeIdx[1], bestClusters[1], tempBuf2, opaque, modeError, &modeChosen) < best) {
 
-        gBestMode = gModeChosen;
+        bestMode = modeChosen;
         memcpy(outBuf, tempBuf2, 16);
         return;
       }

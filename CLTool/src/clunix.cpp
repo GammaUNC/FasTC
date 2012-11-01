@@ -113,12 +113,6 @@ int main(int argc, char **argv) {
 
   } while(knowArg && fileArg < argc);
 
-  if(numThreads > 1 && bSaveLog) {
-    bSaveLog = false;
-    fprintf(stderr, "WARNING: Will not save log because implementation is not thread safe.\n"
-	    "If you'd like, send a complaint to pavel@cs.unc.edu to get this done faster.\n");
-  }
-
   if(fileArg == argc) {
     PrintUsage();
     exit(1);

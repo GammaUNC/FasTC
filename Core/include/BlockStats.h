@@ -13,6 +13,8 @@ public:
 
   BlockStat(const BlockStat &);
   BlockStat &operator=(const BlockStat &);
+
+  void ToString(char *buf, int bufSz) const;
   
 private:
   const enum Type {

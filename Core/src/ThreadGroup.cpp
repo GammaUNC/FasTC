@@ -13,18 +13,25 @@ CmpThread::CmpThread()
   , m_Width(0)
   , m_Height(0)
   , m_CmpFunc(NULL)
+  , m_CmpFuncWithStats(NULL)
+  , m_StatManager(NULL)
   , m_OutBuf(NULL)
   , m_InBuf(NULL)
   , m_ParentExitFlag(NULL)
 { }
 
 void CmpThread::operator()() {
-  if(!m_CmpFunc || !m_OutBuf || !m_InBuf 
+  if(!m_OutBuf || !m_InBuf 
      || !m_ParentCounter || !m_ParentCounterLock || !m_FinishCV
      || !m_StartBarrier
      || !m_ParentExitFlag
   ) {
     fprintf(stderr, "Incorrect thread initialization.\n");
+    return;
+  }
+
+  if(!(m_CmpFunc || (m_CmpFuncWithStats && m_StatManager))) {
+    fprintf(stderr, "Incorrect thread function pointer.\n");
     return;
   }
 
@@ -36,7 +43,10 @@ void CmpThread::operator()() {
       return;
     }
 
-    (*m_CmpFunc)(m_InBuf, m_OutBuf, m_Width, m_Height);
+    if(m_CmpFunc)
+      (*m_CmpFunc)(m_InBuf, m_OutBuf, m_Width, m_Height);
+    else
+      (*m_CmpFuncWithStats)(m_InBuf, m_OutBuf, m_Width, m_Height, *m_StatManager);
 
     {
       TCLock lock(*m_ParentCounterLock);
@@ -47,19 +57,37 @@ void CmpThread::operator()() {
   }
 }
 
-
 ThreadGroup::ThreadGroup( int numThreads, const unsigned char *inBuf, unsigned int inBufSz, CompressionFunc func, unsigned char *outBuf )
   : m_StartBarrier(new TCBarrier(numThreads + 1))
   , m_FinishMutex(new TCMutex())
   , m_FinishCV(new TCConditionVariable())
   , m_NumThreads(numThreads)
   , m_ActiveThreads(0)
-  , m_Func(func)
   , m_ImageDataSz(inBufSz)
   , m_ImageData(inBuf)
   , m_OutBuf(outBuf)
   , m_ThreadState(eThreadState_Done)
   , m_ExitFlag(false)
+  , m_CompressedBlockSize(
+       (func == BC7C::CompressImageBC7 
+#ifdef HAS_SSE_41
+	|| func == BC7C::CompressImageBC7SIMD
+#endif
+       )? 
+         16 
+       : 
+         0
+  )
+  , m_UncompressedBlockSize(
+       (func == BC7C::CompressImageBC7 
+#ifdef HAS_SSE_41
+	|| func == BC7C::CompressImageBC7SIMD
+#endif
+       )? 
+         64 
+       : 
+         0
+  )
 { 
   for(int i = 0; i < kMaxNumThreads; i++) {
     // Thread synchronization primitives
@@ -68,6 +96,50 @@ ThreadGroup::ThreadGroup( int numThreads, const unsigned char *inBuf, unsigned i
     m_Threads[i].m_ParentCounter = &m_ThreadsFinished;
     m_Threads[i].m_StartBarrier = m_StartBarrier;
     m_Threads[i].m_ParentExitFlag = &m_ExitFlag;
+    m_Threads[i].m_CmpFunc = func;
+  }
+}
+
+ThreadGroup::ThreadGroup( 
+  int numThreads, 
+  const unsigned char *inBuf, 
+  unsigned int inBufSz, 
+  CompressionFuncWithStats func, 
+  BlockStatManager &statManager,
+  unsigned char *outBuf 
+)
+  : m_StartBarrier(new TCBarrier(numThreads + 1))
+  , m_FinishMutex(new TCMutex())
+  , m_FinishCV(new TCConditionVariable())
+  , m_NumThreads(numThreads)
+  , m_ActiveThreads(0)
+  , m_ImageDataSz(inBufSz)
+  , m_ImageData(inBuf)
+  , m_OutBuf(outBuf)
+  , m_ThreadState(eThreadState_Done)
+  , m_ExitFlag(false)
+  , m_CompressedBlockSize(
+       (func == BC7C::CompressImageBC7Stats)? 
+         16 
+       : 
+         0
+  )
+  , m_UncompressedBlockSize(
+       (func == BC7C::CompressImageBC7Stats)? 
+         64 
+       : 
+         0
+  )
+{ 
+  for(int i = 0; i < kMaxNumThreads; i++) {
+    // Thread synchronization primitives
+    m_Threads[i].m_ParentCounterLock = m_FinishMutex;
+    m_Threads[i].m_FinishCV = m_FinishCV;
+    m_Threads[i].m_ParentCounter = &m_ThreadsFinished;
+    m_Threads[i].m_StartBarrier = m_StartBarrier;
+    m_Threads[i].m_ParentExitFlag = &m_ExitFlag;
+    m_Threads[i].m_CmpFuncWithStats = func;
+    m_Threads[i].m_StatManager = &statManager;
   }
 }
 
@@ -75,20 +147,6 @@ ThreadGroup::~ThreadGroup() {
   delete m_StartBarrier;
   delete m_FinishMutex;
   delete m_FinishCV;
-}
-
-unsigned int ThreadGroup::GetCompressedBlockSize() {
-  if(m_Func == BC7C::CompressImageBC7) return 16;
-#ifdef HAS_SSE_41
-  if(m_Func == BC7C::CompressImageBC7SIMD) return 16;
-#endif
-}
-
-unsigned int ThreadGroup::GetUncompressedBlockSize() {
-  if(m_Func == BC7C::CompressImageBC7) return 64;
-#ifdef HAS_SSE_41
-  if(m_Func == BC7C::CompressImageBC7SIMD) return 64;
-#endif
 }
 
 bool ThreadGroup::PrepareThreads() {
@@ -126,9 +184,8 @@ bool ThreadGroup::PrepareThreads() {
     CmpThread &t = m_Threads[m_ActiveThreads];
     t.m_Height = 4;
     t.m_Width = numBlocksThisThread * 4;
-    t.m_CmpFunc = m_Func;
-    t.m_OutBuf = m_OutBuf + (blocksProcessed * GetCompressedBlockSize());
-    t.m_InBuf = m_ImageData + (blocksProcessed * GetUncompressedBlockSize());
+    t.m_OutBuf = m_OutBuf + (blocksProcessed * m_CompressedBlockSize);
+    t.m_InBuf = m_ImageData + (blocksProcessed * m_UncompressedBlockSize);
 
     blocksProcessed += numBlocksThisThread;
     

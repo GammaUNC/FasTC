@@ -44,6 +44,17 @@ class WorkerQueue {
     uint8 *outBuf
   );
 
+  WorkerQueue(
+    uint32 numCompressions,
+    uint32 numThreads, 
+    uint32 jobSize,
+    const uint8 *inBuf, 
+    uint32 inBufSz, 
+    CompressionFuncWithStats func, 
+    BlockStatManager &blockStatManager,
+    uint8 *outBuf
+  );
+
   ~WorkerQueue() { }
 
   // Runs the workers
@@ -79,6 +90,11 @@ class WorkerQueue {
   
   const CompressionFunc m_CompressionFunc;
   CompressionFunc GetCompressionFunc() const { return m_CompressionFunc; }
+
+  BlockStatManager *m_BlockStatManager;
+  const CompressionFuncWithStats m_CompressionFuncWithStats;
+  CompressionFuncWithStats GetCompressionFuncWithStats() const { return m_CompressionFuncWithStats; }
+  BlockStatManager *GetBlockStatManager() const { return m_BlockStatManager; }
 
   StopWatch m_StopWatch;
 

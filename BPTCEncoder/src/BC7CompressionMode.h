@@ -42,8 +42,6 @@ public:
 	explicit BC7CompressionMode(int mode, bool opaque = true) : m_IsOpaque(opaque), m_Attributes(&(kModeAttributes[mode])), m_RotateMode(0), m_IndexMode(0) { }
 	~BC7CompressionMode() { }
 
-	static int NumUses[8];
-	static void ResetNumUses() { memset(NumUses, 0, sizeof(NumUses)); }
 	double Compress(BitStream &stream, const int shapeIdx, const RGBACluster *clusters);
 
 	// This switch controls the quality of the simulated annealing optimizer. We will not make

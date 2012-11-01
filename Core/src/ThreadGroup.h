@@ -21,6 +21,9 @@ private:
 
   CompressionFunc m_CmpFunc;
 
+  CompressionFuncWithStats m_CmpFuncWithStats;
+  BlockStatManager *m_StatManager;
+
   unsigned char *m_OutBuf;
   const unsigned char *m_InBuf;
 
@@ -29,9 +32,9 @@ private:
   CmpThread();
 
 public:
-  void operator ()();
+  virtual ~CmpThread() { }
+  virtual void operator ()();
 };
-
 
 class ThreadGroup {
  public:
@@ -42,6 +45,16 @@ class ThreadGroup {
     CompressionFunc func, 
     unsigned char *outBuf
   );
+
+  ThreadGroup( 
+    int numThreads, 
+    const unsigned char *inBuf, 
+    unsigned int inBufSz, 
+    CompressionFuncWithStats func, 
+    BlockStatManager &statManager,
+    unsigned char *outBuf
+  );
+
   ~ThreadGroup();
 
   bool PrepareThreads();
@@ -75,11 +88,10 @@ class ThreadGroup {
   // State variables.
   const unsigned int m_ImageDataSz;
   const unsigned char *const m_ImageData;
-  const CompressionFunc m_Func;
   unsigned char *m_OutBuf;
 
-  unsigned int GetCompressedBlockSize();
-  unsigned int GetUncompressedBlockSize();
+  const unsigned int m_CompressedBlockSize;
+  const unsigned int m_UncompressedBlockSize;
 
   StopWatch m_StopWatch;
 

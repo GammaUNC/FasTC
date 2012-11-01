@@ -113,16 +113,7 @@ static double CompressImageInSerial(
   return cmpTime;
 }
 
-static double CompressImageWithThreads(
-  const unsigned char *imgData,
-  const unsigned int imgDataSz,
-  const SCompressionSettings &settings,
-  unsigned char *outBuf
-) {
-
-  CompressionFunc f = ChooseFuncFromSettings(settings);
-
-  ThreadGroup tgrp (settings.iNumThreads, imgData, imgDataSz, f, outBuf);
+static double CompressThreadGroup(ThreadGroup &tgrp, const SCompressionSettings &settings) {
   if(!(tgrp.PrepareThreads())) {
     assert(!"Thread group failed to prepare threads?!");
     return -1.0f;
@@ -140,7 +131,29 @@ static double CompressImageWithThreads(
     cmpTimeTotal += tgrp.GetStopWatch().TimeInMilliseconds();
   }
 
-  tgrp.CleanUpThreads();
+  tgrp.CleanUpThreads();  
+  return cmpTimeTotal;
+}
+
+static double CompressImageWithThreads(
+  const unsigned char *imgData,
+  const unsigned int imgDataSz,
+  const SCompressionSettings &settings,
+  unsigned char *outBuf
+) {
+
+  CompressionFunc f = ChooseFuncFromSettings(settings);
+  CompressionFuncWithStats fStats = ChooseFuncFromSettingsWithStats(settings);
+
+  double cmpTimeTotal = 0.0;
+  if(fStats && settings.pStatManager) {
+    ThreadGroup tgrp (settings.iNumThreads, imgData, imgDataSz, fStats, *(settings.pStatManager), outBuf);
+    cmpTimeTotal = CompressThreadGroup(tgrp, settings);
+  }
+  else {
+    ThreadGroup tgrp (settings.iNumThreads, imgData, imgDataSz, f, outBuf);
+    cmpTimeTotal = CompressThreadGroup(tgrp, settings);
+  }
 
   double cmpTime = cmpTimeTotal / double(settings.iNumCompressions);
   return cmpTime;
@@ -153,21 +166,40 @@ static double CompressImageWithWorkerQueue(
   unsigned char *outBuf
 ) {
   CompressionFunc f = ChooseFuncFromSettings(settings);
+  CompressionFuncWithStats fStats = ChooseFuncFromSettingsWithStats(settings);
 
-  WorkerQueue wq (
-    settings.iNumCompressions,
-    settings.iNumThreads,
-    settings.iJobSize,
-    imgData,
-    imgDataSz,
-    f,
-    outBuf
-  );
+  double cmpTimeTotal = 0.0;
+  if(fStats && settings.pStatManager) {
+    WorkerQueue wq (
+      settings.iNumCompressions,
+      settings.iNumThreads,
+      settings.iJobSize,
+      imgData,
+      imgDataSz,
+      fStats,
+      *(settings.pStatManager),
+      outBuf
+    );
 
-  wq.Run();
+    wq.Run();
+    cmpTimeTotal = wq.GetStopWatch().TimeInMilliseconds();
+  }
+  else {
+    WorkerQueue wq (
+      settings.iNumCompressions,
+      settings.iNumThreads,
+      settings.iJobSize,
+      imgData,
+      imgDataSz,
+      f,
+      outBuf
+    );
 
-  return wq.GetStopWatch().TimeInMilliseconds() / 
-    double(settings.iNumCompressions);
+    wq.Run();
+    cmpTimeTotal = wq.GetStopWatch().TimeInMilliseconds();
+  }
+
+  return cmpTimeTotal / double(settings.iNumCompressions);
 }
 
 bool CompressImageData(
