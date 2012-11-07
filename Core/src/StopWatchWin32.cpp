@@ -50,6 +50,7 @@ StopWatch &StopWatch::operator=(const StopWatch &other) {
   }
   impl = new StopWatchImpl();
   memcpy(impl, other.impl, sizeof(StopWatchImpl));
+  return *this;
 }
 
 StopWatch::~StopWatch() {
