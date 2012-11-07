@@ -10,7 +10,7 @@ class WorkerQueue;
 #include "Thread.h"
 #include "StopWatch.h"
 
-struct WorkerThread : public TCCallable {
+class WorkerThread : public TCCallable {
   friend class WorkerQueue;
 public:
 

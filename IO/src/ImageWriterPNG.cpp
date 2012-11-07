@@ -82,13 +82,13 @@ bool ImageWriterPNG::WriteImage() {
 	/* Initialize rows of PNG. */
 
 	row_pointers = (png_byte **)png_malloc (png_ptr, m_Height * sizeof (png_byte *));
-	for (int y = 0; y < m_Height; ++y) {
+	for (uint32 y = 0; y < m_Height; ++y) {
 		png_byte *row = (png_byte *)png_malloc (png_ptr, sizeof (uint8) * m_Width * pixel_size);
 
 		row_pointers[y] = row;
 
-		for (int x = 0; x < m_Width; ++x) {
-			for(int ch = 0; ch < 4; ch++) {
+		for (uint32 x = 0; x < m_Width; ++x) {
+			for(uint32 ch = 0; ch < 4; ch++) {
 				*row++ = GetChannelForPixel(x, y, ch);
 			}
     }
@@ -98,7 +98,7 @@ bool ImageWriterPNG::WriteImage() {
 	png_set_rows (png_ptr, info_ptr, row_pointers);
 	png_write_png (png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
 
-	for (int y = 0; y < m_Height; y++) {
+	for (uint32 y = 0; y < m_Height; y++) {
 		png_free (png_ptr, row_pointers[y]);
 	}
 	png_free (png_ptr, row_pointers);

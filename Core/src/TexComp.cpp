@@ -225,7 +225,7 @@ bool CompressImageData(
   }
 
   // Allocate data based on the compression method
-  int cmpDataSzNeeded = 0;
+  uint32 cmpDataSzNeeded = 0;
   switch(settings.format) {
     case eCompressionFormat_DXT1: cmpDataSzNeeded = dataSz / 8;
     case eCompressionFormat_DXT5: cmpDataSzNeeded = dataSz / 4;

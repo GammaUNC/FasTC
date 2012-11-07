@@ -148,7 +148,7 @@ void WorkerQueue::Run() {
   
   // Spawn a bunch of threads...
   TCLock lock(m_Mutex);
-  for(int i = 0; i < m_NumThreads; i++) {
+  for(uint32 i = 0; i < m_NumThreads; i++) {
     m_Workers[i] = new WorkerThread(this, i);
     m_ThreadHandles[m_ActiveThreads] = new TCThread(*m_Workers[i]);
     m_ActiveThreads++;
@@ -168,7 +168,7 @@ void WorkerQueue::Run() {
   m_StopWatch.Stop();
 
   // Join them all together..
-  for(int i = 0; i < m_NumThreads; i++) {
+  for(uint32 i = 0; i < m_NumThreads; i++) {
     m_ThreadHandles[i]->Join();
     delete m_ThreadHandles[i];
     delete m_Workers[i];
