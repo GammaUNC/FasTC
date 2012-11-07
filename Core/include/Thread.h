@@ -3,6 +3,11 @@
 
 #include "TexCompTypes.h"
 
+//!HACK! Apparently MSVC has issues with Yield()...????
+#ifdef _MSC_VER
+#undef Yield
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Base implementation
@@ -68,9 +73,9 @@ class TCThread : public TCThreadBase {
 
  public:
   TCThread(TCCallable &);
-
-  void Join();
+  
   static void Yield();
+  void Join();
 };
 
 ////////////////////////////////////////////////////////////////////////////////

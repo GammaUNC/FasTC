@@ -2337,7 +2337,7 @@ namespace BC7C
 
     assert(idxMode < 2);
     assert(rotMode < 4);
-    assert(shapeIdx < ((mode == 0)? 16 : 64));
+    assert(shapeIdx < uint32((mode == 0)? 16 : 64));
 
     uint32 cp = attrs->colorChannelPrecision;
     const uint32 shift = 8 - cp;

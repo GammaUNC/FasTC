@@ -39,6 +39,8 @@ public:
   }
 };
 
+StopWatch::StopWatch() : impl(new StopWatchImpl) { }
+
 StopWatch::StopWatch(const StopWatch &other) {
   impl = new StopWatchImpl();
   memcpy(impl, other.impl, sizeof(StopWatchImpl));

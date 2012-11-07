@@ -231,7 +231,7 @@ WorkerThread::EAction WorkerQueue::AcceptThreadData(uint32 threadIdx) {
 const uint8 *WorkerQueue::GetSrcForThread(const int threadIdx) const {
   assert(m_Offsets[threadIdx] >= 0);
   assert(threadIdx >= 0);
-  assert(threadIdx < m_NumThreads);
+  assert(threadIdx < int(m_NumThreads));
 
   const uint32 inBufBlockSz = 16 * 4;
   return m_InBuf + m_Offsets[threadIdx] * inBufBlockSz;
@@ -240,7 +240,7 @@ const uint8 *WorkerQueue::GetSrcForThread(const int threadIdx) const {
 uint8 *WorkerQueue::GetDstForThread(const int threadIdx) const {
   assert(m_Offsets[threadIdx] >= 0);
   assert(threadIdx >= 0);
-  assert(threadIdx < m_NumThreads);
+  assert(threadIdx < int(m_NumThreads));
 
   const uint32 outBufBlockSz = 16;
   return m_OutBuf + m_Offsets[threadIdx] * outBufBlockSz;
@@ -249,7 +249,7 @@ uint8 *WorkerQueue::GetDstForThread(const int threadIdx) const {
 uint32 WorkerQueue::GetNumBlocksForThread(const int threadIdx) const {
   assert(m_Offsets[threadIdx] >= 0);
   assert(threadIdx >= 0);
-  assert(threadIdx < m_NumThreads);
+  assert(threadIdx < int(m_NumThreads));
 
   return m_NumBlocks[threadIdx];
 }
