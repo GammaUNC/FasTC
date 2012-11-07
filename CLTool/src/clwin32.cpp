@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <SDKDDKVer.h>
 #include <Windows.h>
 
 #include "BlockStats.h"
@@ -27,8 +28,8 @@ void ExtractBasename(const char *filename, char *buf, uint32 bufSz) {
 	}
 }
 
-int main(int argc, char **argv) {
-
+int _tmain(int argc, _TCHAR* argv[])
+{
   int fileArg = 1;
   if(fileArg == argc) {
     PrintUsage();
