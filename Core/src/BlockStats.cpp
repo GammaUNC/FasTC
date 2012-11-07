@@ -22,14 +22,22 @@ BlockStat::BlockStat(const CHAR *statName, int stat)
   : m_IntStat(stat)
   , m_Type(eType_Int)
 {
+#ifdef _MSC_VER
+  strncpy_s(m_StatName, statName, kStatNameSz);
+#else
   strncpy(m_StatName, statName, kStatNameSz);
+#endif
 }
 
 BlockStat::BlockStat(const CHAR *statName, double stat) 
   : m_FloatStat(stat)
   , m_Type(eType_Float)
 {
+#ifdef _MSC_VER
+  strncpy_s(m_StatName, statName, kStatNameSz);
+#else
   strncpy(m_StatName, statName, kStatNameSz);
+#endif
 }
 
 BlockStat::BlockStat(const BlockStat &other) : m_Type(other.m_Type) {
@@ -38,16 +46,25 @@ BlockStat::BlockStat(const BlockStat &other) : m_Type(other.m_Type) {
 
 BlockStat &BlockStat::operator=(const BlockStat &other) {
   memcpy(this, &other, sizeof(*this));
+  return *this;
 }
 
-void BlockStat::ToString(char *buf, int bufSz) const {
+void BlockStat::ToString(CHAR *buf, int bufSz) const {
   switch(m_Type) {
     case BlockStat::eType_Float:
+#ifdef _MSC_VER
+      _sntprintf_s(buf, bufSz, _TRUNCATE, "%s,%f", m_StatName, m_FloatStat);
+#else
       snprintf(buf, bufSz, "%s,%f", m_StatName, m_FloatStat);
+#endif
     break;
 
     case BlockStat::eType_Int:
+#ifdef _MSC_VER
+      _sntprintf_s(buf, bufSz, _TRUNCATE, "%s,%llu", m_StatName, m_IntStat);
+#else
       snprintf(buf, bufSz, "%s,%llu", m_StatName, m_IntStat);
+#endif
     break;
 
     default:
@@ -106,7 +123,7 @@ void BlockStatManager::ToFile(const CHAR *filename) {
   
   FileStream fstr (filename, eFileMode_Write);
 
-  for(int i = 0; i < m_BlockStatListSz; i++) {
+  for(uint32 i = 0; i < m_BlockStatListSz; i++) {
     const BlockStatList *head = &(m_BlockStatList[i]);
     while(head) {
       BlockStat s = head->GetStat();
@@ -115,12 +132,16 @@ void BlockStatManager::ToFile(const CHAR *filename) {
       s.ToString(statStr, 256);
 
       CHAR str[256];
+#ifdef _MSC_VER
+	  _sntprintf_s(str, 256, _TRUNCATE, "%d,%s\n", i, statStr);
+#else
       snprintf(str, 256, "%d,%s\n", i, statStr);
+#endif
       
-      int strLen = strlen(str);
+      uint32 strLen = uint32(strlen(str));
       if(strLen > 255) {
-	str[255] = '\n';
-	strLen = 256;
+	    str[255] = '\n';
+	    strLen = 256;
       }
  
       fstr.Write((uint8 *)str, strLen);
@@ -136,7 +157,7 @@ void BlockStatManager::ToFile(const CHAR *filename) {
 //
 ////////////////////////////////////////////////////////////////////////////////
 static const CHAR *kNullBlockString = "NULL_BLOCK_STAT";
-static const uint32 kNullBlockStringLength = strlen(kNullBlockString);
+static const uint32 kNullBlockStringLength = uint32(strlen(kNullBlockString));
 
 BlockStatManager::BlockStatList::BlockStatList() 
   : m_Tail(0)
