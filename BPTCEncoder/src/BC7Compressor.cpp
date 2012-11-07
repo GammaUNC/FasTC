@@ -1478,12 +1478,11 @@ namespace BC7C
   // implementation has an 4:1 compression ratio.
   void CompressImageBC7(const unsigned char *inBuf, unsigned char *outBuf, unsigned int width, unsigned int height)
   {
-    uint32 block[16];
     BC7CompressionMode::MaxAnnealingIterations = min(BC7CompressionMode::kMaxAnnealingIterations, GetQualityLevel());
 
-    for(int j = 0; j < height; j += 4)
+    for(uint32 j = 0; j < height; j += 4)
     {
-      for(int i = 0; i < width; i += 4)
+      for(uint32 i = 0; i < width; i += 4)
       {
         // ExtractBlock(inBuf + i * 4, width, block);
         CompressBC7Block((const uint32 *)inBuf, outBuf);
@@ -1521,12 +1520,11 @@ namespace BC7C
     unsigned int height,
     BlockStatManager &statManager
   ) {
-    uint32 block[16];
     BC7CompressionMode::MaxAnnealingIterations = min(BC7CompressionMode::kMaxAnnealingIterations, GetQualityLevel());
 
-    for(int j = 0; j < height; j += 4)
+    for(uint32 j = 0; j < height; j += 4)
     {
-      for(int i = 0; i < width; i += 4)
+      for(uint32 i = 0; i < width; i += 4)
       {
         // ExtractBlock(inBuf + i * 4, width, block);
         CompressBC7Block((const uint32 *)inBuf, outBuf, statManager);

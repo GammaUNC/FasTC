@@ -5,6 +5,12 @@
 #include <limits.h>
 #include <assert.h>
 
+///////////////////////////////////////////////////////////////////////////////
+//
+// Static helper functions
+//
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 static inline T min(const T &a, const T &b) {
   return (a > b)? b : a;
@@ -13,6 +19,11 @@ static inline T min(const T &a, const T &b) {
 template <typename T>
 static inline T abs(const T &a) {
   return (a > 0)? a : -a;
+}
+
+template <typename T>
+static inline T sad(const T &a, const T &b) {
+  return (a > b)? a - b : b - a;
 }
 
 void ReportError(const char *str) {
@@ -59,8 +70,8 @@ unsigned int ImageLoader::GetChannelForPixel(uint32 x, uint32 y, uint32 ch) {
   const uint32 val = data[pixelIdx];
   
   if(prec < 8) {
-    uint32 ret = 0;
-    for(uint32 precLeft = 8; precLeft > 0; precLeft -= min(prec, abs(prec - precLeft))) {
+    int32 ret = 0;
+    for(uint32 precLeft = 8; precLeft > 0; precLeft -= min(prec, sad(prec, precLeft))) {
       
       if(prec > precLeft) {
 	const int toShift = prec - precLeft;
@@ -77,7 +88,7 @@ unsigned int ImageLoader::GetChannelForPixel(uint32 x, uint32 y, uint32 ch) {
     return ret;
   }
   else if(prec > 8) {
-    const int toShift = prec - 8;
+    const int32 toShift = prec - 8;
     return val >> toShift;
   }
 
@@ -113,59 +124,59 @@ bool ImageLoader::LoadImage() {
 #endif
 
   int byteIdx = 0;
-  for(int i = 0; i < ah; i+=4) {
-    for(int j = 0; j < aw; j+= 4) {
+  for(uint32 i = 0; i < ah; i+=4) {
+    for(uint32 j = 0; j < aw; j+= 4) {
 
       // For each block, visit the pixels in sequential order
-      for(int y = i; y < i+4; y++) {
-	for(int x = j; x < j+4; x++) {
+      for(uint32 y = i; y < i+4; y++) {
+		for(uint32 x = j; x < j+4; x++) {
 
-	  if(y >= m_Height || x >= m_Width) {
-	    m_PixelData[byteIdx++] = 0; // r
-	    m_PixelData[byteIdx++] = 0; // g
-	    m_PixelData[byteIdx++] = 0; // b
-	    m_PixelData[byteIdx++] = 0; // a
-	    continue;
-	  }
+		  if(y >= m_Height || x >= m_Width) {
+			m_PixelData[byteIdx++] = 0; // r
+			m_PixelData[byteIdx++] = 0; // g
+			m_PixelData[byteIdx++] = 0; // b
+			m_PixelData[byteIdx++] = 0; // a
+			continue;
+		  }
 
-	  unsigned int redVal = GetChannelForPixel(x, y, 0);
-	  if(redVal == INT_MAX)
-	    return false;
+		  unsigned int redVal = GetChannelForPixel(x, y, 0);
+		  if(redVal == INT_MAX)
+			return false;
 
-	  unsigned int greenVal = redVal;
-	  unsigned int blueVal = redVal;
+		  unsigned int greenVal = redVal;
+		  unsigned int blueVal = redVal;
 
-	  if(GetGreenChannelPrecision() > 0) {
-	    greenVal = GetChannelForPixel(x, y, 1);
-	    if(greenVal == INT_MAX)
-	      return false;
-	  }
+		  if(GetGreenChannelPrecision() > 0) {
+			greenVal = GetChannelForPixel(x, y, 1);
+			if(greenVal == INT_MAX)
+			  return false;
+		  }
 
-	  if(GetBlueChannelPrecision() > 0) {
-	    blueVal = GetChannelForPixel(x, y, 2);
-	    if(blueVal == INT_MAX)
-	      return false;
-	  }
+		  if(GetBlueChannelPrecision() > 0) {
+			blueVal = GetChannelForPixel(x, y, 2);
+			if(blueVal == INT_MAX)
+			  return false;
+		  }
 
-	  unsigned int alphaVal = 0xFF;
-	  if(GetAlphaChannelPrecision() > 0) {
-	    alphaVal = GetChannelForPixel(x, y, 3);
-	    if(alphaVal == INT_MAX)
-	      return false;
-	  }
+		  unsigned int alphaVal = 0xFF;
+		  if(GetAlphaChannelPrecision() > 0) {
+			alphaVal = GetChannelForPixel(x, y, 3);
+			if(alphaVal == INT_MAX)
+			  return false;
+		  }
 
-	  // Red channel
-	  m_PixelData[byteIdx++] = redVal & 0xFF;
+		  // Red channel
+		  m_PixelData[byteIdx++] = redVal & 0xFF;
 
-	  // Green channel
-	  m_PixelData[byteIdx++] = greenVal & 0xFF;
+		  // Green channel
+		  m_PixelData[byteIdx++] = greenVal & 0xFF;
 
-	  // Blue channel
-	  m_PixelData[byteIdx++] = blueVal & 0xFF;
+		  // Blue channel
+		  m_PixelData[byteIdx++] = blueVal & 0xFF;
 
-	  // Alpha channel
-	  m_PixelData[byteIdx++] = alphaVal & 0xFF;
-	}
+		  // Alpha channel
+		  m_PixelData[byteIdx++] = alphaVal & 0xFF;
+		}
       }
     }
   }
