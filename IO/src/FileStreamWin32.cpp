@@ -95,7 +95,9 @@ FileStream &FileStream::operator=(const FileStream &other) {
   m_Impl->IncreaseReferenceCount();
 
   m_Mode = other.m_Mode;
-  strncpy(m_Filename, other.m_Filename, kMaxFilenameSz);
+  strncpy(m_Filename, other.m_Filename, kMaxFilenameSz); 
+
+  return *this;
 }
 
 FileStream::~FileStream() {
