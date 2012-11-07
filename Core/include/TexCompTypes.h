@@ -12,16 +12,17 @@
 #ifdef _MSC_VER
 
 typedef __int16 int16;
-typedef __uint16 uint16;
+typedef unsigned __int16 uint16;
 typedef __int32 int32;
-typedef __uint32 uint32;
+typedef unsigned __int32 uint32;
 typedef __int8 int8;
-typedef __uint8 uint8;
+typedef unsigned __int8 uint8;
 
-typedef __uint64 uint64;
+typedef unsigned __int64 uint64;
 typedef __int64 int64;
 
-typedef __int32_ptr int32_ptr;
+#include <tchar.h>
+typedef TCHAR CHAR;
 
 // If not, assume GCC, or at least standard defines...
 #else 
@@ -38,7 +39,6 @@ typedef uint16_t uint16;
 typedef uint32_t uint32;
 typedef uint64_t uint64;
 
-typedef uintptr_t int32_ptr;
 typedef char CHAR;
 
 #endif // _MSC_VER
