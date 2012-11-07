@@ -243,6 +243,8 @@ bool ThreadGroup::CleanUpThreads() {
   // Reset active number of threads...
   m_ActiveThreads = 0;
   m_ExitFlag = false;
+
+  return true;
 }
 
 void ThreadGroup::Join() {

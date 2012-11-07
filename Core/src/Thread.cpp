@@ -34,6 +34,8 @@ TCThreadBase &TCThreadBase::operator=(const TCThreadBase &other) {
   // Our implementation is now the same as the other.
   m_Impl = other.m_Impl;
   m_Impl->IncreaseReferenceCount();
+
+  return *this;
 }
 
 TCThreadBase::~TCThreadBase() {
