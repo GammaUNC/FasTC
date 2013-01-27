@@ -39,6 +39,13 @@ INCLUDE_DIRECTORIES( ${TexC_SOURCE_DIR}/Core/include )
 SET( THREAD_API )
 SET( THREAD_APIS_AVAILABLE "None" )
 
+###### Find Boost...
+
+IF( MSVC )
+		SET(ENV{BOOSTLIBDIR} "${MSVC_LIB_DIR}")
+		SET(ENV{BOOSTINCLUDEDIR} "${MSVC_INSTALL_PATH}/include")
+ENDIF( MSVC )
+
 SET( Boost_USE_STATIC_LIBS ON )
 FIND_PACKAGE( Boost COMPONENTS thread system date_time chrono ) 
 IF( Boost_FOUND )
@@ -49,6 +56,8 @@ IF( Boost_FOUND )
     ENDIF()
 
 ENDIF()
+
+###### Find PThreads....
 
 FIND_PACKAGE( Threads )
 IF( CMAKE_USE_PTHREADS_INIT )
