@@ -94,7 +94,7 @@ ELSE()
 	SET( SOURCES ${SOURCES} "src/ThreadGroup.cpp" )
 	SET( SOURCES ${SOURCES} "src/WorkerQueue.cpp" )
 
-	SET( HEADERS ${HEADERS} "include/Thread.h" )
+	SET( HEADERS ${HEADERS} "src/Thread.h" )
 	SET( HEADERS ${HEADERS} "src/ThreadGroup.h" )
 	SET( HEADERS ${HEADERS} "src/WorkerQueue.h" )
 ENDIF()
