@@ -207,7 +207,7 @@ static inline T sad(const T &a, const T &b) {
   return (a > b)? a - b : b - a;
 }
 
-static int GetSubsetForIndex(int idx, const int shapeIdx, const int nSubsets) {
+static uint8 GetSubsetForIndex(int idx, const int shapeIdx, const int nSubsets) {
   int subset = 0;
   
   switch(nSubsets) {
@@ -233,7 +233,7 @@ static int GetSubsetForIndex(int idx, const int shapeIdx, const int nSubsets) {
   return subset;
 }
 
-static int GetAnchorIndexForSubset(int subset, const int shapeIdx, const int nSubsets) {
+static uint32 GetAnchorIndexForSubset(int subset, const int shapeIdx, const int nSubsets) {
   
   int anchorIdx = 0;
   switch(subset) {
@@ -262,57 +262,15 @@ static int GetAnchorIndexForSubset(int subset, const int shapeIdx, const int nSu
   return anchorIdx;
 }
 
-static int GetPointMaskForSubset(int subset, const int shapeIdx, const int nSubsets) {
-  int mask = 0xFFFF;
-
-  assert(subset < nSubsets);
-
-  switch(nSubsets) {
-    case 2:
-    {
-      mask = (subset)? kShapeMask2[shapeIdx] : ~(kShapeMask2[shapeIdx]);
-    }
-    break;
-
-    case 3:
-    {
-      switch(subset) {
-        default:
-        case 0:
-        {
-          mask = ~(kShapeMask3[shapeIdx][0]);
-        }
-        break;
-
-        case 1:
-        {
-          mask = ~(~(kShapeMask3[shapeIdx][0]) | kShapeMask3[shapeIdx][1]);
-        }
-        break;
-
-        case 2:
-        {
-          mask = kShapeMask3[shapeIdx][1];
-        }
-        break;
-      }
-    }
-    break;
-
-    default:
-    break;
-  }
-
-  return mask;
+template <typename T>
+static T min(const T &a, const T &b) {
+  return (a < b)? a : b;
 }
 
-#ifndef min
-#define min(a, b) (((a) > (b))? (b) : (a))
-#endif
-
-#ifndef max
-#define max(a, b) (((a) > (b))? (a) : (b))
-#endif
+template <typename T>
+static T max(const T &a, const T &b) {
+  return (a > b)? a : b;
+}
 
 template <typename T>
 static void insert(T* buf, int bufSz, T newVal, int idx = 0) {
@@ -327,9 +285,9 @@ template <typename T>
 static inline void swap(T &a, T &b) { T t = a; a = b; b = t; }
 
 const uint32 kBC7InterpolationValues[4][16][2] = {
-  { {64, 0}, {33, 31}, {0, 64}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-  { {64, 0}, {43, 21}, {21, 43}, {0, 64}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-  { {64, 0}, {55, 9}, {46, 18}, {37, 27}, {27, 37}, {18, 46}, {9, 55}, {0, 64}, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { {64, 0}, {33, 31}, {0, 64}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
+  { {64, 0}, {43, 21}, {21, 43}, {0, 64}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
+  { {64, 0}, {55, 9}, {46, 18}, {37, 27}, {27, 37}, {18, 46}, {9, 55}, {0, 64}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
   { {64, 0}, {60, 4}, {55, 9}, {51, 13}, {47, 17}, {43, 21}, {38, 26}, {34, 30}, {30, 34}, {26, 38}, {21, 43}, {17, 47}, {13, 51}, {9, 55}, {4, 60}, {0, 64} }
 };
 
@@ -403,7 +361,7 @@ double BC7CompressionMode::CompressSingleColor(const RGBAVector &p, RGBAVector &
     uint32 bestValI[kNumColorChannels] = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
     uint32 bestValJ[kNumColorChannels] = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
 
-    for(int ci = 0; ci < kNumColorChannels; ci++) {
+    for(uint32 ci = 0; ci < kNumColorChannels; ci++) {
 
       const uint8 val = (pixel >> (ci * 8)) & 0xFF;
       int nBits = ci == 3? GetAlphaChannelPrecision() : m_Attributes->colorChannelPrecision;
@@ -467,7 +425,7 @@ double BC7CompressionMode::CompressSingleColor(const RGBAVector &p, RGBAVector &
       bestDist = dist;
       bestPbitCombo = pbi;
 
-      for(int ci = 0; ci < kNumColorChannels; ci++) {
+      for(uint32 ci = 0; ci < kNumColorChannels; ci++) {
         p1.c[ci] = float(bestValI[ci]);
         p2.c[ci] = float(bestValJ[ci]);
       }
@@ -609,7 +567,7 @@ void BC7CompressionMode::PickBestNeighboringEndpoints(const RGBACluster &cluster
       else
         ChangePointForDirWithoutPbitChange(np, fastrand() % 16, step);
 
-      for(int i = 0; i < kNumColorChannels; i++) {
+      for(uint32 i = 0; i < kNumColorChannels; i++) {
         np.c[i] = min(max(np.c[i], 0.0f), 255.0f);
       }
     }
@@ -662,7 +620,6 @@ bool BC7CompressionMode::AcceptNewEndpointError(double newError, double oldError
 double BC7CompressionMode::OptimizeEndpointsForCluster(const RGBACluster &cluster, RGBAVector &p1, RGBAVector &p2, int *bestIndices, int &bestPbitCombo) const {
   
   const int nBuckets = (1 << GetNumberOfBitsPerIndex());
-  const int nPbitCombos = GetNumPbitCombos();
   const uint32 qmask = GetQuantizationMask();
 
   // Here we use simulated annealing to traverse the space of clusters to find the best possible endpoints.
@@ -816,16 +773,13 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
   const tInterpLevel *interpVals = kBC7InterpolationValues + (GetNumberOfBitsPerAlpha() - 1);
   const float weight = GetErrorMetric().a;
 
-  const int nBuckets = (1 << GetNumberOfBitsPerAlpha());
+  const uint32 nBuckets = (1 << GetNumberOfBitsPerAlpha());
 
   // If they're the same, then we can get them exactly.
   if(a1 == a2) 
   {  
-    const uint8 step = 1 << (8-GetAlphaChannelPrecision());
     const uint8 a1be = uint8(a1);
     const uint8 a2be = uint8(a2);
-    const uint8 a1b = ::QuantizeChannel(a1be, (((char)0x80) >> (GetAlphaChannelPrecision() - 1)));
-    const uint8 a2b = ::QuantizeChannel(a2be, (((char)0x80) >> (GetAlphaChannelPrecision() - 1)));
 
     // Mode 5 has 8 bits of precision for alpha.
     if(GetModeNumber() == 5) {
@@ -833,7 +787,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
       assert(a1 == float(a1b));
       assert(a2 == float(a2b));
 
-      for(int i = 0; i < kMaxNumDataPoints; i++)
+      for(uint32 i = 0; i < kMaxNumDataPoints; i++)
         alphaIndices[i] = 0;
 
       alphaError = 0.0;
@@ -852,11 +806,11 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
       }
 
       if(m_IndexMode == 1) {
-        for(int i = 0; i < kMaxNumDataPoints; i++)
+        for(uint32 i = 0; i < kMaxNumDataPoints; i++)
           alphaIndices[i] = 1;
       }
       else {
-        for(int i = 0; i < kMaxNumDataPoints; i++)
+        for(uint32 i = 0; i < kMaxNumDataPoints; i++)
           alphaIndices[i] = 2;
       }
 
@@ -874,18 +828,18 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
     float vals[1<<3];
     memset(vals, 0, sizeof(vals));
 
-    int buckets[kMaxNumDataPoints];
+    uint32 buckets[kMaxNumDataPoints];
 
     // Figure out initial positioning.
-    for(int i = 0; i < nBuckets; i++) {
+    for(uint32 i = 0; i < nBuckets; i++) {
       vals[i] = alphaMin + (float(i)/float(nBuckets-1)) * (alphaMax - alphaMin);
     }
 
     // Assign each value to a bucket
-    for(int i = 0; i < kMaxNumDataPoints; i++) {
+    for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
 
       float minDist = 255.0f;
-      for(int j = 0; j < nBuckets; j++) {
+      for(uint32 j = 0; j < nBuckets; j++) {
         float dist = fabs(alphaVals[i] - vals[j]);
         if(dist < minDist) {
           minDist = dist;
@@ -906,8 +860,8 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
       memset(avg, 0, sizeof(avg));
 
       // Calculate average of each cluster
-      for(int i = 0; i < nBuckets; i++) {
-        for(int j = 0; j < kMaxNumDataPoints; j++) {
+      for(uint32 i = 0; i < nBuckets; i++) {
+        for(uint32 j = 0; j < kMaxNumDataPoints; j++) {
 
           if(buckets[j] == i) {
             avg[i] += alphaVals[j];
@@ -921,7 +875,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
 
       // Did we change anything?
       fixed = true;
-      for(int i = 0; i < nBuckets; i++) {
+      for(uint32 i = 0; i < nBuckets; i++) {
         fixed = fixed && (avg[i] == vals[i]);
       }
 
@@ -929,10 +883,10 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
       memcpy(vals, avg, sizeof(vals));
 
       // Reassign each value to a bucket
-      for(int i = 0; i < kMaxNumDataPoints; i++) {
+      for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
 
         float minDist = 255.0f;
-        for(int j = 0; j < nBuckets; j++) {
+        for(uint32 j = 0; j < nBuckets; j++) {
           float dist = fabs(alphaVals[i] - vals[j]);
           if(dist < minDist) {
             minDist = dist;
@@ -945,7 +899,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
     // Do least squares fit of vals.
     float asq = 0.0, bsq = 0.0, ab = 0.0;
     float ax(0.0), bx(0.0);
-    for(int i = 0; i < nBuckets; i++) {
+    for(uint32 i = 0; i < nBuckets; i++) {
       float a = float(nBuckets - 1 - i) / float(nBuckets - 1);
       float b = float(i) / float(nBuckets - 1);
 
@@ -974,14 +928,14 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
 
     // Compute error
     alphaError = 0.0;
-		for(int i = 0; i < kMaxNumDataPoints; i++) {
+    for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
 
       uint8 val = uint8(alphaVals[i]);
 
       float minError = FLT_MAX;
       int bestBucket = -1;
 
-      for(int j = 0; j < nBuckets; j++) {
+      for(uint32 j = 0; j < nBuckets; j++) {
         uint32 interp0 = (*interpVals)[j][0];
         uint32 interp1 = (*interpVals)[j][1];
 
@@ -1000,7 +954,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
     }
   }
 
-  for(int i = 0; i < kNumColorChannels; i++) {
+  for(uint32 i = 0; i < kNumColorChannels; i++) {
     p1.c[i] = (i == (kNumColorChannels-1))? a1 : rgbp1.c[i];
     p2.c[i] = (i == (kNumColorChannels-1))? a2 : rgbp2.c[i];
   }
@@ -1025,8 +979,6 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
   }
   
   const int nBuckets = (1 << GetNumberOfBitsPerIndex());
-  const int nPbitCombos = GetNumPbitCombos();
-  const uint32 qmask = GetQuantizationMask();
 
 #if 1
   RGBAVector avg = cluster.GetTotal() / float(cluster.GetNumPoints());
@@ -1452,7 +1404,6 @@ namespace BC7C
   ErrorMetric GetErrorMetricEnum() { return gErrorMetric; }
 
   // Function prototypes
-  static void ExtractBlock(const uint8* inPtr, int width, uint32* colorBlock);
   static void CompressBC7Block(const uint32 *block, uint8 *outBuf);
   static void CompressBC7Block(const uint32 *block, uint8 *outBuf, BlockStatManager &statManager);
 
@@ -1599,17 +1550,6 @@ namespace BC7C
     }
   }
 
-  // Extract a 4 by 4 block of pixels from inPtr and store it in colorBlock. The width parameter
-  // specifies the size of the image in pixels.
-  static void ExtractBlock(const uint8* inPtr, int width, uint32* colorBlock)
-  {
-    for(int j = 0; j < 4; j++)
-    {
-      memcpy(&colorBlock[j * 4], inPtr, 4 * 4);
-      inPtr += width * 4;
-    }
-  }
-
   static double CompressTwoClusters(
     int shapeIdx, 
     const RGBACluster *clusters, 
@@ -1712,7 +1652,7 @@ namespace BC7C
 
   static void PopulateTwoClustersForShape(const RGBACluster &points, int shapeIdx, RGBACluster *clusters) {
     const uint16 shape = kShapeMask2[shapeIdx]; 
-    for(int pt = 0; pt < kMaxNumDataPoints; pt++) {
+    for(uint32 pt = 0; pt < kMaxNumDataPoints; pt++) {
 
       const RGBAVector &p = points.GetPoint(pt);
 
@@ -1728,7 +1668,7 @@ namespace BC7C
   }
 
   static void PopulateThreeClustersForShape(const RGBACluster &points, int shapeIdx, RGBACluster *clusters) {
-    for(int pt = 0; pt < kMaxNumDataPoints; pt++) {
+    for(uint32 pt = 0; pt < kMaxNumDataPoints; pt++) {
 
       const RGBAVector &p = points.GetPoint(pt);
 
@@ -1813,7 +1753,7 @@ namespace BC7C
     bool opaque = true;
     bool transparent = true;
 
-    for(int i = 0; i < kMaxNumDataPoints; i++) {
+    for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
       RGBAVector p = RGBAVector(i, block[i]);
       blockCluster.AddPoint(p);
       if(fabs(p.a - 255.0f) > 1e-10)
@@ -1836,7 +1776,7 @@ namespace BC7C
     int bestShapeIdx[2] = { -1, -1 };
     RGBACluster bestClusters[2][3];
 
-    for(int i = 0; i < kNumShapes2; i++) 
+    for(unsigned int i = 0; i < kNumShapes2; i++) 
     {
       RGBACluster clusters[2];
       PopulateTwoClustersForShape(blockCluster, i, clusters);
@@ -1863,7 +1803,7 @@ namespace BC7C
     // There are not 3 subset blocks that support alpha, so only check these
     // if the entire block is opaque.
     if(opaque) {
-      for(int i = 0; i < kNumShapes3; i++) {
+      for(unsigned int i = 0; i < kNumShapes3; i++) {
 
         RGBACluster clusters[3];
         PopulateThreeClustersForShape(blockCluster, i, clusters);
@@ -2108,7 +2048,7 @@ namespace BC7C
     bool opaque = true;
     bool transparent = true;
 
-    for(int i = 0; i < kMaxNumDataPoints; i++) {
+    for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
       RGBAVector p = RGBAVector(i, block[i]);
       blockCluster.AddPoint(p);
       if(fabs(p.a - 255.0f) > 1e-10)
@@ -2163,12 +2103,11 @@ namespace BC7C
 
     // First we must figure out which shape to use. To do this, simply
     // see which shape has the smallest sum of minimum bounding spheres.
-    double estimates[2] = { -1.0, -1.0 };
     double bestError[2] = { DBL_MAX, DBL_MAX };
     int bestShapeIdx[2] = { -1, -1 };
     RGBACluster bestClusters[2][3];
 
-    for(int i = 0; i < kNumShapes2; i++) 
+    for(unsigned int i = 0; i < kNumShapes2; i++) 
     {
       RGBACluster clusters[2];
       PopulateTwoClustersForShape(blockCluster, i, clusters);
@@ -2230,7 +2169,7 @@ namespace BC7C
     // There are not 3 subset blocks that support alpha, so only check these
     // if the entire block is opaque.
     if(opaque) {
-      for(int i = 0; i < kNumShapes3; i++) {
+      for(unsigned int i = 0; i < kNumShapes3; i++) {
 
         RGBACluster clusters[3];
         PopulateThreeClustersForShape(blockCluster, i, clusters);
@@ -2467,7 +2406,7 @@ namespace BC7C
     int nBitsPerColor = attrs->numBitsPerIndex;
 
     uint32 idxPrec = attrs->numBitsPerIndex;
-    for(int i = 0; i < kMaxNumDataPoints; i++) {
+    for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
       uint32 subset = GetSubsetForIndex(i, shapeIdx, nSubsets);
 
       int idx = 0;
@@ -2485,7 +2424,7 @@ namespace BC7C
       memcpy(alphaIndices, colorIndices, sizeof(alphaIndices));
     }
     else {
-      for(int i = 0; i < kMaxNumDataPoints; i++) {
+      for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
         uint32 subset = GetSubsetForIndex(i, shapeIdx, nSubsets);
 
         int idx = 0;
@@ -2499,7 +2438,7 @@ namespace BC7C
       }
 
       if(idxMode) {
-        for(int i = 0; i < kMaxNumDataPoints; i++) {
+        for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
           swap(alphaIndices[i], colorIndices[i]);
         }
 
@@ -2510,7 +2449,7 @@ namespace BC7C
     assert(strm.GetBitsRead() == 128);
 
     // Get final colors by interpolating...
-    for(int i = 0; i < kMaxNumDataPoints; i++) {
+    for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
 
       const uint32 subset = GetSubsetForIndex(i, shapeIdx, nSubsets);
       uint32 &pixel = outBuf[i];

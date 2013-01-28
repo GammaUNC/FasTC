@@ -473,7 +473,6 @@ static unsigned char Optimal7CompressBC7Mode5[256][2] = {
 		}
 		OutputDebugString(tableEntryStr);
 	}
-*/
 static unsigned char Optimal5CompressDXT1[256][2][3] = {
 	{ { 0, 0x00, 0x00 }, { 1, 0x00, 0x00 } },
 	{ { 0, 0x00, 0x00 }, { 1, 0x00, 0x00 } },
@@ -732,6 +731,7 @@ static unsigned char Optimal5CompressDXT1[256][2][3] = {
 	{ { 0, 0x1f, 0x1f }, { 1, 0x1f, 0x1f } },
 	{ { 0, 0x1f, 0x1f }, { 1, 0x1f, 0x1f } }
 };
+*/
 
 static unsigned char Optimal6CompressDXT1[256][2][3] = {
 	{ { 0, 0x00, 0x00 }, { 1, 0x00, 0x00 } },

@@ -124,6 +124,7 @@ public:
 
 private:
 	
+        const double m_IsOpaque;
 	const Attributes *const m_Attributes;
 
 	int m_RotateMode;
@@ -238,8 +239,6 @@ private:
 	double CompressCluster(const RGBACluster &cluster, RGBAVector &p1, RGBAVector &p2, int *bestIndices, int *alphaIndices) const;
 
 	void ClampEndpointsToGrid(RGBAVector &p1, RGBAVector &p2, int &bestPBitCombo) const;
-
-	const double m_IsOpaque;
 };
 
 extern const uint32 kBC7InterpolationValues[4][16][2];

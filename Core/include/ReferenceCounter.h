@@ -60,6 +60,7 @@ class ReferenceCounter {
     DecRefCount();
     m_ReferenceCount = other.m_ReferenceCount;
     IncRefCount();
+    return *this;
   }
 
   uint32 GetRefCount() const { 

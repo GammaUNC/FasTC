@@ -347,7 +347,7 @@ void RGBACluster::AddPoint(const RGBAVector &p) {
 	m_DataPoints[m_NumPoints++] = p;
 	m_PointBitString |= 1 << p.GetIdx();
 
-	for(int i = 0; i < kNumColorChannels; i++) {
+	for(uint32 i = 0; i < kNumColorChannels; i++) {
 		m_Min.c[i] = min(p.c[i], m_Min.c[i]);
 		m_Max.c[i] = max(p.c[i], m_Max.c[i]);
 	}
@@ -449,7 +449,7 @@ double RGBACluster::QuantizedError(const RGBAVector &p1, const RGBAVector &p2, u
 			uint32 interp1 = (*interpVals)[j][1];
 
 			RGBAVector errorVec (0.0f);
-			for(int k = 0; k < kNumColorChannels; k++) {
+			for(uint32 k = 0; k < kNumColorChannels; k++) {
 				const uint8 ip = (((uint32(pqp1[k]) * interp0) + (uint32(pqp2[k]) * interp1) + 32) >> 6) & 0xFF;
 				const uint8 dist = sad(pb[k], ip);
 				errorVec.c[k] = kFloatConversion[dist] * metric.c[k];
@@ -548,13 +548,12 @@ static uint32 PowerIteration(const RGBAMatrix &mat, RGBADir &eigVec, double &eig
 	return numIterations;
 }
 
-uint32 GetPrincipalAxis(int nPts, const RGBAVector *pts, RGBADir &axis, double &eigOne, double *eigTwo) {
+uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, double &eigOne, double *eigTwo) {
 
-	assert(nPts > 0);
 	assert(nPts <= kMaxNumDataPoints);
 
 	RGBAVector avg (0.0f);
-	for(int i = 0; i < nPts; i++) {
+	for(uint32 i = 0; i < nPts; i++) {
 		avg += pts[i];
 	}
 	avg /= float(nPts);
@@ -562,21 +561,21 @@ uint32 GetPrincipalAxis(int nPts, const RGBAVector *pts, RGBADir &axis, double &
 	// We use these vectors for calculating the covariance matrix...
 	RGBAVector toPts[kMaxNumDataPoints];
 	RGBAVector toPtsMax(-FLT_MAX);
-	for(int i = 0; i < nPts; i++) {
+	for(uint32 i = 0; i < nPts; i++) {
 		toPts[i] = pts[i] - avg;
 
-		for(int j = 0; j < kNumColorChannels; j++) {
+		for(uint32 j = 0; j < kNumColorChannels; j++) {
 			toPtsMax.c[j] = max(toPtsMax.c[j], toPts[i].c[j]);
 		}
 	}
 
 	// Generate a list of unique points...
 	RGBAVector upts[kMaxNumDataPoints];
-	int uptsIdx = 0;
-	for(int i = 0; i < nPts; i++) {
+	uint32 uptsIdx = 0;
+	for(uint32 i = 0; i < nPts; i++) {
 		
 		bool hasPt = false;
-		for(int j = 0; j < uptsIdx; j++) {
+		for(uint32 j = 0; j < uptsIdx; j++) {
 			if(upts[j] == pts[i])
 				hasPt = true;
 		}
@@ -597,7 +596,7 @@ uint32 GetPrincipalAxis(int nPts, const RGBAVector *pts, RGBADir &axis, double &
 
 		RGBADir dir (upts[1] - upts[0]);
 		bool collinear = true;
-		for(int i = 2; i < nPts; i++) {
+		for(uint32 i = 2; i < nPts; i++) {
 			RGBAVector v = (upts[i] - upts[0]);
 			if(fabs(fabs(v*dir) - v.Length()) > 1e-7) {
 				collinear = false;
@@ -614,11 +613,11 @@ uint32 GetPrincipalAxis(int nPts, const RGBAVector *pts, RGBADir &axis, double &
 	RGBAMatrix covMatrix;
 
 	// Compute covariance.
-	for(int i = 0; i < kNumColorChannels; i++) {
-		for(int j = 0; j <= i; j++) {
+	for(uint32 i = 0; i < kNumColorChannels; i++) {
+		for(uint32 j = 0; j <= i; j++) {
 
 			float sum = 0.0;
-			for(int k = 0; k < nPts; k++) {
+			for(uint32 k = 0; k < nPts; k++) {
 				sum += toPts[k].c[i] * toPts[k].c[j];
 			}
 
@@ -639,7 +638,7 @@ uint32 GetPrincipalAxis(int nPts, const RGBAVector *pts, RGBADir &axis, double &
 	    );
 	    
 	    bool allZero = true;
-	    for(int i = 0; i < 16; i++) {
+	    for(uint32 i = 0; i < 16; i++) {
 	      if(fabs(reduced[i]) > 0.0005) {
 		allZero = false;
 	      }
