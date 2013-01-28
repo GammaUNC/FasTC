@@ -51,6 +51,9 @@ class ImageLoader {
 
  protected:
 
+  const uint8 *const m_RawData;
+  uint8 *m_PixelData;
+
   uint32 m_Width;
   uint32 m_Height;
 
@@ -65,9 +68,6 @@ class ImageLoader {
  
   uint32 m_AlphaChannelPrecision;
   uint8 *m_AlphaData;
-
-  uint8 *m_PixelData;
-  const uint8 *const m_RawData;
 
   ImageLoader(const uint8 *rawData) 
   : m_RawData(rawData)

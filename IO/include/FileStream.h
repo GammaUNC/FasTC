@@ -99,10 +99,10 @@ class FileStream {
 
  private:
 
-  EFileMode m_Mode;
-
   // Platform specific implementation 
   FileStreamImpl *m_Impl;
+
+  EFileMode m_Mode;
 
   static const uint32 kMaxFilenameSz = 256;
   CHAR m_Filename[kMaxFilenameSz];

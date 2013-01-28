@@ -245,7 +245,6 @@ unsigned char *ImageFile::ReadFileData(const CHAR *filename) {
   // Read all of the data
   uint64 totalBytesRead = 0;
   uint64 totalBytesLeft = fileSize;
-  uint32 bytesToRead = uint32(std::min(totalBytesLeft, uint64(1 << 31)));
   int32 bytesRead;
   while((bytesRead = fstr.Read(rawData, uint32(fileSize))) > 0) {
 	  totalBytesRead += bytesRead;

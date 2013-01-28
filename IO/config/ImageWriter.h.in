@@ -51,18 +51,18 @@ class ImageWriter {
 
  protected:
 
+  const uint8 *m_PixelData;
+  uint32 m_RawFileDataSz;
+  uint8 *m_RawFileData;
+  
   uint32 m_Width;
   uint32 m_Height;
 
-  const uint8 *m_PixelData;
-	uint32 m_RawFileDataSz;
-	uint8 *m_RawFileData;
-
   ImageWriter(const int width, const int height, const uint8 *rawData) 
   : m_PixelData(rawData)
+  , m_RawFileDataSz(256)
+  , m_RawFileData(new uint8[m_RawFileDataSz])
   , m_Width(width), m_Height(height)
-	, m_RawFileDataSz(256)
-	, m_RawFileData(new uint8[m_RawFileDataSz])
     { }
 
   uint32 GetChannelForPixel(uint32 x, uint32 y, uint32 ch);
