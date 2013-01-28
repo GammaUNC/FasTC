@@ -55,18 +55,18 @@ void PrintUsage() {
 }
 
 void ExtractBasename(const char *filename, char *buf, int bufSz) {
-	int len = strlen(filename);
-	const char *end = filename + len;
-	while(--end != filename) {
-		if(*end == '.')
-		{
-			int numChars = end - filename + 1;
-			int toCopy = (numChars > bufSz)? bufSz : numChars;
-			memcpy(buf, filename, toCopy);
-			buf[toCopy - 1] = '\0';
-			return;
-		}
-	}
+  int len = strlen(filename);
+  const char *end = filename + len;
+  while(--end != filename) {
+    if(*end == '.')
+    {
+      int numChars = end - filename + 1;
+      int toCopy = (numChars > bufSz)? bufSz : numChars;
+      memcpy(buf, filename, toCopy);
+      buf[toCopy - 1] = '\0';
+      return;
+    }
+  }
 }
 
 int main(int argc, char **argv) {
@@ -161,16 +161,16 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-	char basename[256];
-	ExtractBasename(argv[fileArg], basename, 256);
+  char basename[256];
+  ExtractBasename(argv[fileArg], basename, 256);
 
   ImageFile file (argv[fileArg]);
-	if(!file.Load()) {
+  if(!file.Load()) {
     fprintf(stderr, "Error loading file: %s\n", argv[fileArg]);
     return 1;
-	}
+  }
 
-	const Image *img = file.GetImage();
+  const Image *img = file.GetImage();
 
   int numBlocks = (img->GetWidth() * img->GetHeight())/16;
   BlockStatManager *statManager = NULL;
@@ -201,12 +201,14 @@ int main(int argc, char **argv) {
   }
 
   if(bSaveLog) {
-    statManager->ToFile(strcat(basename, ".log"));
+    char logname[256];
+    sprintf(logname, "%s.log", basename);
+    statManager->ToFile(logname);
   }
 
-	Image cImg (*ci);
-	ImageFile cImgFile (strcat(basename, "-bc7.png"), eFileFormat_PNG, cImg);
-	cImgFile.Write();
+  Image cImg (*ci);
+  ImageFile cImgFile (strcat(basename, "-bc7.png"), eFileFormat_PNG, cImg);
+  cImgFile.Write();
 
   // Cleanup 
   delete ci;
