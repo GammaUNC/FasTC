@@ -63,8 +63,8 @@ static T max(const T &a, const T &b) {
 ////////////////////////////////////////////////////////////////////////////////
 
 BlockStat::BlockStat(const CHAR *statName, int stat) 
-  : m_IntStat(stat)
-  , m_Type(eType_Int)
+  : m_Type(eType_Int)
+  , m_IntStat(stat)
 {
 #ifdef _MSC_VER
   strncpy_s(m_StatName, statName, kStatNameSz);
@@ -74,8 +74,8 @@ BlockStat::BlockStat(const CHAR *statName, int stat)
 }
 
 BlockStat::BlockStat(const CHAR *statName, double stat) 
-  : m_FloatStat(stat)
-  , m_Type(eType_Float)
+  : m_Type(eType_Float)
+  , m_FloatStat(stat)
 {
 #ifdef _MSC_VER
   strncpy_s(m_StatName, statName, kStatNameSz);
@@ -124,19 +124,19 @@ void BlockStat::ToString(CHAR *buf, int bufSz) const {
 ////////////////////////////////////////////////////////////////////////////////
 
 void BlockStatManager::Copy(const BlockStatManager &other) {
-	// This is a bug. If we copy the manager then all of the lists and pointers
-	// become shared and can cause dereferencing issues. Check to see where you're
-	// copying this class and make sure to actually create a new instance.
-	assert(!"We shouldn't be copying these in this manner!");
-	
-	m_BlockStatList = new BlockStatList(*other.m_BlockStatList);
-	m_BlockStatListSz = other.m_BlockStatListSz;
-	m_NextBlock = other.m_NextBlock;
+  // This is a bug. If we copy the manager then all of the lists and pointers
+  // become shared and can cause dereferencing issues. Check to see where you're
+  // copying this class and make sure to actually create a new instance.
+  assert(!"We shouldn't be copying these in this manner!");
 
-	// If we do copy them, then make sure that we are actually using the exact same
-	// pointers for our synchronization primitives... otherwise we could run into
-	// deadlock issues.
-	m_Mutex = other.m_Mutex;
+  m_BlockStatList = new BlockStatList(*other.m_BlockStatList);
+  m_BlockStatListSz = other.m_BlockStatListSz;
+  m_NextBlock = other.m_NextBlock;
+
+  // If we do copy them, then make sure that we are actually using the exact same
+  // pointers for our synchronization primitives... otherwise we could run into
+  // deadlock issues.
+  m_Mutex = other.m_Mutex;
 }
 
 BlockStatManager::BlockStatManager(const BlockStatManager &other) {

@@ -114,16 +114,17 @@ class BlockStatManager {
   private:
     BlockStatList(const BlockStat &stat);
 
-    BlockStat m_Stat;
     BlockStatList *m_Tail;
+    BlockStat m_Stat;
 
     ReferenceCounter m_Counter;
   } *m_BlockStatList;
   uint32 m_BlockStatListSz;
 
-  TCMutex *m_Mutex;
   uint32 m_NextBlock;
   ReferenceCounter m_Counter;
+
+  TCMutex *m_Mutex;
 
   // Note: we probably shouldn't call this...
   void Copy(const BlockStatManager &);

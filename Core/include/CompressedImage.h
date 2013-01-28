@@ -55,11 +55,13 @@ enum ECompressionFormat {
 class CompressedImage {
 
  private:
-  unsigned char *m_Data;
-  unsigned int m_DataSz;
   unsigned int m_Width;
   unsigned int m_Height;
+
   ECompressionFormat m_Format;
+
+  unsigned char *m_Data;
+  unsigned int m_DataSz;
 
   void InitData(const unsigned char *withData);
  public:
@@ -71,8 +73,8 @@ class CompressedImage {
     const unsigned char *data
   );
 
-	unsigned int GetHeight() const { return m_Height; }
-	unsigned int GetWidth() const { return m_Width; }
+  unsigned int GetHeight() const { return m_Height; }
+  unsigned int GetWidth() const { return m_Width; }
 
   CompressedImage( const CompressedImage &other );
   ~CompressedImage();

@@ -93,6 +93,12 @@ static  CompressionFuncWithStats ChooseFuncFromSettingsWithStats(const SCompress
        return BC7C::CompressImageBC7Stats;
     }
     break;
+
+    default:
+    {
+      assert(!"Not implemented!");
+      return NULL;
+    }
   }
   return NULL;
 }
@@ -114,6 +120,12 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
 #endif
     }
     break;
+
+    default:
+    {
+      assert(!"Not implemented!");
+      return NULL;
+    }
   }
   return NULL;
 }
@@ -270,9 +282,10 @@ bool CompressImageData(
   // Allocate data based on the compression method
   uint32 cmpDataSzNeeded = 0;
   switch(settings.format) {
-    case eCompressionFormat_DXT1: cmpDataSzNeeded = dataSz / 8;
-    case eCompressionFormat_DXT5: cmpDataSzNeeded = dataSz / 4;
-    case eCompressionFormat_BPTC: cmpDataSzNeeded = dataSz / 4;
+    default: assert(!"Not implemented!"); // Fall through V
+    case eCompressionFormat_DXT1: cmpDataSzNeeded = dataSz / 8; break;
+    case eCompressionFormat_DXT5: cmpDataSzNeeded = dataSz / 4; break;
+    case eCompressionFormat_BPTC: cmpDataSzNeeded = dataSz / 4; break;
   }
 
   if(cmpDataSzNeeded == 0) {

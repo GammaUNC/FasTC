@@ -89,6 +89,7 @@ void CompressedImage::InitData(const unsigned char *withData) {
   int uncompDataSz = m_Width * m_Height * 4;
 
   switch(m_Format) {
+    default: assert(!"Not implemented!"); // Fall through V
     case eCompressionFormat_DXT1: m_DataSz = uncompDataSz / 8; break;
     case eCompressionFormat_DXT5: m_DataSz = uncompDataSz / 4; break;
     case eCompressionFormat_BPTC: m_DataSz = uncompDataSz / 4; break;
@@ -112,6 +113,7 @@ bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBuf
   // First make sure that we have enough data
   uint32 dataSz = 0;
   switch(m_Format) {
+    default: assert(!"Not implemented!"); // Fall through V
     case eCompressionFormat_DXT1: dataSz = m_DataSz * 8; break;
     case eCompressionFormat_DXT5: dataSz = m_DataSz * 4; break;
     case eCompressionFormat_BPTC: dataSz = m_DataSz * 4; break;

@@ -134,9 +134,10 @@ class WorkerQueue {
   const CompressionFunc m_CompressionFunc;
   CompressionFunc GetCompressionFunc() const { return m_CompressionFunc; }
 
-  BlockStatManager *m_BlockStatManager;
   const CompressionFuncWithStats m_CompressionFuncWithStats;
   CompressionFuncWithStats GetCompressionFuncWithStats() const { return m_CompressionFuncWithStats; }
+
+  BlockStatManager *m_BlockStatManager;
   BlockStatManager *GetBlockStatManager() const { return m_BlockStatManager; }
 
   StopWatch m_StopWatch;

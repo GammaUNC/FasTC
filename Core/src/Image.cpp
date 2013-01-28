@@ -70,9 +70,9 @@ Image::Image(const CompressedImage &ci)
 }
 
 Image::Image(const ImageLoader &loader) 
-  : m_PixelData(0)
-  , m_Width(loader.GetWidth())
+  : m_Width(loader.GetWidth())
   , m_Height(loader.GetHeight())
+  , m_PixelData(0)
 {
   if(loader.GetImageData()) {
     m_PixelData = new uint8[ loader.GetImageDataSz() ];
@@ -93,6 +93,7 @@ CompressedImage *Image::Compress(const SCompressionSettings &settings) const {
   // Allocate data based on the compression method
   int cmpDataSz = 0;
   switch(settings.format) {
+  default: assert(!"Not implemented!");
     case eCompressionFormat_DXT1: cmpDataSz = dataSz / 8;
     case eCompressionFormat_DXT5: cmpDataSz = dataSz / 4;
     case eCompressionFormat_BPTC: cmpDataSz = dataSz / 4;

@@ -133,13 +133,13 @@ class ThreadGroup {
   const unsigned char *const m_ImageData;
   unsigned char *m_OutBuf;
 
-  const unsigned int m_CompressedBlockSize;
-  const unsigned int m_UncompressedBlockSize;
-
   StopWatch m_StopWatch;
 
   EThreadState m_ThreadState;
   bool m_ExitFlag;
+
+  const unsigned int m_CompressedBlockSize;
+  const unsigned int m_UncompressedBlockSize;
 };
 
 #endif // _THREAD_GROUP_H_

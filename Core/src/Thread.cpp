@@ -117,8 +117,8 @@ private:
 public:
   TCBarrierImpl(int threads) 
     : TCThreadBaseImpl()
-    , m_ThreadCount(threads)
     , m_ThreadLimit(threads)
+    , m_ThreadCount(threads)
     , m_Times(0) 
   { 
     assert(threads > 0);
