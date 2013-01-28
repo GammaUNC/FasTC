@@ -187,9 +187,9 @@ private:
                 }
                 else {
                   return (
-                    (maskSeed >> (24 + m_Attributes->colorChannelPrecision - 1) & 0xFF) |
+		    ((maskSeed >> (24 + m_Attributes->colorChannelPrecision - 1) & 0xFF) |
                     (maskSeed >> (16 + m_Attributes->colorChannelPrecision - 1) & 0xFF00) |
-                    (maskSeed >> (8 + m_Attributes->colorChannelPrecision - 1) & 0xFF0000) &
+		    (maskSeed >> (8 + m_Attributes->colorChannelPrecision - 1) & 0xFF0000)) &
                     (0x00FFFFFF)
                   );
                 }

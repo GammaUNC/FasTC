@@ -96,9 +96,9 @@ public:
 	{ }
 
 	RGBAVector(float _r, float _g, float _b, float _a) :
-		r(_r), g(_g), b(_b), a(_a) { }
+		r(_r), g(_g), b(_b), a(_a), idx(0) { }
 
-	explicit RGBAVector(float cc) : r(cc), g(cc), b(cc), a(cc) { }
+	explicit RGBAVector(float cc) : r(cc), g(cc), b(cc), a(cc), idx(0) { }
 
 	RGBAVector &operator =(const RGBAVector &other) {
 		this->idx = other.idx;

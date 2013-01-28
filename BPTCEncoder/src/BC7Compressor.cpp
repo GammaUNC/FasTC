@@ -601,8 +601,11 @@ static inline float frand() {
   // repeat the most significant bits of r in 
   // the least significant of the mantissa
   const uint32 m = (r << 8) | (r >> 7);
-  const uint32 flt = (127 << 23) | m;
-  return *(reinterpret_cast<const float *>(&flt)) - 1.0f;
+  const union {
+    uint32 fltAsInt;
+    float flt;
+  } fltUnion = { (127 << 23) | m };
+  return fltUnion.flt - 1.0;
 }
 
 bool BC7CompressionMode::AcceptNewEndpointError(double newError, double oldError, float temp) const {
@@ -664,7 +667,7 @@ double BC7CompressionMode::OptimizeEndpointsForCluster(const RGBACluster &cluste
 
     int indices[kMaxNumDataPoints];
     RGBAVector np1, np2;
-    int nPbitCombo;
+    int nPbitCombo = 0;
 
     PickBestNeighboringEndpoints(cluster, p1, p2, curPbitCombo, np1, np2, nPbitCombo, visitedStates, lastVisitedState);
 
