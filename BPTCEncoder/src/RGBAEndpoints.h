@@ -420,6 +420,6 @@ private:
 };
 
 extern uint8 QuantizeChannel(const uint8 val, const uint8 mask, const int pBit = -1);
-extern uint32 GetPrincipalAxis(int nPts, const RGBAVector *pts, RGBADir &axis, double &eigOne, double *eigTwo);
+extern uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, double &eigOne, double *eigTwo);
 
 #endif //__RGBA_ENDPOINTS_H__
