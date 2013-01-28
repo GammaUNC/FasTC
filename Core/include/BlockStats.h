@@ -61,6 +61,7 @@ class BlockStatManager {
   class BlockStatList {
   public:
     BlockStatList();
+    BlockStatList(const BlockStatList &other);
     ~BlockStatList();
 
     void AddStat(const BlockStat &stat);
@@ -69,7 +70,6 @@ class BlockStatManager {
 
   private:
     BlockStatList(const BlockStat &stat);
-	BlockStatList(const BlockStatList &other);
 
     BlockStat m_Stat;
     BlockStatList *m_Tail;

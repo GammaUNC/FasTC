@@ -86,7 +86,7 @@ void BlockStatManager::Copy(const BlockStatManager &other) {
 	// copying this class and make sure to actually create a new instance.
 	assert(!"We shouldn't be copying these in this manner!");
 	
-	m_BlockStatList = new BlockStatList(other.m_BlockStatList);
+	m_BlockStatList = new BlockStatList(*other.m_BlockStatList);
 	m_BlockStatListSz = other.m_BlockStatListSz;
 	m_NextBlock = other.m_NextBlock;
 
