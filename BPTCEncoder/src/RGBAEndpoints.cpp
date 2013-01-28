@@ -333,7 +333,7 @@ bool RGBAMatrix::Identity() {
 
 RGBACluster::RGBACluster(const RGBACluster &left, const RGBACluster &right) {
 	*this = left;
-	for(int i = 0; i < right.m_NumPoints; i++) {
+	for(uint32 i = 0; i < right.m_NumPoints; i++) {
 		const RGBAVector &p = right.m_DataPoints[i];
 		AddPoint(p);
 	}
@@ -436,7 +436,7 @@ double RGBACluster::QuantizedError(const RGBAVector &p1, const RGBAVector &p2, u
 	const RGBAVector metric = errorMetricVec;
 
 	float totalError = 0.0;
-	for(int i = 0; i < m_NumPoints; i++) {
+	for(uint32 i = 0; i < m_NumPoints; i++) {
 
 		const uint32 pixel = m_DataPoints[i].ToPixel();
 		const uint8 *pb = (const uint8 *)(&pixel);

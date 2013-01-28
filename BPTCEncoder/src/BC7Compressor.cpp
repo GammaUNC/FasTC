@@ -718,7 +718,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
     double bestErr = CompressSingleColor(p, p1, p2, dummyPbit);
 
     // We're assuming all indices will be index 1...
-    for(int i = 0; i < cluster.GetNumPoints(); i++) {
+    for(uint32 i = 0; i < cluster.GetNumPoints(); i++) {
       bestIndices[i] = 1;
       alphaIndices[i] = 1;
     }
@@ -730,7 +730,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
   float alphaVals[kMaxNumDataPoints];
 
   float alphaMin = FLT_MAX, alphaMax = -FLT_MAX;
-  for(int i = 0; i < cluster.GetNumPoints(); i++) {
+  for(uint32 i = 0; i < cluster.GetNumPoints(); i++) {
 
     RGBAVector v = cluster.GetPoint(i);
     switch(GetRotationMode()) {
@@ -783,10 +783,6 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
 
     // Mode 5 has 8 bits of precision for alpha.
     if(GetModeNumber() == 5) {
-
-      assert(a1 == float(a1b));
-      assert(a2 == float(a2b));
-
       for(uint32 i = 0; i < kMaxNumDataPoints; i++)
         alphaIndices[i] = 0;
 
@@ -971,14 +967,14 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
     double bestErr = CompressSingleColor(p, p1, p2, bestPbitCombo);
 
     // We're assuming all indices will be index 1...
-    for(int i = 0; i < cluster.GetNumPoints(); i++) {
+    for(uint32 i = 0; i < cluster.GetNumPoints(); i++) {
       bestIndices[i] = 1;
     }
     
     return bestErr;
   }
   
-  const int nBuckets = (1 << GetNumberOfBitsPerIndex());
+  const uint32 nBuckets = (1 << GetNumberOfBitsPerIndex());
 
 #if 1
   RGBAVector avg = cluster.GetTotal() / float(cluster.GetNumPoints());
@@ -987,7 +983,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
   ::GetPrincipalAxis(cluster.GetNumPoints(), cluster.GetPoints(), axis, eigOne, NULL);
 
   float mindp = FLT_MAX, maxdp = -FLT_MAX;
-  for(int i = 0 ; i < cluster.GetNumPoints(); i++) {
+  for(uint32 i = 0 ; i < cluster.GetNumPoints(); i++) {
     float dp = (cluster.GetPoint(i) - avg) * axis;
     if(dp < mindp) mindp = dp;
     if(dp > maxdp) maxdp = dp;
@@ -1002,10 +998,10 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
   ClampEndpoints(p1, p2);
 
   RGBAVector pts[1 << 4]; // At most 4 bits per index.
-  int numPts[1<<4];
+  uint32 numPts[1<<4];
   assert(nBuckets <= 1 << 4);
 
-  for(int i = 0; i < nBuckets; i++) {
+  for(uint32 i = 0; i < nBuckets; i++) {
     float s = (float(i) / float(nBuckets - 1));
     pts[i] = (1.0f - s) * p1 + s * p2;
   }
@@ -1014,7 +1010,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
   assert(pts[nBuckets - 1] == p2);
 
   // Do k-means clustering...
-  int bucketIdx[kMaxNumDataPoints];
+  uint32 bucketIdx[kMaxNumDataPoints];
 
   bool fixed = false;
   while(!fixed) {
@@ -1022,11 +1018,11 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
     RGBAVector newPts[1 << 4];
 
     // Assign each of the existing points to one of the buckets...
-    for(int i = 0; i < cluster.GetNumPoints(); i++) {
+    for(uint32 i = 0; i < cluster.GetNumPoints(); i++) {
 
       int minBucket = -1;
       float minDist = FLT_MAX;
-      for(int j = 0; j < nBuckets; j++) {
+      for(uint32 j = 0; j < nBuckets; j++) {
         RGBAVector v = cluster.GetPoint(i) - pts[j];
         float distSq = v * v;
         if(distSq < minDist)
@@ -1041,11 +1037,11 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
     }
 
     // Calculate new buckets based on centroids of clusters...
-    for(int i = 0; i < nBuckets; i++) {
+    for(uint32 i = 0; i < nBuckets; i++) {
       
       numPts[i] = 0;
       newPts[i] = RGBAVector(0.0f);
-      for(int j = 0; j < cluster.GetNumPoints(); j++) {
+      for(uint32 j = 0; j < cluster.GetNumPoints(); j++) {
         if(bucketIdx[j] == i) {
           numPts[i]++;
           newPts[i] += cluster.GetPoint(j);
@@ -1060,20 +1056,20 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
 
     // If we haven't changed, then we're done.
     fixed = true;
-    for(int i = 0; i < nBuckets; i++) {
+    for(uint32 i = 0; i < nBuckets; i++) {
       if(pts[i] != newPts[i])
         fixed = false;
     }
 
     // Assign the new points to be the old points.
-    for(int i = 0; i < nBuckets; i++) {
+    for(uint32 i = 0; i < nBuckets; i++) {
       pts[i] = newPts[i];
     }
   }
 
   // If there's only one bucket filled, then just compress for that single color...
   int numBucketsFilled = 0, lastFilledBucket = -1;
-  for(int i = 0; i < nBuckets; i++) {
+  for(uint32 i = 0; i < nBuckets; i++) {
     if(numPts[i] > 0) {
       numBucketsFilled++;
       lastFilledBucket = i;
@@ -1086,7 +1082,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
     double bestErr = CompressSingleColor(p, p1, p2, bestPbitCombo);
 
     // We're assuming all indices will be index 1...
-    for(int i = 0; i < cluster.GetNumPoints(); i++) {
+    for(uint32 i = 0; i < cluster.GetNumPoints(); i++) {
       bestIndices[i] = 1;
     }
       
@@ -1098,7 +1094,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
   // http://developer.download.nvidia.com/compute/cuda/1.1-Beta/x86_website/projects/dxtc/doc/cuda_dxtc.pdf
   float asq = 0.0, bsq = 0.0, ab = 0.0;
   RGBAVector ax(0.0), bx(0.0);
-  for(int i = 0; i < nBuckets; i++) {
+  for(uint32 i = 0; i < nBuckets; i++) {
     float a = float(nBuckets - 1 - i) / float(nBuckets - 1);
     float b = float(i) / float(nBuckets - 1);
 
@@ -2004,7 +2000,7 @@ namespace BC7C
 	BlockStat s (kBlockStatString[eBlockStat_Mode], *m_ModePtr);
 	m_BSM.AddStat(m_BlockIdx, s);
 
-	for(int i = 0; i < BC7CompressionMode::kNumModes; i++) {
+	for(uint32 i = 0; i < BC7CompressionMode::kNumModes; i++) {
 	  s = BlockStat(kBlockStatString[eBlockStat_ModeZeroEstimate + i], m_Estimates[i]);
 	  m_BSM.AddStat(m_BlockIdx, s);
 
@@ -2020,7 +2016,7 @@ namespace BC7C
 
     // reset global variables...
     bestMode = 0;
-    for(int i = 0; i < BC7CompressionMode::kNumModes; i++){
+    for(uint32 i = 0; i < BC7CompressionMode::kNumModes; i++){
       modeError[i] = modeEstimate[i] = -1.0;
     }
 

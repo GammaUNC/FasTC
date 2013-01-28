@@ -84,8 +84,8 @@ static const int kPBits[4][2] = {
 class BC7CompressionMode {
 public:
 
-	static const int kMaxNumSubsets = 3;
-	static const int kNumModes = 8;
+	static const uint32 kMaxNumSubsets = 3;
+	static const uint32 kNumModes = 8;
 
 	explicit BC7CompressionMode(int mode, bool opaque = true) : m_IsOpaque(opaque), m_Attributes(&(kModeAttributes[mode])), m_RotateMode(0), m_IndexMode(0) { }
 	~BC7CompressionMode() { }

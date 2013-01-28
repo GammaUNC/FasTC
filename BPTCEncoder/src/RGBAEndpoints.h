@@ -377,7 +377,7 @@ public:
 			
 	RGBAVector GetTotal() const { return m_Total; }
 	const RGBAVector &GetPoint(int idx) const { return m_DataPoints[idx]; }
-	int GetNumPoints() const { return m_NumPoints; }
+	uint32 GetNumPoints() const { return m_NumPoints; }
 	RGBAVector GetAvg() const { return m_Total / float(m_NumPoints); }
 	const RGBAVector *GetPoints() const { return m_DataPoints; }
 
@@ -402,7 +402,7 @@ public:
 private:
 
 	// The number of points in the cluster.
-	int m_NumPoints;
+	uint32 m_NumPoints;
 
 	RGBAVector m_Total;
 
