@@ -105,9 +105,9 @@ void BlockStat::ToString(CHAR *buf, int bufSz) const {
 
     case BlockStat::eType_Int:
 #ifdef _MSC_VER
-      _sntprintf_s(buf, bufSz, _TRUNCATE, "%s,%lu", m_StatName, m_IntStat);
+      _sntprintf_s(buf, bufSz, _TRUNCATE, "%s,%lu", m_StatName, (unsigned long)m_IntStat);
 #else
-      snprintf(buf, bufSz, "%s,%lu", m_StatName, m_IntStat);
+        snprintf(buf, bufSz, "%s,%lu", m_StatName, (unsigned long)m_IntStat);
 #endif
     break;
 
