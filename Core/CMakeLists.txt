@@ -80,7 +80,15 @@ INCLUDE_DIRECTORIES( ${TexC_SOURCE_DIR}/Core/include )
 SET( THREAD_API )
 SET( THREAD_APIS_AVAILABLE "None" )
 
-FIND_PACKAGE( Boost COMPONENTS thread system ) 
+###### Find Boost...
+
+IF( MSVC )
+		SET(ENV{BOOSTLIBDIR} "${MSVC_LIB_DIR}")
+		SET(ENV{BOOSTINCLUDEDIR} "${MSVC_INSTALL_PATH}/include")
+ENDIF( MSVC )
+
+SET( Boost_USE_STATIC_LIBS ON )
+FIND_PACKAGE( Boost COMPONENTS thread system date_time chrono ) 
 IF( Boost_FOUND )
 
     SET( THREAD_APIS_AVAILABLE "Boost" ${THREAD_APIS_AVAILABLE} )
@@ -89,6 +97,8 @@ IF( Boost_FOUND )
     ENDIF()
 
 ENDIF()
+
+###### Find PThreads....
 
 FIND_PACKAGE( Threads )
 IF( CMAKE_USE_PTHREADS_INIT )
@@ -111,7 +121,7 @@ SET_PROPERTY( CACHE THREAD_API PROPERTY STRINGS ${THREAD_APIS_AVAILABLE} )
 IF( THREAD_API MATCHES "Boost")
 	INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 	SET( SOURCES ${SOURCES} "src/ThreadBoost.cpp" )
-	LINK_DIRECTORIES( ${Boost_LIBRARY_DIR} )
+	LINK_DIRECTORIES( ${Boost_LIBRARY_DIRS} )
 ENDIF()
 
 IF( THREAD_API MATCHES "PThread" )
@@ -125,7 +135,7 @@ ELSE()
 	SET( SOURCES ${SOURCES} "src/ThreadGroup.cpp" )
 	SET( SOURCES ${SOURCES} "src/WorkerQueue.cpp" )
 
-	SET( HEADERS ${HEADERS} "include/Thread.h" )
+	SET( HEADERS ${HEADERS} "src/Thread.h" )
 	SET( HEADERS ${HEADERS} "src/ThreadGroup.h" )
 	SET( HEADERS ${HEADERS} "src/WorkerQueue.h" )
 ENDIF()

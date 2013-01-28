@@ -54,7 +54,7 @@ class ImageLoaderPNG : public ImageLoader {
   virtual bool ReadData();
 
 private:
-  unsigned int m_StreamPosition;
+  uint64 m_StreamPosition;
   friend class PNGStreamReader;
 };
 

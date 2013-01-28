@@ -48,6 +48,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "TexCompTypes.h"
 #include "BC7Compressor.h"
 
 CompressedImage::CompressedImage()
@@ -109,7 +110,7 @@ CompressedImage::~CompressedImage() {
 bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBufSz) const {
 
   // First make sure that we have enough data
-  int dataSz = 0;
+  uint32 dataSz = 0;
   switch(m_Format) {
     case eCompressionFormat_DXT1: dataSz = m_DataSz * 8; break;
     case eCompressionFormat_DXT5: dataSz = m_DataSz * 4; break;

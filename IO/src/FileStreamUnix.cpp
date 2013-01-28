@@ -139,6 +139,8 @@ FileStream &FileStream::operator=(const FileStream &other) {
 
   m_Mode = other.m_Mode;
   strncpy(m_Filename, other.m_Filename, kMaxFilenameSz);
+
+  return *this;
 }
 
 FileStream::~FileStream() {

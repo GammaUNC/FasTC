@@ -82,7 +82,7 @@ public:
   const EImageFileFormat m_FileFormat;
 
   static unsigned char *ReadFileData(const CHAR *filename);
-	static bool WriteImageDataToFile(const uint8 *data, const uint32 dataSz, const CHAR *filename);
+  static bool WriteImageDataToFile(const uint8 *data, const uint32 dataSz, const CHAR *filename);
   static EImageFileFormat DetectFileFormat(const CHAR *filename);
 
   Image *LoadImage(const unsigned char *rawImageData) const;

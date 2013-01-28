@@ -150,14 +150,14 @@ bool ImageLoaderPNG::ReadData() {
       m_RedChannelPrecision = bitDepth;
       m_RedData = new unsigned char[numPixels];
 
-      for(int i = 0; i < m_Height; i++) {
+      for(uint32 i = 0; i < m_Height; i++) {
 	
 	png_read_row(png_ptr, rowData, NULL);
 
 	unsigned int rowOffset = i * m_Width;
 	
 	unsigned int byteIdx = 0;
-	for(int j = 0; j < m_Width; j++) {
+	for(uint32 j = 0; j < m_Width; j++) {
  	  m_RedData[rowOffset + j] = rowData[byteIdx++];
 	}
 
@@ -174,14 +174,14 @@ bool ImageLoaderPNG::ReadData() {
       m_BlueChannelPrecision = bitDepth;
       m_BlueData = new unsigned char[numPixels];
 
-      for(int i = 0; i < m_Height; i++) {
+      for(uint32 i = 0; i < m_Height; i++) {
 	
 	png_read_row(png_ptr, rowData, NULL);
 
 	unsigned int rowOffset = i * m_Width;
 	
 	unsigned int byteIdx = 0;
-	for(int j = 0; j < m_Width; j++) {
+	for(uint32 j = 0; j < m_Width; j++) {
  	  m_RedData[rowOffset + j] = rowData[byteIdx++];
 	  m_GreenData[rowOffset + j] = rowData[byteIdx++];
 	  m_BlueData[rowOffset + j] = rowData[byteIdx++];
@@ -201,14 +201,14 @@ bool ImageLoaderPNG::ReadData() {
       m_AlphaChannelPrecision = bitDepth;
       m_AlphaData = new unsigned char[numPixels];
 
-      for(int i = 0; i < m_Height; i++) {
+      for(uint32 i = 0; i < m_Height; i++) {
 	
 	png_read_row(png_ptr, rowData, NULL);
 
 	unsigned int rowOffset = i * m_Width;
 	
 	unsigned int byteIdx = 0;
-	for(int j = 0; j < m_Width; j++) {
+	for(uint32 j = 0; j < m_Width; j++) {
  	  m_RedData[rowOffset + j] = rowData[byteIdx++];
 	  m_GreenData[rowOffset + j] = rowData[byteIdx++];
 	  m_BlueData[rowOffset + j] = rowData[byteIdx++];
@@ -225,14 +225,14 @@ bool ImageLoaderPNG::ReadData() {
       m_AlphaChannelPrecision = bitDepth;
       m_AlphaData = new unsigned char[numPixels];
 
-      for(int i = 0; i < m_Height; i++) {
+      for(uint32 i = 0; i < m_Height; i++) {
 	
 	png_read_row(png_ptr, rowData, NULL);
 
 	unsigned int rowOffset = i * m_Width;
 	
 	unsigned int byteIdx = 0;
-	for(int j = 0; j < m_Width; j++) {
+	for(uint32 j = 0; j < m_Width; j++) {
  	  m_RedData[rowOffset + j] = rowData[byteIdx++];
 	  m_AlphaData[rowOffset + j] = rowData[byteIdx++];
 	}

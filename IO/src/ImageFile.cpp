@@ -48,6 +48,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include <assert.h>
+#include <algorithm>
 
 #include "ImageWriter.h"
 #include "ImageLoader.h"
@@ -75,10 +76,10 @@ static inline T abs(const T &a) {
   return a > 0? a : -a;
 }
 
-template <typename T>
-static inline T min(const T &a, const T &b) {
-  return (a < b)? a : b;
-}
+//!HACK!
+#ifdef _MSC_VER
+#define strncpy strncpy_s
+#endif
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -156,7 +157,7 @@ bool ImageFile::Write() {
 		return false;
 	}
 
-	WriteImageDataToFile(writer->GetRawFileData(), writer->GetRawFileDataSz(), m_Filename);
+	WriteImageDataToFile(writer->GetRawFileData(), uint32(writer->GetRawFileDataSz()), m_Filename);
 
 	delete writer;
 	return true;
@@ -197,13 +198,13 @@ Image *ImageFile::LoadImage(const unsigned char *rawImageData) const {
 
 EImageFileFormat ImageFile::DetectFileFormat(const CHAR *filename) {
 
-  int len = strlen(filename);
+  size_t len = strlen(filename);
   if(len >= 256) {
     // !FIXME! Report Error...
     return kNumImageFileFormats;
   }
 
-  int dotPos = len - 1;
+  size_t dotPos = len - 1;
 
   while(dotPos >= 0 && filename[dotPos--] != '.');
 
@@ -242,8 +243,16 @@ unsigned char *ImageFile::ReadFileData(const CHAR *filename) {
   assert(fstr.Tell() == 0);
 
   // Read all of the data
-  int32 bytesRead = fstr.Read(rawData, fileSize);
-  if(bytesRead != fileSize) {
+  uint64 totalBytesRead = 0;
+  uint64 totalBytesLeft = fileSize;
+  uint32 bytesToRead = uint32(std::min(totalBytesLeft, uint64(1 << 31)));
+  int32 bytesRead;
+  while((bytesRead = fstr.Read(rawData, uint32(fileSize))) > 0) {
+	  totalBytesRead += bytesRead;
+	  totalBytesLeft -= bytesRead;
+  }
+
+  if(totalBytesRead != fileSize) {
     assert(!"We didn't read as much data as we thought we had!");
     fprintf(stderr, "Internal error: Incorrect file size assumption\n");
     return 0;

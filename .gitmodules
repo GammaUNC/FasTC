@@ -1,0 +1,3 @@
+[submodule "Windows"]
+	path = Windows
+	url = git@github.com:Mokosha/FasTC-MSVCLibs.git

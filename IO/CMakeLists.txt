@@ -43,7 +43,6 @@
 SET( SOURCES
 	"src/ImageWriter.cpp"
 	"src/ImageLoader.cpp"
-	"src/FileStream.cpp"
 	"src/ImageFile.cpp"
 )
 
@@ -53,6 +52,15 @@ SET( HEADERS
 	"include/ImageFile.h"
 	"include/FileStream.h"
 )
+
+IF( WIN32 )
+	SET( SOURCES ${SOURCES} "src/FileStreamWin32.cpp" )
+ELSE()
+	SET( SOURCES ${SOURCES} "src/FileStreamUnix.cpp" )
+	
+	# Assume compiler is GCC
+	SET( LINK_FLAGS -lrt ${LINK_FLAGS} )
+ENDIF()
 
 FIND_PACKAGE( PNG )
 IF( PNG_FOUND )

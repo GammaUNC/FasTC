@@ -118,7 +118,7 @@ double Image::ComputePSNR(const CompressedImage &ci) const {
   const double wb = 1.0;
     
   double MSE = 0.0;
-  for(int i = 0; i < imageSz; i+=4) {
+  for(uint32 i = 0; i < imageSz; i+=4) {
 
     const unsigned char *pixelDataRaw = m_PixelData + i;
     const unsigned char *pixelDataUncomp = unCompData + i;

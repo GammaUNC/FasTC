@@ -46,7 +46,19 @@
 
 #include "TexCompTypes.h"
 #include "ReferenceCounter.h"
-#include "Thread.h"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Forward declarations
+//
+///////////////////////////////////////////////////////////////////////////////
+class TCMutex;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// class BlockStat
+//
+///////////////////////////////////////////////////////////////////////////////
 
 struct BlockStat {
   friend class BlockStatManager;
@@ -57,7 +69,7 @@ public:
   BlockStat(const BlockStat &);
   BlockStat &operator=(const BlockStat &);
 
-  void ToString(char *buf, int bufSz) const;
+  void ToString(CHAR *buf, int bufSz) const;
   
 private:
   const enum Type {
@@ -79,6 +91,8 @@ class BlockStatManager {
   
  public:
   BlockStatManager(int nBlocks);
+  BlockStatManager(const BlockStatManager &);
+  BlockStatManager &operator=(const BlockStatManager &);
   ~BlockStatManager();
 
   uint32 BeginBlock();
@@ -90,6 +104,7 @@ class BlockStatManager {
   class BlockStatList {
   public:
     BlockStatList();
+    BlockStatList(const BlockStatList &other);
     ~BlockStatList();
 
     void AddStat(const BlockStat &stat);
@@ -106,9 +121,12 @@ class BlockStatManager {
   } *m_BlockStatList;
   uint32 m_BlockStatListSz;
 
-  TCMutex m_Mutex;
+  TCMutex *m_Mutex;
   uint32 m_NextBlock;
   ReferenceCounter m_Counter;
+
+  // Note: we probably shouldn't call this...
+  void Copy(const BlockStatManager &);
 };
 
 #endif // __BLOCK_STATS_H__

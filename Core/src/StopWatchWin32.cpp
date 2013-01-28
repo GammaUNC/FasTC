@@ -67,12 +67,14 @@
 #include "TexCompTypes.h"
 
 #include <cassert>
+#include <Windows.h>
 
 class StopWatchImpl {
+public:
   uint64 frequency;
   uint64 start;
   uint64 stop;
-  uintptr affinityMask;
+  uintptr_t affinityMask;
 
   StopWatchImpl() :
     start(0), stop(0), affinityMask(0)
@@ -85,6 +87,8 @@ class StopWatchImpl {
   }
 };
 
+StopWatch::StopWatch() : impl(new StopWatchImpl) { }
+
 StopWatch::StopWatch(const StopWatch &other) {
   impl = new StopWatchImpl();
   memcpy(impl, other.impl, sizeof(StopWatchImpl));
@@ -96,6 +100,7 @@ StopWatch &StopWatch::operator=(const StopWatch &other) {
   }
   impl = new StopWatchImpl();
   memcpy(impl, other.impl, sizeof(StopWatchImpl));
+  return *this;
 }
 
 StopWatch::~StopWatch() {
@@ -156,7 +161,7 @@ double StopWatch::TimeInSeconds() const
 {
   // Return the elapsed time in seconds.
   assert((impl->stop - impl->start) > 0);
-  return double(impl->stop - impl->start) / double(frequency);
+  return double(impl->stop - impl->start) / double(impl->frequency);
 }
 
 // Get the elapsed time in milliseconds.
@@ -164,7 +169,7 @@ double StopWatch::TimeInMilliseconds() const
 {
   // Return the elapsed time in milliseconds.
   assert((impl->stop - impl->start) > 0);
-  return double(impl->stop - impl->start) / double(frequency) * 1000.0;
+  return double(impl->stop - impl->start) / double(impl->frequency) * 1000.0;
 }
 
 // Get the elapsed time in microseconds.
