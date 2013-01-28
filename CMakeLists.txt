@@ -69,11 +69,11 @@ IF(MSVC)
 ENDIF(MSVC)
 
 IF(CMAKE_COMPILER_IS_GNUCC)
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic -Werror")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -fms-extensions")
 ENDIF()
 
 IF(CMAKE_COMPILER_IS_GNUCXX)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -Werror")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -fms-extensions")
 ENDIF()
 
 ADD_SUBDIRECTORY(BPTCEncoder)
