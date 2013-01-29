@@ -227,7 +227,7 @@ void WorkerQueue::NotifyWorkerFinished() {
 }
 
 WorkerThread::EAction WorkerQueue::AcceptThreadData(uint32 threadIdx) {
-  if(threadIdx < 0 || threadIdx >= m_ActiveThreads) {
+  if(threadIdx >= m_ActiveThreads) {
     return WorkerThread::eAction_Quit;
   }
 

@@ -730,7 +730,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
   }
 
   RGBACluster rgbCluster;
-  float alphaVals[kMaxNumDataPoints];
+  float alphaVals[kMaxNumDataPoints] = {0};
 
   float alphaMin = FLT_MAX, alphaMax = -FLT_MAX;
   for(uint32 i = 0; i < cluster.GetNumPoints(); i++) {
@@ -1013,7 +1013,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
   assert(pts[nBuckets - 1] == p2);
 
   // Do k-means clustering...
-  uint32 bucketIdx[kMaxNumDataPoints];
+  uint32 bucketIdx[kMaxNumDataPoints] = {0};
 
   bool fixed = false;
   while(!fixed) {

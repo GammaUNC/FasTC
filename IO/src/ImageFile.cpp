@@ -206,10 +206,8 @@ EImageFileFormat ImageFile::DetectFileFormat(const CHAR *filename) {
 
   size_t dotPos = len - 1;
 
-  while(dotPos >= 0 && filename[dotPos--] != '.');
-
-  if(dotPos < 0) {
-    // !FIXME! Report Error.....
+  while((dotPos >= len)? false : filename[dotPos--] != '.');
+  if (dotPos >= len) {
     return kNumImageFileFormats;
   }
   

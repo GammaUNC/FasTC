@@ -93,10 +93,10 @@ CompressedImage *Image::Compress(const SCompressionSettings &settings) const {
   // Allocate data based on the compression method
   int cmpDataSz = 0;
   switch(settings.format) {
-  default: assert(!"Not implemented!");
-    case eCompressionFormat_DXT1: cmpDataSz = dataSz / 8;
-    case eCompressionFormat_DXT5: cmpDataSz = dataSz / 4;
-    case eCompressionFormat_BPTC: cmpDataSz = dataSz / 4;
+    default: assert(!"Not implemented!"); // Fall Through V
+    case eCompressionFormat_DXT1: cmpDataSz = dataSz / 8; break;
+    case eCompressionFormat_DXT5: cmpDataSz = dataSz / 4; break;
+    case eCompressionFormat_BPTC: cmpDataSz = dataSz / 4; break;
   }
 
   unsigned char *cmpData = new unsigned char[cmpDataSz];
