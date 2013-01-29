@@ -79,7 +79,7 @@ class FileStream {
   int32 Write(const uint8 *buf, uint32 bufSz);
 
   // Returns where in the filestream we are. Returns -1 on error.
-  int64 Tell();
+  int32 Tell();
   
   enum ESeekPosition {
     eSeekPosition_Beginning,

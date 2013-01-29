@@ -605,7 +605,7 @@ static inline float frand() {
     uint32 fltAsInt;
     float flt;
   } fltUnion = { (127 << 23) | m };
-  return fltUnion.flt - 1.0;
+  return fltUnion.flt - 1.0f;
 }
 
 bool BC7CompressionMode::AcceptNewEndpointError(double newError, double oldError, float temp) const {

@@ -231,7 +231,7 @@ unsigned char *ImageFile::ReadFileData(const CHAR *filename) {
 
   // Figure out the filesize.
   fstr.Seek(0, FileStream::eSeekPosition_End);
-  uint64 fileSize = fstr.Tell();
+  uint32 fileSize = fstr.Tell();
 
   // Allocate data for file contents
   unsigned char *rawData = new unsigned char[fileSize];

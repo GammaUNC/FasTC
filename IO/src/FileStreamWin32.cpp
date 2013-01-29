@@ -197,7 +197,7 @@ int32 FileStream::Write(const uint8 *buf, uint32 bufSz) {
   return amtWritten;
 }
 
-int64 FileStream::Tell() {
+int32 FileStream::Tell() {
   HANDLE fp = m_Impl->GetFileHandle();
   if(NULL == fp) {
     return -1;

@@ -54,11 +54,11 @@ ADD_EXECUTABLE(
 	${SOURCES}
 )
 
-# Make sure that if we're using boost libraries for threading then we add this linker path.
-# Personally, I believe this is a bug in CMAKE but I'm not exactly sure.
-#IF( THREAD_API MATCHES "Boost" )
-#	SET_TARGET_PROPERTIES(tc PROPERTIES LINK_FLAGS "/LIBPATH:\"${Boost_LIBRARY_DIRS}\"")
-#ENDIF()
+# Add flag for link time code generation. This was used to build the libpng libraries, so we should
+# probably also include it for this project as well...
+IF( MSVC )
+  SET_TARGET_PROPERTIES(tc PROPERTIES LINK_FLAGS "/LTCG")
+ENDIF()
 
 TARGET_LINK_LIBRARIES( tc BPTCEncoder )
 TARGET_LINK_LIBRARIES( tc TexCompIO )
