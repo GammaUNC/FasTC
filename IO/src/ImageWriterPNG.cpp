@@ -87,7 +87,6 @@ public:
 ImageWriterPNG::ImageWriterPNG(const Image &im)
 	: ImageWriter(im.GetWidth(), im.GetHeight(), im.RawData())
   , m_StreamPosition(0)
-	, m_TotalBytesWritten(0)
 {
 }
 

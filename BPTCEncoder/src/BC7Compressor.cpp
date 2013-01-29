@@ -1158,7 +1158,7 @@ double BC7CompressionMode::Compress(BitStream &stream, const int shapeIdx, const
 
   double totalErr = 0.0;
   for(int cidx = 0; cidx < nSubsets; cidx++) {
-    int indices[kMaxNumDataPoints];
+    int indices[kMaxNumDataPoints] = {0};
 
     if(m_Attributes->hasRotation) {
 

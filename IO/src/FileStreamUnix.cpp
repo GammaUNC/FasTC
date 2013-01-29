@@ -202,7 +202,7 @@ int32 FileStream::Write(const uint8 *buf, uint32 bufSz) {
   return amtWritten;
 }
 
-int64 FileStream::Tell() {
+int32 FileStream::Tell() {
   FILE *fp = m_Impl->GetFilePtr();
   if(NULL == fp) {
     return -1;

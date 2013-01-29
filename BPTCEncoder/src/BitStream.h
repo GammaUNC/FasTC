@@ -71,7 +71,6 @@ class BitStream {
   BitStream(unsigned char *ptr, int nBits, int start_offset) :
     m_BitsWritten(0),
     m_NumBits(nBits),
-    m_NumBytes((nBits + start_offset + 7) >> 3),
     m_CurByte(ptr),
     m_NextBit(start_offset % 8),
     done(false)
@@ -116,7 +115,6 @@ class BitStream {
   
   int m_BitsWritten;
   const int m_NumBits;
-  const int m_NumBytes;
   unsigned char *m_CurByte;
   int m_NextBit;
   
