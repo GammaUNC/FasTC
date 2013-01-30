@@ -153,11 +153,13 @@ SET( HEADERS
 	src/BC7CompressionMode.h
 	src/BitStream.h
 	src/RGBAEndpoints.h
+  src/ParallelStage.h
 )
 
 SET( SOURCES
 	src/BC7Compressor.cpp
 	src/RGBAEndpoints.cpp
+  src/ParallelStage.cpp
 )
 
 IF( HAS_SSE_41 ) 
