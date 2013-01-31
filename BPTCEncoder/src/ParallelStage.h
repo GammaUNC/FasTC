@@ -57,7 +57,7 @@ class ParallelStage {
   ParallelStage(const ParallelStage &);
   ParallelStage &operator=(const ParallelStage &);
   
-  const BC7ParallelStages stage;
+  const BC7ParallelStage m_Stage;
   
   void AddBlock(int blockNum);
   

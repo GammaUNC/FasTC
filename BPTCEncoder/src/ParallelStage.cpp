@@ -43,6 +43,9 @@
 
 #include "ParallelStage.h"
 
+#include <assert.h>
+#include <string.h>
+
 /*
  const BC7ParallelStage stage;
  
@@ -61,19 +64,41 @@
  // This is the total number of blocks in this particular stage.
  uint32 m_NumBlocks;
  */    
-ParallelStage::ParallelStage(BC7ParallelStage stage, const unsigned char *inbuf, unsigned char *outbuf, uint32 numBlocks) {
-
+ParallelStage::ParallelStage(BC7ParallelStage stage, const unsigned char *inbuf, unsigned char *outbuf, uint32 numBlocks)
+  : m_Stage(stage)
+  , m_InBuf(inbuf)
+  , m_OutBuf(outbuf)
+  , m_Blocks(new uint32[numBlocks])
+  , m_TotalNumBlocks(numBlocks)
+  , m_NumBlocks(0)
+{
+  assert(numBlocks > 0);
 }
 
-ParallelStage::ParallelStage(const ParallelStage &) {
-
+ParallelStage::ParallelStage(const ParallelStage &other)
+  : m_Stage(other.m_Stage)
+  , m_InBuf(other.m_InBuf)
+  , m_OutBuf(other.m_OutBuf)
+  , m_Blocks(new uint32[other.m_NumBlocks])
+  , m_TotalNumBlocks(other.m_TotalNumBlocks)
+  , m_NumBlocks(other.m_NumBlocks)
+{
+  memcpy(m_Blocks, other.m_Blocks, m_NumBlocks * sizeof(m_Blocks[0]));
 }
 
-ParallelStage &ParallelStage::operator=(const ParallelStage &) {
+ParallelStage &ParallelStage::operator=(const ParallelStage &other) {
+  assert(m_Stage == other.m_Stage);
+  assert(m_InBuf == other.m_InBuf);
+  assert(m_OutBuf == other.m_OutBuf);
+  assert(m_TotalNumBlocks == other.m_TotalNumBlocks);
+  assert(m_NumBlocks == other.m_NumBlocks);
   
+  memcpy(m_Blocks, other.m_Blocks, m_NumBlocks * sizeof(m_Blocks[0]));
 }
   
 
 void ParallelStage::AddBlock(int blockNum) {
+  assert(m_NumBlocks < m_TotalNumBlocks);
   
+  m_Blocks[m_NumBlocks++] = blockNum;
 }
