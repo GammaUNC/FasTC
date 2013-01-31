@@ -94,6 +94,7 @@ ParallelStage &ParallelStage::operator=(const ParallelStage &other) {
   assert(m_NumBlocks == other.m_NumBlocks);
   
   memcpy(m_Blocks, other.m_Blocks, m_NumBlocks * sizeof(m_Blocks[0]));
+  return *this;
 }
   
 
