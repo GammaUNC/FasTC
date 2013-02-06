@@ -70,6 +70,7 @@
 
 // Forward Declarations
 class BitStream;
+struct VisitedState;
 const int kMaxEndpoints = 3;
 
 static const int kPBits[4][2] = {
@@ -187,9 +188,9 @@ private:
                 }
                 else {
                   return (
-		    ((maskSeed >> (24 + m_Attributes->colorChannelPrecision - 1) & 0xFF) |
+                    ((maskSeed >> (24 + m_Attributes->colorChannelPrecision - 1) & 0xFF) |
                     (maskSeed >> (16 + m_Attributes->colorChannelPrecision - 1) & 0xFF00) |
-		    (maskSeed >> (8 + m_Attributes->colorChannelPrecision - 1) & 0xFF0000)) &
+                    (maskSeed >> (8 + m_Attributes->colorChannelPrecision - 1) & 0xFF0000)) &
                     (0x00FFFFFF)
                   );
                 }
@@ -213,13 +214,12 @@ private:
 		}
 	}
 	
-	double OptimizeEndpointsForCluster(const RGBACluster &cluster, RGBAVector &p1, RGBAVector &p2, int *bestIndices, int &bestPbitCombo) const;
-
-	struct VisitedState {
-		RGBAVector p1;
-		RGBAVector p2;
-		int pBitCombo;
-	};
+	double OptimizeEndpointsForCluster(
+    const RGBACluster &cluster,
+    RGBAVector &p1, RGBAVector &p2,
+    int *bestIndices,
+    int &bestPbitCombo
+  ) const;
 
 	void PickBestNeighboringEndpoints(
 		const RGBACluster &cluster, 

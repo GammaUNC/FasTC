@@ -517,7 +517,19 @@ static void ChangePointForDirWithPbitChange(RGBAVector &v, int dir, int oldPbit,
   }
 }
 
-void BC7CompressionMode::PickBestNeighboringEndpoints(const RGBACluster &cluster, const RGBAVector &p1, const RGBAVector &p2, const int curPbitCombo, RGBAVector &np1, RGBAVector &np2, int &nPbitCombo, const VisitedState *visitedStates, int nVisited, float stepSz) const {
+struct VisitedState {
+  RGBAVector p1;
+  RGBAVector p2;
+  int pBitCombo;
+};
+
+void BC7CompressionMode::PickBestNeighboringEndpoints(
+  const RGBACluster &cluster,
+  const RGBAVector &p1, const RGBAVector &p2, const int curPbitCombo,
+  RGBAVector &np1, RGBAVector &np2, int &nPbitCombo,
+  const VisitedState *visitedStates, int nVisited,
+  float stepSz
+) const {
   
   // !SPEED! There might be a way to make this faster since we're working
   // with floating point values that are powers of two. We should be able
