@@ -51,7 +51,14 @@
 #include "Image.h"
 
 void PrintUsage() {
-   fprintf(stderr, "Usage: tc [-l] [-q <quality>] [-n <num>] [-simd] [-t <threads> [-j <jobs>]] <imagefile>\n");
+  fprintf(stderr, "Usage: tc [OPTIONS] imagefile\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "\t-l\t\tSave an output log.\n");
+  fprintf(stderr, "\t-q <quality>\tSet compression quality level. Default: 50\n");
+  fprintf(stderr, "\t-n <num>\tCompress the image num times and give the average time and PSNR. Default: 1\n");
+  fprintf(stderr, "\t-simd\t\tUse SIMD compression path\n");
+  fprintf(stderr, "\t-t <num>\tCompress the image using <num> threads. Default: 1\n");
+  fprintf(stderr, "\t-j <num>\tUse <num> blocks for each work item in a worker queue threading model. Default: (Blocks / Threads)\n");
 }
 
 void ExtractBasename(const char *filename, char *buf, int bufSz) {
