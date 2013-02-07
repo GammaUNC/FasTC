@@ -55,7 +55,43 @@ static inline T sad( const T &a, const T &b ) {
   return (a > b)? a - b : b - a;
 }
 
-Image::Image(const CompressedImage &ci) 
+Image::Image(const Image &other)
+: m_Width(other.m_Width)
+, m_Height(other.m_Height)
+, m_PixelData(new uint8[m_Width * m_Height * 4])
+{
+  if(m_PixelData) {
+    memcpy(m_PixelData, other.m_PixelData, m_Width * m_Height * 4);
+  }
+  else {
+    fprintf(stderr, "Out of memory!\n");
+  }
+}
+
+Image &Image::operator=(const Image &other) {
+  
+  m_Width = other.m_Width;
+  m_Height = other.m_Height;
+  
+  if(m_PixelData) {
+    delete [] m_PixelData;
+  }
+  
+  if(other.m_PixelData) {
+    m_PixelData = new uint8[m_Width * m_Height * 4];
+    if(m_PixelData)
+      memcpy(m_PixelData, other.m_PixelData, m_Width * m_Height * 4);
+    else
+      fprintf(stderr, "Out of memory!\n");
+  }
+  else {
+    m_PixelData = other.m_PixelData;
+  }
+  
+  return *this;
+}
+
+Image::Image(const CompressedImage &ci)
   : m_Width(ci.GetWidth())
   , m_Height(ci.GetHeight())
 {
@@ -84,6 +120,13 @@ Image::Image(const ImageLoader &loader)
   }
 }
 
+Image::~Image() {
+  if(m_PixelData) {
+    delete [] m_PixelData;
+    m_PixelData = 0;
+  }
+}
+
 CompressedImage *Image::Compress(const SCompressionSettings &settings) const {
   CompressedImage *outImg = NULL;
   const unsigned int dataSz = GetWidth() * GetHeight() * 4;
@@ -103,6 +146,8 @@ CompressedImage *Image::Compress(const SCompressionSettings &settings) const {
   CompressImageData(m_PixelData, dataSz, cmpData, cmpDataSz, settings);
 
   outImg = new CompressedImage(GetWidth(), GetHeight(), settings.format, cmpData);
+  
+  delete [] cmpData;
   return outImg;
 }
 
@@ -111,6 +156,7 @@ double Image::ComputePSNR(const CompressedImage &ci) const {
   unsigned char *unCompData = new unsigned char[imageSz];
   if(!(ci.DecompressImage(unCompData, imageSz))) {
     fprintf(stderr, "%s\n", "Failed to decompress image.");
+    delete [] unCompData;
     return -1.0f;
   }
 

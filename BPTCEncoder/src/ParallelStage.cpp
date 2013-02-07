@@ -110,6 +110,13 @@ ParallelStage &ParallelStage::operator=(const ParallelStage &other) {
   return *this;
 }
 
+ParallelStage::~ParallelStage() {
+  if(m_Blocks) {
+    delete [] m_Blocks;
+    m_Blocks = 0;
+  }
+}
+
 void ParallelStage::AddBlock(uint32 blockNum) {
   assert(m_NumBlocks < m_TotalNumBlocks);
   

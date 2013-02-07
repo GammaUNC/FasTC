@@ -56,6 +56,11 @@ class Image {
  public:
 	Image(const CompressedImage &);
   Image(const ImageLoader &);
+  ~Image();
+  
+  Image(const Image &);
+  Image &operator=(const Image &);
+  
   const uint8 *RawData() const { return m_PixelData; }
 
   CompressedImage *Compress(const SCompressionSettings &settings) const;

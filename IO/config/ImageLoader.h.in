@@ -102,6 +102,11 @@ class ImageLoader {
       delete [] m_AlphaData;
       m_AlphaData = 0;
     }
+    
+    if(m_PixelData) {
+      delete [] m_PixelData;
+      m_PixelData = 0;
+    }
   }
 
   virtual bool ReadData() = 0;

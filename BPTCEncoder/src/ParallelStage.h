@@ -63,6 +63,8 @@ class ParallelStage {
   );
   ParallelStage(const ParallelStage &);
   ParallelStage &operator=(const ParallelStage &);
+  
+  ~ParallelStage();
 
   const BC7ParallelStage m_Stage;
 
