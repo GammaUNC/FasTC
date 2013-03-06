@@ -1531,6 +1531,104 @@ namespace BC7C
     }
   }
 
+#ifdef HAS_ATOMICS
+#ifdef HAS_MSVC_ATOMICS
+  static uint32 TestAndSet(uint32 *x) {
+    return InterlockedExchange(x, 1);
+  }
+
+  static uint32 FetchAndAdd(uint32 *x) {
+    return InterlockedIncrement(x);
+  }
+
+  static void ResetTestAndSet(uint *x) {
+    *x = 0;
+  }
+#elif defined HAS_GCC_ATOMICS
+  static uint32 TestAndSet(uint32 *x) {
+    return __sync_lock_test_and_set(x, 1);
+  }
+
+  static uint32 FetchAndAdd(uint32 *x) {
+    return __sync_fetch_and_add(x, 1);
+  }
+
+  static void ResetTestAndSet(uint32 *x) {
+    __sync_lock_release(x);
+  }
+#endif
+
+  // Variables used for synchronization in threadsafe implementation.
+  static ALIGN(32) uint32 _currentBlock = 0;
+  static ALIGN(32) uint32 _initialized = 0;
+  static const unsigned char *_inBuf;
+  static unsigned char *_outBuf;
+  static bool _initializedFlag = false;
+
+  void CompressImageBC7Atomic(
+    const unsigned char *inBuf,
+    unsigned char *outBuf,
+    unsigned int width,
+    unsigned int height
+  ) {
+
+    bool myData = false;
+    while(!myData) {
+
+      // Have we initialized any data?
+      if(!TestAndSet(&_initialized)) {
+
+        // I'm the first one here... initialize MY data...
+
+        const int kMaxIters = BC7CompressionMode::kMaxAnnealingIterations;
+        BC7CompressionMode::MaxAnnealingIterations = min(kMaxIters, GetQualityLevel());
+
+        _currentBlock = 0;
+
+        _inBuf = inBuf;
+        _outBuf = outBuf;
+        myData = true;
+
+        _initializedFlag = true;
+      }
+
+      // We've initialized data... is it mine?
+      else if(_inBuf == inBuf && _outBuf == outBuf) {
+        myData = true;
+      }
+
+      const uint32 nBlocks = (height * width) / 16;
+
+      // Make sure that whoever is initializing data is working on it...
+      while(!_initializedFlag && _currentBlock < nBlocks) {
+        YieldThread();
+      }
+
+      // Help finish whatever texture we're compressing before we start again on my work...
+      uint32 blockIdx;
+      while((blockIdx = FetchAndAdd(&_currentBlock)) < nBlocks) {
+        unsigned char *out = _outBuf + (16 * blockIdx);
+        const unsigned char *in = _inBuf + (64 * blockIdx);
+
+        CompressBC7Block((const uint32 *)in, out);
+        YieldThread(); // Just to give other threads a chance to make some progress
+      }
+
+      // If we've allocated someone to compress the last block, then reset the initialization...
+      if(blockIdx == nBlocks) {
+        _initializedFlag = false;
+        ResetTestAndSet(&_initialized);
+      }
+      else if(blockIdx > nBlocks) {
+        // Wait for last block to finish..
+        while(_initialized) {
+          YieldThread();
+        }
+      }
+    }
+  }
+#endif // HAS_ATOMICS
+
   void CompressImageBC7Stats(
     const unsigned char *inBuf, 
     unsigned char *outBuf, 

@@ -123,6 +123,18 @@ namespace BC7C
 	void CompressImageBC7SIMD(const unsigned char* inBuf, unsigned char* outBuf, unsigned int width, unsigned int height);
 #endif
 
+#ifdef HAS_ATOMICS
+  // This is a threadsafe version of the compression function. Once it is called on a certain block of data, it will 
+  // compress the entire amount of data. However, if the function is called multiple times from multiple threads then they
+  // will all dispatch to compress the data that they can and the one that finishes the compression resets the function.
+  //
+  // The function should be used as follows:
+  // for(int i = 0; i < NTHREADS; i++) {
+  //   startThread(function, args);
+  // join_threads();
+  void CompressImageBC7Atomic(const unsigned char *inBuf, unsigned char *outBuf, unsigned int width, unsigned int height);
+#endif
+
 	// Decompress the image given as BC7 data to R8G8B8A8 format. Width and Height are the dimensions of the image in pixels.
 	void DecompressImageBC7(const unsigned char* inBuf, unsigned char* outBuf, unsigned int width, unsigned int height);
 }
