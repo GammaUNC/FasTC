@@ -49,6 +49,7 @@
 #include <assert.h>
 
 #include "BC7Compressor.h"
+#include "Thread.h"
 #include "WorkerQueue.h"
 #include "ThreadGroup.h"
 
@@ -321,4 +322,8 @@ bool CompressImageData(
   }
 
   return true;
+}
+
+void YieldThread() {
+	TCThread::Yield();
 }

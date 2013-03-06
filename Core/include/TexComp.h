@@ -121,4 +121,8 @@ typedef void (* CompressionFuncWithStats)(
 // compressed image and a raw image.
 extern double ComputePSNR(const CompressedImage &ci, const ImageFile &file);
 
+// This is a multi-platform yield function that preempts the current thread
+// based on the threading library that we're using.
+extern void YieldThread();
+
 #endif //_TEX_COMP_H_
