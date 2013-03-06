@@ -48,3 +48,7 @@
 #cmakedefine NO_INLINE_ASSEMBLY
 #cmakedefine HAS_SSE_POPCNT
 #cmakedefine HAS_SSE_41
+
+#cmakedefine HAS_ATOMICS
+#cmakedefine HAS_GCC_ATOMICS
+#cmakedefine HAS_MSVC_ATOMICS

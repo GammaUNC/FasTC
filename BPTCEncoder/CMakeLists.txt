@@ -144,6 +144,36 @@ IF( NOT HAS_INLINE_ASSEMBLY AND NOT HAS_INLINE_ASSEMBLY_WITH_FLAGS )
   SET( NO_INLINE_ASSEMBLY true )
 ENDIF()
 
+# Check to see whether or not our compiler supports atomic operations
+IF( CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX )
+
+  CHECK_CXX_SOURCE_RUNS("
+    int main() {
+      int x = 0;
+      __sync_fetch_and_add(&x, 1);
+      return !x;
+    }"
+    HAS_GCC_ATOMICS
+  )
+
+ELSEIF( MSVC )
+
+  CHECK_CXX_SOURCE_RUNS("
+    #include <Windows.h>
+    int main() {
+      int *x = _aligned_malloc(sizeof(int), 32);
+      x = InterlockedIncrement(&x);
+      free(x);
+      return !x;
+    }"
+    HAS_MSVC_ATOMICS
+  )
+
+ENDIF()
+IF( HAS_MSVC_ATOMICS OR HAS_GCC_ATOMICS )
+  SET(HAS_ATOMICS true)
+ENDIF()
+
 CONFIGURE_FILE(
 	"config/BC7Config.h.in"
 	"include/BC7Config.h"
