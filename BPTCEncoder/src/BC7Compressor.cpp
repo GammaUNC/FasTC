@@ -80,10 +80,11 @@
 #include <ctime>
 
 #ifdef _MSC_VER
-#define ALIGN_SSE __declspec( align(16) )
+#define ALIGN(x) __declspec( align(x) )
 #else
-#define ALIGN_SSE __attribute__((aligned(16)))
+#define ALIGN(x) __attribute__((aligned(x)))
 #endif
+#define ALIGN_SSE ALIGN(16)
 
 // #define USE_PCA_FOR_SHAPE_ESTIMATION
 
