@@ -52,7 +52,7 @@
 //
 // Permission is granted to use, copy, distribute and prepare derivative works of this
 // software for any purpose and without fee, provided, that the above copyright notice
-// and this statement appear in all copies.  Intel makes no representations about the
+// and this statement appear in all copies.   Intel makes no representations about the
 // suitability of this software for any purpose.  THIS SOFTWARE IS PROVIDED "AS IS."
 // INTEL SPECIFICALLY DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, AND ALL LIABILITY,
 // INCLUDING CONSEQUENTIAL AND OTHER INDIRECT DAMAGES, FOR THE USE OF THIS SOFTWARE,
@@ -63,14 +63,20 @@
 //
 //--------------------------------------------------------------------------------------
 
-#include "TexCompTypes.h"
 #include "BC7Compressor.h"
 #include "BC7CompressionMode.h"
+
+#include "TexComp.h"
+#include "TexCompTypes.h"
 #include "BCLookupTables.h"
 #include "RGBAEndpoints.h"
 #include "BitStream.h"
 
 #include "BlockStats.h"
+
+#ifdef HAS_MSVC_ATOMICS
+#   include "Windows.h"
+#endif
 
 #include <cstdio>
 #include <cstdlib>
@@ -80,9 +86,9 @@
 #include <ctime>
 
 #ifdef _MSC_VER
-#define ALIGN(x) __declspec( align(x) )
+#   define ALIGN(x) __declspec( align(x) )
 #else
-#define ALIGN(x) __attribute__((aligned(x)))
+#   define ALIGN(x) __attribute__((aligned(x)))
 #endif
 #define ALIGN_SSE ALIGN(16)
 
@@ -299,7 +305,7 @@ BC7CompressionMode::Attributes BC7CompressionMode::kModeAttributes[kNumModes] = 
   { 1, 6, 2, 3, 0, 6, 0, false, false, BC7CompressionMode::ePBitType_Shared },
   { 2, 6, 3, 2, 0, 5, 0, false, false, BC7CompressionMode::ePBitType_None },
   { 3, 6, 2, 2, 0, 7, 0, false, false, BC7CompressionMode::ePBitType_NotShared },
-  { 4, 0, 1, 2, 3, 5, 6, true,  true,  BC7CompressionMode::ePBitType_None },
+  { 4, 0, 1, 2, 3, 5, 6, true,  true,   BC7CompressionMode::ePBitType_None },
   { 5, 0, 1, 2, 2, 7, 8, true,  false, BC7CompressionMode::ePBitType_None },
   { 6, 0, 1, 4, 0, 7, 7, false, false, BC7CompressionMode::ePBitType_NotShared },
   { 7, 6, 2, 2, 0, 5, 5, false, false, BC7CompressionMode::ePBitType_NotShared },
@@ -699,7 +705,7 @@ double BC7CompressionMode::OptimizeEndpointsForCluster(const RGBACluster &cluste
       bestPbitCombo = nPbitCombo;
       bestError = error;
 
-			lastVisitedState = 0;
+      lastVisitedState = 0;
       visitedStates[lastVisitedState].p1 = np1;
       visitedStates[lastVisitedState].p2 = np2; 
       visitedStates[lastVisitedState].pBitCombo = nPbitCombo;
@@ -793,7 +799,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
 
   // If they're the same, then we can get them exactly.
   if(a1 == a2) 
-  {  
+  {   
     const uint8 a1be = uint8(a1);
     const uint8 a2be = uint8(a2);
 
@@ -1611,8 +1617,8 @@ namespace BC7C
       error = compressor7.Compress(tmpStream7, shapeIdx, clusters);
       if(errors) errors[7] = error;
       if(error < bestError) {
-	if(modeChosen) *modeChosen = 7;
-	memcpy(outBuf, tempBuf7, 16);
+  if(modeChosen) *modeChosen = 7;
+  memcpy(outBuf, tempBuf7, 16);
         return error;
       }
     }
@@ -2002,27 +2008,27 @@ namespace BC7C
 
     public:
       RAIIStatSaver(uint32 blockIdx, BlockStatManager &m) : m_BlockIdx(blockIdx), m_BSM(m) 
-							  , m_ModePtr(NULL), m_Estimates(NULL), m_Errors(NULL) { }
+                , m_ModePtr(NULL), m_Estimates(NULL), m_Errors(NULL) { }
       void SetMode(int *modePtr) { m_ModePtr = modePtr; }
       void SetEstimates(double *estimates) { m_Estimates = estimates; }
       void SetErrors(double *errors) { m_Errors = errors; }
 
       ~RAIIStatSaver() {
 
-	assert(m_ModePtr);
-	assert(m_Estimates);
-	assert(m_Errors);
+        assert(m_ModePtr);
+        assert(m_Estimates);
+        assert(m_Errors);
 
-	BlockStat s (kBlockStatString[eBlockStat_Mode], *m_ModePtr);
-	m_BSM.AddStat(m_BlockIdx, s);
+        BlockStat s (kBlockStatString[eBlockStat_Mode], *m_ModePtr);
+        m_BSM.AddStat(m_BlockIdx, s);
 
-	for(uint32 i = 0; i < BC7CompressionMode::kNumModes; i++) {
-	  s = BlockStat(kBlockStatString[eBlockStat_ModeZeroEstimate + i], m_Estimates[i]);
-	  m_BSM.AddStat(m_BlockIdx, s);
+        for(uint32 i = 0; i < BC7CompressionMode::kNumModes; i++) {
+          s = BlockStat(kBlockStatString[eBlockStat_ModeZeroEstimate + i], m_Estimates[i]);
+          m_BSM.AddStat(m_BlockIdx, s);
 
-	  s = BlockStat(kBlockStatString[eBlockStat_ModeZeroError + i], m_Errors[i]);
-	  m_BSM.AddStat(m_BlockIdx, s);	  
-	}
+          s = BlockStat(kBlockStatString[eBlockStat_ModeZeroError + i], m_Errors[i]);
+          m_BSM.AddStat(m_BlockIdx, s);     
+        }
       }
     };
 
@@ -2091,26 +2097,26 @@ namespace BC7C
       blockCluster.GetBoundingBox(Min, Max);
       v = Max - Min;
       if(v * v == 0) {
-	modeEstimate[6] = 0.0;
+        modeEstimate[6] = 0.0;
       }
       else {
-	const float *w = GetErrorMetric();
-	const double err = 0.0001 + blockCluster.QuantizedError(Min, Max, 4, 0xFEFEFEFE, RGBAVector(w[0], w[1], w[2], w[3]));
-	UpdateErrorEstimate(modeEstimate, 6, err);
+        const float *w = GetErrorMetric();
+        const double err = 0.0001 + blockCluster.QuantizedError(Min, Max, 4, 0xFEFEFEFE, RGBAVector(w[0], w[1], w[2], w[3]));
+        UpdateErrorEstimate(modeEstimate, 6, err);
 
 #ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-	double eigOne = blockCluster.GetPrincipalEigenvalue();
-	double eigTwo = blockCluster.GetSecondEigenvalue();
-	double error;
-	if(eigOne != 0.0) {
-	  error = eigTwo / eigOne;
-	}
-	else {
-	  error = 1.0;
-	}
+        double eigOne = blockCluster.GetPrincipalEigenvalue();
+        double eigTwo = blockCluster.GetSecondEigenvalue();
+        double error;
+        if(eigOne != 0.0) {
+          error = eigTwo / eigOne;
+        }
+        else {
+          error = 1.0;
+        }
 
-	BlockStat s (kBlockStatString[eBlockStat_SingleShapeEstimate], error);
-	statManager.AddStat(blockIdx, s);
+        BlockStat s (kBlockStatString[eBlockStat_SingleShapeEstimate], error);
+        statManager.AddStat(blockIdx, s);
 #endif
       }
     }
@@ -2129,19 +2135,19 @@ namespace BC7C
       double err = 0.0;
       double errEstimate[2] = { -1.0, -1.0 };
       for(int ci = 0; ci < 2; ci++) {
-	double shapeEstimate[2] = { -1.0, -1.0 };
+        double shapeEstimate[2] = { -1.0, -1.0 };
         err += EstimateTwoClusterErrorStats(clusters[ci], shapeEstimate);
 
-	for(int ei = 0; ei < 2; ei++) {
-	  if(shapeEstimate[ei] >= 0.0) {
-	    if(errEstimate[ei] == -1.0) {
-	      errEstimate[ei] = shapeEstimate[ei];
-	    }
-	    else {
-	      errEstimate[ei] += shapeEstimate[ei];
-	    }
-	  }
-	}
+        for(int ei = 0; ei < 2; ei++) {
+          if(shapeEstimate[ei] >= 0.0) {
+            if(errEstimate[ei] == -1.0) {
+              errEstimate[ei] = shapeEstimate[ei];
+            }
+            else {
+              errEstimate[ei] += shapeEstimate[ei];
+            }
+          }
+        }
       }
 
 #ifdef USE_PCA_FOR_SHAPE_ESTIMATION
@@ -2149,21 +2155,21 @@ namespace BC7C
 #endif
 
       if(errEstimate[0] != -1.0) {
-	UpdateErrorEstimate(modeEstimate, 1, errEstimate[0]);
+        UpdateErrorEstimate(modeEstimate, 1, errEstimate[0]);
       }
 
       if(errEstimate[1] != -1.0) {
-	UpdateErrorEstimate(modeEstimate, 3, errEstimate[1]);
+        UpdateErrorEstimate(modeEstimate, 3, errEstimate[1]);
       }
 
       if(err < bestError[0]) {
-	BlockStat s = BlockStat(kBlockStatString[eBlockStat_TwoShapeEstimate], err);
-        statManager.AddStat(blockIdx, s);	
+        BlockStat s = BlockStat(kBlockStatString[eBlockStat_TwoShapeEstimate], err);
+        statManager.AddStat(blockIdx, s);   
       }
 
       // If it's small, we'll take it!
       if(err < 1e-9) {
-	int modeChosen;
+        int modeChosen;
         CompressTwoClusters(i, clusters, outBuf, opaque, modeError, &modeChosen);
         bestMode = modeChosen;
 
@@ -2189,43 +2195,43 @@ namespace BC7C
         PopulateThreeClustersForShape(blockCluster, i, clusters);
 
         double err = 0.0;
-	double errEstimate[2] = { -1.0, -1.0 };
-	for(int ci = 0; ci < 3; ci++) {
-	  double shapeEstimate[2] = { -1.0, -1.0 };
+        double errEstimate[2] = { -1.0, -1.0 };
+        for(int ci = 0; ci < 3; ci++) {
+          double shapeEstimate[2] = { -1.0, -1.0 };
           err += EstimateThreeClusterErrorStats(clusters[ci], shapeEstimate);
 
-	  for(int ei = 0; ei < 2; ei++) {
-	    if(shapeEstimate[ei] >= 0.0) {
-	      if(errEstimate[ei] == -1.0) {
-		errEstimate[ei] = shapeEstimate[ei];
-	      }
-	      else {
-		errEstimate[ei] += shapeEstimate[ei];
-	      }
-	    }
-	  }
-	}
+          for(int ei = 0; ei < 2; ei++) {
+            if(shapeEstimate[ei] >= 0.0) {
+              if(errEstimate[ei] == -1.0) {
+                errEstimate[ei] = shapeEstimate[ei];
+              }
+              else {
+                errEstimate[ei] += shapeEstimate[ei];
+              }
+            }
+          }
+        }
 
 #ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-	err /= 3.0;
+        err /= 3.0;
 #endif
 
-	if(errEstimate[0] != -1.0) {
-	  UpdateErrorEstimate(modeEstimate, 0, errEstimate[0]);
-	}
-	
-	if(errEstimate[1] != -1.0) {
-	  UpdateErrorEstimate(modeEstimate, 2, errEstimate[1]);
-	}
+        if(errEstimate[0] != -1.0) {
+          UpdateErrorEstimate(modeEstimate, 0, errEstimate[0]);
+        }
+  
+        if(errEstimate[1] != -1.0) {
+          UpdateErrorEstimate(modeEstimate, 2, errEstimate[1]);
+        }
 
-	if(err < bestError[1]) {
-	  BlockStat s = BlockStat(kBlockStatString[eBlockStat_ThreeShapeEstimate], err);
-	  statManager.AddStat(blockIdx, s);	
-	}
+        if(err < bestError[1]) {
+          BlockStat s = BlockStat(kBlockStatString[eBlockStat_ThreeShapeEstimate], err);
+          statManager.AddStat(blockIdx, s);   
+        }
 
         // If it's small, we'll take it!
         if(err < 1e-9) {
-	  int modeChosen;
+          int modeChosen;
           CompressThreeClusters(i, clusters, outBuf, opaque, modeError, &modeChosen);
           bestMode = modeChosen;
 
@@ -2409,7 +2415,7 @@ namespace BC7C
     for(uint32 j = 0; j < 2; j++)
     for(uint32 ch = 0; ch < kNumColorChannels; ch++) {
       const uint32 prec = ch == 3? ap : cp;
-      eps[i][j][ch] |= eps[i][j][ch] >> prec;    
+      eps[i][j][ch] |= eps[i][j][ch] >> prec;     
     }
 
     // Figure out indices...
