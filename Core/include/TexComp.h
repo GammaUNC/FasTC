@@ -79,6 +79,11 @@ struct SCompressionSettings {
   // exit.
   int iJobSize; 
 
+  // This flags instructs the compression routine to be launched in succession
+  // with many threads at once. Atomic expressions based on the availability
+  // in the platform and compiler will provide synchronization.
+  bool bUseAtomics;
+
   // This is an optinal pointer to a stat manager class. If
   // instantiated and the proper function pointer is defined
   // then the compression routine that collects the stats will
