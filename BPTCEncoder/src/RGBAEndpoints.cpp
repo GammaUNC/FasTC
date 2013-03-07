@@ -504,9 +504,8 @@ static uint32 PowerIteration(const RGBAMatrix &mat, RGBADir &eigVec, double &eig
 	for(int nTries = 0; nTries < 3; nTries++) {
 	// !SPEED! Find eigenvectors by using the power method. This is good because the
 	// matrix is only 4x4, which allows us to use SIMD...
-    RGBAVector b = RGBAVector(float(rand()));
-	assert(b.Length() > 0);
-	b /= b.Length();
+  RGBAVector b = RGBAVector(float(rand()) + 1.0f);
+  b /= b.Length();
 
 	bool fixed = false;
 	numIterations = 0;
