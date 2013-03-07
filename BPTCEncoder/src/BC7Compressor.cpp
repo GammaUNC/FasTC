@@ -1508,16 +1508,17 @@ namespace BC7C
         uint8* unCompData = (uint8 *)unComp;
 
         double diffSum = 0.0;
-        for(int i = 0; i < 64; i+=4) {
-          double rdiff = sad(unCompData[i], inBuf[i]);
-          double gdiff = sad(unCompData[i+1], inBuf[i+1]);
-          double bdiff = sad(unCompData[i+2], inBuf[i+2]);
-          double adiff = sad(unCompData[i+3], inBuf[i+3]);
-          diffSum += (rdiff + gdiff + bdiff + adiff) * ((unCompData[i+3] + inBuf[i+3])*0.5);
+        for(int k = 0; k < 64; k+=4) {
+          double rdiff = sad(unCompData[k], inBuf[k]);
+          double gdiff = sad(unCompData[k+1], inBuf[k+1]);
+          double bdiff = sad(unCompData[k+2], inBuf[k+2]);
+          double adiff = sad(unCompData[k+3], inBuf[k+3]);
+          double avga = ((float(unCompData[k+3]) + float(inBuf[k+3]))*0.5)/255.0;
+          diffSum += (rdiff + gdiff + bdiff + adiff) * avga;
         }
         double blockError = double(diffSum) / 64.0;
-        if(blockError > 50.0) {
-          fprintf(stderr, "WARNING: Block error very high (%.2f)\n", blockError);
+        if(blockError > 5.0) {
+          fprintf(stderr, "WARNING: Block error very high at <%d, %d>: (%.2f)\n", i, j, blockError);
         }
 #endif
 
