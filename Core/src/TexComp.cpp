@@ -184,13 +184,15 @@ class AtomicThreadUnit : public TCCallable {
     m_OutBuf(outBuf),
     m_Height(height),
     m_Width(width),
-    m_Barrier(barrier)
+    m_Barrier(barrier),
+    m_NumCompressions(nCompressions),
+    m_CmpFnc(f)
   { }
 
   virtual ~AtomicThreadUnit() { }
   virtual void operator()() {
     m_Barrier->Wait();
-    for(int i = 0; i < m_NumCompressions; i++)
+    for(uint32 i = 0; i < m_NumCompressions; i++)
       (*m_CmpFnc)(m_InBuf, m_OutBuf, m_Width, m_Height);
   }
 };
@@ -374,7 +376,14 @@ bool CompressImageData(
     double cmpMSTime = 0.0;
 
     if(settings.iNumThreads > 1) {
-      if(settings.iJobSize > 0)
+      if(settings.bUseAtomics) {
+        //!KLUDGE!
+        unsigned int height = 4;
+        unsigned int width = dataSz / 16;
+
+        cmpMSTime = CompressImageWithAtomics(data, width, height, settings, cmpData);
+      }
+      else if(settings.iJobSize > 0)
         cmpMSTime = CompressImageWithWorkerQueue(data, dataSz, settings, cmpData);
       else
         cmpMSTime = CompressImageWithThreads(data, dataSz, settings, cmpData);

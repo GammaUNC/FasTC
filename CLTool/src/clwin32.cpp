@@ -59,6 +59,7 @@ void PrintUsage() {
   fprintf(stderr, "\t-n <num>\tCompress the image num times and give the average time and PSNR. Default: 1\n");
   fprintf(stderr, "\t-simd\t\tUse SIMD compression path\n");
   fprintf(stderr, "\t-t <num>\tCompress the image using <num> threads. Default: 1\n");
+  fprintf(stderr, "\t-a \tCompress the image using synchronization via atomic operations. Default: Off\n");
   fprintf(stderr, "\t-j <num>\tUse <num> blocks for each work item in a worker queue threading model. Default: (Blocks / Threads)\n");
 }
 
@@ -91,6 +92,7 @@ int _tmain(int argc, _TCHAR* argv[])
   int numCompressions = 1;
   bool bUseSIMD = false;
   bool bSaveLog = false;
+  bool bUseAtomics = false;
   
   bool knowArg = false;
   do {
@@ -162,6 +164,12 @@ int _tmain(int argc, _TCHAR* argv[])
       continue;
     }
 
+    if(strcmp(argv[fileArg], "-a") == 0) {
+      fileArg++;
+      bUseAtomics = true;
+      knowArg = true;
+      continue;
+    }
   } while(knowArg && fileArg < argc);
 
   if(numThreads > 1 && bSaveLog) {
@@ -194,6 +202,7 @@ int _tmain(int argc, _TCHAR* argv[])
   
   SCompressionSettings settings;
   settings.bUseSIMD = bUseSIMD;
+  settings.bUseAtomics = bUseAtomics;
   settings.iNumThreads = numThreads;
   settings.iQuality = quality;
   settings.iNumCompressions = numCompressions;
