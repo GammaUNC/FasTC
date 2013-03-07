@@ -161,10 +161,12 @@ ELSEIF( MSVC )
   CHECK_CXX_SOURCE_RUNS("
     #include <Windows.h>
     int main() {
-      int *x = _aligned_malloc(sizeof(int), 32);
-      x = InterlockedIncrement(&x);
-      free(x);
-      return !x;
+      unsigned int val;
+      unsigned int *x = (unsigned int *)_aligned_malloc(sizeof(int), 32);
+      *x = 0;
+      val = InterlockedIncrement(x);
+      _aligned_free(x);
+      return !val;
     }"
     HAS_MSVC_ATOMICS
   )
