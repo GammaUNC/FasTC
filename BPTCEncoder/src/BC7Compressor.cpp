@@ -78,6 +78,7 @@
 #   include "Windows.h"
 #endif
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -270,18 +271,8 @@ static uint32 GetAnchorIndexForSubset(int subset, const int shapeIdx, const int 
 }
 
 template <typename T>
-static T min(const T &a, const T &b) {
-  return (a < b)? a : b;
-}
-
-template <typename T>
-static T max(const T &a, const T &b) {
-  return (a > b)? a : b;
-}
-
-template <typename T>
 static void insert(T* buf, int bufSz, T newVal, int idx = 0) {
-  int safeIdx = min(bufSz-1, max(idx, 0));
+  int safeIdx = std::min(bufSz-1, std::max(idx, 0));
   for(int i = bufSz - 1; i > safeIdx; i--) {
     buf[i] = buf[i-1];
   }
@@ -425,7 +416,7 @@ double BC7CompressionMode::CompressSingleColor(const RGBAVector &p, RGBAVector &
         }
       }
 
-      dist = max(bestChannelDist, dist);
+      dist = std::max(bestChannelDist, dist);
     }
 
     if(dist < bestDist) {
@@ -587,7 +578,7 @@ void BC7CompressionMode::PickBestNeighboringEndpoints(
         ChangePointForDirWithoutPbitChange(np, fastrand() % 16, step);
 
       for(uint32 i = 0; i < kNumColorChannels; i++) {
-        np.c[i] = min(max(np.c[i], 0.0f), 255.0f);
+        np.c[i] = std::min(std::max(np.c[i], 0.0f), 255.0f);
       }
     }
 
@@ -777,8 +768,8 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
     alphaVals[i] = v.a;
     v.a = 255.0f;
 
-    alphaMin = min(alphaVals[i], alphaMin);
-    alphaMax = max(alphaVals[i], alphaMax);
+    alphaMin = std::min(alphaVals[i], alphaMin);
+    alphaMax = std::max(alphaVals[i], alphaMax);
 
     rgbCluster.AddPoint(v);
   }
@@ -937,8 +928,8 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
     a2 = f * (bx * asq - ax * ab);
 
     // Clamp
-    a1 = min(255.0f, max(0.0f, a1));
-    a2 = min(255.0f, max(0.0f, a2));
+    a1 = std::min(255.0f, std::max(0.0f, a1));
+    a2 = std::min(255.0f, std::max(0.0f, a2));
 
     // Quantize
     const uint8 a1b = ::QuantizeChannel(uint8(a1), (((char)0x80) >> (GetAlphaChannelPrecision() - 1)));
@@ -1427,7 +1418,7 @@ namespace BC7C
 
   static int gQualityLevel = 50;
   void SetQualityLevel(int q) {
-    gQualityLevel = max(0, q);
+    gQualityLevel = std::max(0, q);
   }
   int GetQualityLevel() { return gQualityLevel; }
 
@@ -1496,7 +1487,7 @@ namespace BC7C
   void CompressImageBC7(const unsigned char *inBuf, unsigned char *outBuf, unsigned int width, unsigned int height)
   {
     const int kMaxIters = BC7CompressionMode::kMaxAnnealingIterations;
-    BC7CompressionMode::MaxAnnealingIterations = min(kMaxIters, GetQualityLevel());
+    BC7CompressionMode::MaxAnnealingIterations = std::min(kMaxIters, GetQualityLevel());
 
     for(uint32 j = 0; j < height; j += 4)
     {
@@ -1581,7 +1572,7 @@ namespace BC7C
         // I'm the first one here... initialize MY data...
 
         const int kMaxIters = BC7CompressionMode::kMaxAnnealingIterations;
-        BC7CompressionMode::MaxAnnealingIterations = min(kMaxIters, GetQualityLevel());
+        BC7CompressionMode::MaxAnnealingIterations = std::min(kMaxIters, GetQualityLevel());
 
         _currentBlock = 0;
 
@@ -1637,7 +1628,7 @@ namespace BC7C
     BlockStatManager &statManager
   ) {
     const int kMaxIters = BC7CompressionMode::kMaxAnnealingIterations;
-    BC7CompressionMode::MaxAnnealingIterations = min(kMaxIters, GetQualityLevel());
+    BC7CompressionMode::MaxAnnealingIterations = std::min(kMaxIters, GetQualityLevel());
 
     for(uint32 j = 0; j < height; j += 4)
     {
@@ -2019,13 +2010,13 @@ namespace BC7C
     if(err1 >= 0.0)
       estimates[0] = err1;
     else
-      estimates[0] = min(estimates[0], err1);
+      estimates[0] = std::min(estimates[0], err1);
 
     const double err3 = c.QuantizedError(Min, Max, 8, 0xFFFEFEFE, RGBAVector(w[0], w[1], w[2], w[3]));
     if(err3 >= 0.0)
       estimates[1] = err3;
     else
-      estimates[1] = min(estimates[1], err3);
+      estimates[1] = std::min(estimates[1], err3);
 
     double error = 0.0001;
 #ifdef USE_PCA_FOR_SHAPE_ESTIMATION
@@ -2038,7 +2029,7 @@ namespace BC7C
       error += 1.0;
     }
 #else
-    error += min(err1, err3);
+    error += std::min(err1, err3);
 #endif
     return error;
   }
@@ -2057,13 +2048,13 @@ namespace BC7C
     if(err0 >= 0.0)
       estimates[0] = err0;
     else
-      estimates[0] = min(estimates[0], err0);
+      estimates[0] = std::min(estimates[0], err0);
 
     const double err2 = 0.0001 + c.QuantizedError(Min, Max, 4, 0xFFF8F8F8, RGBAVector(w[0], w[1], w[2], w[3]));
     if(err2 >= 0.0)
       estimates[1] = err2;
     else
-      estimates[1] = min(estimates[1], err2);
+      estimates[1] = std::min(estimates[1], err2);
 
     double error = 0.0001;
 #ifdef USE_PCA_FOR_SHAPE_ESTIMATION
@@ -2078,7 +2069,7 @@ namespace BC7C
       error += 1.0;
     }
 #else
-    error += min(err0, err2);
+    error += std::min(err0, err2);
 #endif
     return error;
   }
