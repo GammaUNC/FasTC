@@ -1538,10 +1538,10 @@ namespace BC7C
   }
 
   static uint32 FetchAndAdd(uint32 *x) {
-    return InterlockedIncrement(x);
+    return InterlockedIncrement(x)-1;
   }
 
-  static void ResetTestAndSet(uint *x) {
+  static void ResetTestAndSet(uint32 *x) {
     *x = 0;
   }
 #elif defined HAS_GCC_ATOMICS
