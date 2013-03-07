@@ -58,6 +58,7 @@ void PrintUsage() {
   fprintf(stderr, "\t-n <num>\tCompress the image num times and give the average time and PSNR. Default: 1\n");
   fprintf(stderr, "\t-simd\t\tUse SIMD compression path\n");
   fprintf(stderr, "\t-t <num>\tCompress the image using <num> threads. Default: 1\n");
+  fprintf(stderr, "\t-a \t\tCompress the image using synchronization via atomic operations. Default: Off\n");
   fprintf(stderr, "\t-j <num>\tUse <num> blocks for each work item in a worker queue threading model. Default: (Blocks / Threads)\n");
 }
 
@@ -90,6 +91,7 @@ int main(int argc, char **argv) {
   int numCompressions = 1;
   bool bUseSIMD = false;
   bool bSaveLog = false;
+  bool bUseAtomics = false;
   
   bool knowArg = false;
   do {
@@ -126,8 +128,8 @@ int main(int argc, char **argv) {
       fileArg++;
       
       if(fileArg == argc || (numThreads = atoi(argv[fileArg])) < 1) {
-	PrintUsage();
-	exit(1);
+        PrintUsage();
+        exit(1);
       }
 
       fileArg++;
@@ -139,8 +141,8 @@ int main(int argc, char **argv) {
       fileArg++;
       
       if(fileArg == argc || (quality = atoi(argv[fileArg])) < 0) {
-	PrintUsage();
-	exit(1);
+        PrintUsage();
+        exit(1);
       }
 
       fileArg++;
@@ -152,11 +154,18 @@ int main(int argc, char **argv) {
       fileArg++;
       
       if(fileArg == argc || (numJobs = atoi(argv[fileArg])) < 0) {
-	PrintUsage();
-	exit(1);
+        PrintUsage();
+        exit(1);
       }
 
       fileArg++;
+      knowArg = true;
+      continue;
+    }
+
+    if(strcmp(argv[fileArg], "-a") == 0) {
+      fileArg++;
+      bUseAtomics = true;
       knowArg = true;
       continue;
     }
@@ -187,6 +196,7 @@ int main(int argc, char **argv) {
   
   SCompressionSettings settings;
   settings.bUseSIMD = bUseSIMD;
+  settings.bUseAtomics = bUseAtomics;
   settings.iNumThreads = numThreads;
   settings.iQuality = quality;
   settings.iNumCompressions = numCompressions;
