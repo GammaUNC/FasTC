@@ -66,7 +66,7 @@ public:
     case eFileMode_Write:
     case eFileMode_WriteBinary:
       dwDesiredAccess = GENERIC_WRITE;
-      dwOpenAction = CREATE_NEW;
+      dwOpenAction = CREATE_ALWAYS;
       break;
 
     case eFileMode_WriteAppend:
