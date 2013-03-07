@@ -78,6 +78,11 @@
 #   include "Windows.h"
 #endif
 
+#ifdef _MSC_VER
+#  undef min
+#  undef max
+#endif // _MSC_VER
+
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
