@@ -104,12 +104,13 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
       if(s.bUseSIMD) {
         return BC7C::CompressImageBC7SIMD;
       }
-      else {
 #endif
-        return BC7C::CompressImageBC7;
-#ifdef HAS_SSE_41
-      }
+
+#ifdef HAS_ATOMICS
+      if(s.bUseAtomics)
+        return BC7C::CompressImageBC7Atomic;
 #endif
+      return BC7C::CompressImageBC7;
     }
     break;
 
@@ -158,6 +159,84 @@ static double CompressImageInSerial(
 
   double cmpTime = cmpTimeTotal / double(settings.iNumCompressions);
   return cmpTime;
+}
+
+class AtomicThreadUnit : public TCCallable {
+  const unsigned char *const m_InBuf;
+  unsigned char *m_OutBuf;
+  const unsigned int m_Height;
+  const unsigned int m_Width;
+  TCBarrier *m_Barrier;
+  const unsigned int m_NumCompressions;
+  CompressionFunc m_CmpFnc;
+
+ public:
+  AtomicThreadUnit(
+    const unsigned char *const inBuf,
+    unsigned char *outBuf,
+    const unsigned int height,
+    const unsigned int width,
+    TCBarrier *barrier,
+    const unsigned int nCompressions,
+    CompressionFunc f
+  ) : TCCallable(),
+    m_InBuf(inBuf),
+    m_OutBuf(outBuf),
+    m_Height(height),
+    m_Width(width),
+    m_Barrier(barrier)
+  { }
+
+  virtual ~AtomicThreadUnit() { }
+  virtual void operator()() {
+    m_Barrier->Wait();
+    for(int i = 0; i < m_NumCompressions; i++)
+      (*m_CmpFnc)(m_InBuf, m_OutBuf, m_Width, m_Height);
+  }
+};
+
+static double CompressImageWithAtomics(
+  const unsigned char *imgData,
+  const unsigned int width, const unsigned int height,
+  const SCompressionSettings &settings,
+  unsigned char *outBuf
+) {
+  CompressionFunc f = ChooseFuncFromSettings(settings);
+  
+  const int nTimes = settings.iNumCompressions;
+  const int nThreads = settings.iNumThreads;
+
+  // Allocate resources...
+  TCBarrier barrier (nThreads);
+  TCThread **threads = (TCThread **)malloc(nThreads * sizeof(TCThread *));
+  AtomicThreadUnit **units = (AtomicThreadUnit **)malloc(nThreads * sizeof(AtomicThreadUnit *));
+
+  // Launch threads...
+  StopWatch sw;
+  sw.Start();
+  for(int i = 0; i < nThreads; i++) {
+    AtomicThreadUnit *u = new AtomicThreadUnit(imgData, outBuf, height, width, &barrier, nTimes, f);
+    threads[i] = new TCThread(*u);
+    units[i] = u;
+  }
+
+  // Wait for threads to finish
+  for(int i = 0; i < nThreads; i++) {
+    threads[i]->Join();
+  }
+  sw.Stop();
+
+  // Cleanup
+  for(int i = 0; i < nThreads; i++)
+    delete threads[i];
+  free(threads);
+  for(int i = 0; i < nThreads; i++)
+    delete units[i];
+  free(units);
+
+  // Compression time
+  double cmpTimeTotal = sw.TimeInMilliseconds();
+  return cmpTimeTotal / double(settings.iNumCompressions);
 }
 
 static double CompressThreadGroup(ThreadGroup &tgrp, const SCompressionSettings &settings) {
@@ -296,9 +375,9 @@ bool CompressImageData(
 
     if(settings.iNumThreads > 1) {
       if(settings.iJobSize > 0)
-	cmpMSTime = CompressImageWithWorkerQueue(data, dataSz, settings, cmpData);
+        cmpMSTime = CompressImageWithWorkerQueue(data, dataSz, settings, cmpData);
       else
-	cmpMSTime = CompressImageWithThreads(data, dataSz, settings, cmpData);
+        cmpMSTime = CompressImageWithThreads(data, dataSz, settings, cmpData);
     }
     else {
       cmpMSTime = CompressImageInSerial(data, dataSz, settings, cmpData);
