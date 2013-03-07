@@ -1,8 +1,43 @@
 #include "FileStream.h"
 
 #include <Windows.h>
+#include <strsafe.h>
+
 #include <stdio.h>
 #include <assert.h>
+
+void ErrorExit(LPTSTR lpszFunction) 
+{ 
+    // Retrieve the system error message for the last-error code
+
+    LPVOID lpMsgBuf;
+    LPVOID lpDisplayBuf;
+    DWORD dw = GetLastError(); 
+
+    FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        dw,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR) &lpMsgBuf,
+        0, NULL );
+
+    // Display the error message and exit the process
+
+    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
+        (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR)); 
+    StringCchPrintf((LPTSTR)lpDisplayBuf, 
+        LocalSize(lpDisplayBuf) / sizeof(TCHAR),
+        TEXT("%s failed with error %d: %s"), 
+        lpszFunction, dw, lpMsgBuf); 
+    MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
+
+    LocalFree(lpMsgBuf);
+    LocalFree(lpDisplayBuf);
+    ExitProcess(dw); 
+}
 
 class FileStreamImpl {
   
@@ -20,8 +55,8 @@ public:
   {
 
 	DWORD dwDesiredAccess = GENERIC_READ;
-	DWORD dwShareMode = 0;
-    switch(mode) {
+  DWORD dwOpenAction = OPEN_EXISTING;
+  switch(mode) {
     default:
     case eFileMode_ReadBinary:
     case eFileMode_Read:
@@ -31,16 +66,20 @@ public:
     case eFileMode_Write:
     case eFileMode_WriteBinary:
       dwDesiredAccess = GENERIC_WRITE;
+      dwOpenAction = CREATE_NEW;
       break;
 
     case eFileMode_WriteAppend:
     case eFileMode_WriteBinaryAppend:
-		dwDesiredAccess = FILE_APPEND_DATA;
+		  dwDesiredAccess = FILE_APPEND_DATA;
+      dwOpenAction = CREATE_NEW;
       break;
     }
 
-    m_Handle = CreateFile(filename, dwDesiredAccess, dwShareMode, NULL, 0, FILE_ATTRIBUTE_NORMAL, NULL);
-	assert(m_Handle != INVALID_HANDLE_VALUE);
+    m_Handle = CreateFile(filename, dwDesiredAccess, 0, NULL, dwOpenAction, FILE_ATTRIBUTE_NORMAL, NULL);
+	  if(m_Handle == INVALID_HANDLE_VALUE) {
+      ErrorExit(TEXT("CreateFile"));
+    }
   }
 
   ~FileStreamImpl() {
