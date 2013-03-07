@@ -43,10 +43,11 @@
 
 #include "TexComp.h"
 
-#include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
 
 #include "BC7Compressor.h"
 #include "Thread.h"
@@ -58,18 +59,8 @@
 
 
 template <typename T>
-static T min(const T &a, const T &b) {
-  return (a < b)? a : b;
-}
-
-template <typename T>
-static T max(const T &a, const T &b) {
-  return (a > b)? a : b;
-}
-
-template <typename T>
 static void clamp(T &x, const T &minX, const T &maxX) {
-  x = max(min(maxX, x), minX);
+  x = std::max(std::min(maxX, x), minX);
 }
 
 template <typename T>
@@ -111,7 +102,7 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
       BC7C::SetQualityLevel(s.iQuality);
 #ifdef HAS_SSE_41
       if(s.bUseSIMD) {
-	return BC7C::CompressImageBC7SIMD;
+        return BC7C::CompressImageBC7SIMD;
       }
       else {
 #endif
