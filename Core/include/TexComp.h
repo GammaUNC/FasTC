@@ -45,10 +45,10 @@
 #define _TEX_COMP_H_
 
 #include "CompressedImage.h"
+#include "CompressionJob.h"
 
 // Forward declarations
 class ImageFile;
-class CompressedImage;
 class BlockStatManager;
 
 struct SCompressionSettings {

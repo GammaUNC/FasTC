@@ -105,11 +105,6 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
         return BC7C::CompressImageBC7SIMD;
       }
 #endif
-
-#ifdef HAS_ATOMICS
-      if(s.bUseAtomics)
-        return BC7C::CompressImageBC7Atomic;
-#endif
       return BC7C::CompressImageBC7;
     }
     break;
@@ -162,38 +157,30 @@ static double CompressImageInSerial(
 }
 
 class AtomicThreadUnit : public TCCallable {
-  const unsigned char *const m_InBuf;
-  unsigned char *m_OutBuf;
-  const unsigned int m_Height;
-  const unsigned int m_Width;
+  CompressionJobList &m_CompressionJobList;
   TCBarrier *m_Barrier;
-  const unsigned int m_NumCompressions;
   CompressionFunc m_CmpFnc;
 
  public:
   AtomicThreadUnit(
-    const unsigned char *const inBuf,
-    unsigned char *outBuf,
-    const unsigned int height,
-    const unsigned int width,
+    CompressionJobList &_cjl,
     TCBarrier *barrier,
-    const unsigned int nCompressions,
     CompressionFunc f
   ) : TCCallable(),
-    m_InBuf(inBuf),
-    m_OutBuf(outBuf),
-    m_Height(height),
-    m_Width(width),
+    m_CompressionJobList(_cjl),
     m_Barrier(barrier),
-    m_NumCompressions(nCompressions),
     m_CmpFnc(f)
   { }
 
   virtual ~AtomicThreadUnit() { }
   virtual void operator()() {
     m_Barrier->Wait();
-    for(uint32 i = 0; i < m_NumCompressions; i++)
-      (*m_CmpFnc)(m_InBuf, m_OutBuf, m_Width, m_Height);
+    if(m_CmpFnc == BC7C::Compress) {
+      BC7C::CompressAtomic(m_CompressionJobList);
+    }
+    else {
+      assert(!"I don't know what we're compressing...");
+    }
   }
 };
 
@@ -205,22 +192,34 @@ static double CompressImageWithAtomics(
 ) {
   CompressionFunc f = ChooseFuncFromSettings(settings);
   
+  // Setup compression list...
   const int nTimes = settings.iNumCompressions;
+  CompressionJobList cjl (nTimes);
+  for(int i = 0; i < nTimes; i++) {
+    if(!cjl.AddJob(CompressionJob(imgData, outBuf, height, width))) {
+      assert(!"Error adding compression job to job list!");
+    }
+  }
+
   const int nThreads = settings.iNumThreads;
 
   // Allocate resources...
-  TCBarrier barrier (nThreads);
+  TCBarrier barrier (nThreads+1);
   TCThread **threads = (TCThread **)malloc(nThreads * sizeof(TCThread *));
   AtomicThreadUnit **units = (AtomicThreadUnit **)malloc(nThreads * sizeof(AtomicThreadUnit *));
 
   // Launch threads...
-  StopWatch sw;
-  sw.Start();
   for(int i = 0; i < nThreads; i++) {
-    AtomicThreadUnit *u = new AtomicThreadUnit(imgData, outBuf, height, width, &barrier, nTimes, f);
+    AtomicThreadUnit *u = new AtomicThreadUnit(cjl, &barrier, f);
     threads[i] = new TCThread(*u);
     units[i] = u;
   }
+
+  // Wait here to make sure that our timer is correct...
+  barrier.Wait();
+
+  StopWatch sw;
+  sw.Start();
 
   // Wait for threads to finish
   for(int i = 0; i < nThreads; i++) {

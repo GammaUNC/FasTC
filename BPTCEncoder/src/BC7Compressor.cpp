@@ -91,13 +91,6 @@
 #include <cfloat>
 #include <ctime>
 
-#ifdef _MSC_VER
-#   define ALIGN(x) __declspec( align(x) )
-#else
-#   define ALIGN(x) __attribute__((aligned(x)))
-#endif
-#define ALIGN_SSE ALIGN(16)
-
 // #define USE_PCA_FOR_SHAPE_ESTIMATION
 
 enum EBlockStats {
@@ -1424,6 +1417,8 @@ namespace BC7C
   static int gQualityLevel = 50;
   void SetQualityLevel(int q) {
     gQualityLevel = std::max(0, q);
+    const int kMaxIters = BC7CompressionMode::kMaxAnnealingIterations;
+    BC7CompressionMode::MaxAnnealingIterations = std::min(kMaxIters, GetQualityLevel());
   }
   int GetQualityLevel() { return gQualityLevel; }
 
@@ -1556,72 +1551,33 @@ namespace BC7C
 #endif
 
   // Variables used for synchronization in threadsafe implementation.
-  static ALIGN(32) uint32 _currentBlock = 0;
-  static ALIGN(32) uint32 _initialized = 0;
-  static const unsigned char *_inBuf;
-  static unsigned char *_outBuf;
-  static bool _initializedFlag = false;
+  void CompressAtomic(CompressionJobList &cjl) {
+ 
+    uint32 jobIdx;
+    while((jobIdx = cjl.m_CurrentJobIndex) < cjl.GetNumJobs()) {
 
-  void CompressImageBC7Atomic(
-    const unsigned char *inBuf,
-    unsigned char *outBuf,
-    unsigned int width,
-    unsigned int height
-  ) {
+      // !HACK! ... Microsoft has this defined
+      #undef GetJob
 
-    bool myData = false;
-    while(!myData) {
-
-      // Have we initialized any data?
-      if(!TestAndSet(&_initialized)) {
-
-        // I'm the first one here... initialize MY data...
-
-        const int kMaxIters = BC7CompressionMode::kMaxAnnealingIterations;
-        BC7CompressionMode::MaxAnnealingIterations = std::min(kMaxIters, GetQualityLevel());
-
-        _currentBlock = 0;
-
-        _inBuf = inBuf;
-        _outBuf = outBuf;
-        myData = true;
-
-        _initializedFlag = true;
-      }
-
-      // We've initialized data... is it mine?
-      else if(_inBuf == inBuf && _outBuf == outBuf) {
-        myData = true;
-      }
-
-      const uint32 nBlocks = (height * width) / 16;
-
-      // Make sure that whoever is initializing data is working on it...
-      while(!_initializedFlag && _currentBlock < nBlocks) {
-        YieldThread();
-      }
+      const CompressionJob *cj = cjl.GetJob(jobIdx);
+      const uint32 nBlocks = (cj->height * cj->width) / 16;
 
       // Help finish whatever texture we're compressing before we start again on my work...
       uint32 blockIdx;
-      while((blockIdx = FetchAndAdd(&_currentBlock)) < nBlocks) {
-        unsigned char *out = _outBuf + (16 * blockIdx);
-        const unsigned char *in = _inBuf + (64 * blockIdx);
+      while((blockIdx = FetchAndAdd(&(cjl.m_CurrentBlockIndex))) < nBlocks) {
+        unsigned char *out = cj->outBuf + (16 * blockIdx);
+        const unsigned char *in = cj->inBuf + (64 * blockIdx);
 
         CompressBC7Block((const uint32 *)in, out);
-        YieldThread(); // Just to give other threads a chance to make some progress
       }
 
-      // If we've allocated someone to compress the last block, then reset the initialization...
-      if(blockIdx == nBlocks) {
-        _initializedFlag = false;
-        ResetTestAndSet(&_initialized);
+      if(TestAndSet(cjl.GetFinishedFlag(jobIdx))) {
+        cjl.m_CurrentJobIndex++;
+        cjl.m_CurrentBlockIndex = 0;
       }
-      else if(blockIdx > nBlocks) {
-        // Wait for last block to finish..
-        while(_initialized) {
-          YieldThread();
-        }
-      }
+
+      // Wait until this texture finishes.
+      while(cjl.m_CurrentJobIndex = jobIdx);
     }
   }
 #endif // HAS_ATOMICS
