@@ -127,7 +127,10 @@ bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBuf
 
   switch(m_Format) {
   case eCompressionFormat_BPTC: 
-    BC7C::DecompressImageBC7(m_Data, outBuf, m_Width, m_Height);
+    { 
+      DecompressionJob dj (m_Data, outBuf, m_Width, m_Height);
+      BC7C::Decompress(dj);
+    }
     break;
 
   default:

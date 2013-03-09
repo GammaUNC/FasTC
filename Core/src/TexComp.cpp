@@ -82,7 +82,7 @@ static  CompressionFuncWithStats ChooseFuncFromSettingsWithStats(const SCompress
   switch(s.format) {
     case eCompressionFormat_BPTC:
     {
-       return BC7C::CompressImageBC7Stats;
+       return BC7C::CompressWithStats;
     }
     break;
 
@@ -105,7 +105,7 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
         return BC7C::CompressImageBC7SIMD;
       }
 #endif
-      return BC7C::CompressImageBC7;
+      return BC7C::Compress;
     }
     break;
 
@@ -140,11 +140,12 @@ static double CompressImageInSerial(
     stopWatch.Start();
 
     // !FIXME! We're assuming that we have 4x4 blocks here...
+    CompressionJob cj (imgData, outBuf, imgDataSz / 16, 4);
     if(fStats && settings.pStatManager) {
-      (*fStats)(imgData, outBuf, imgDataSz / 16, 4, *(settings.pStatManager));
+      (*fStats)(cj, *(settings.pStatManager));
     }
     else {
-      (*f)(imgData, outBuf, imgDataSz / 16, 4);
+      (*f)(cj);
     }
 
     stopWatch.Stop();

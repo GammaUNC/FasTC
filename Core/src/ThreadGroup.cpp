@@ -86,10 +86,11 @@ void CmpThread::operator()() {
       return;
     }
 
+    CompressionJob cj (m_InBuf, m_OutBuf, m_Width, m_Height);
     if(m_CmpFunc)
-      (*m_CmpFunc)(m_InBuf, m_OutBuf, m_Width, m_Height);
+      (*m_CmpFunc)(cj);
     else
-      (*m_CmpFuncWithStats)(m_InBuf, m_OutBuf, m_Width, m_Height, *m_StatManager);
+      (*m_CmpFuncWithStats)(cj, *m_StatManager);
 
     {
       TCLock lock(*m_ParentCounterLock);
@@ -112,7 +113,7 @@ ThreadGroup::ThreadGroup( int numThreads, const unsigned char *inBuf, unsigned i
   , m_ThreadState(eThreadState_Done)
   , m_ExitFlag(false)
   , m_CompressedBlockSize(
-       (func == BC7C::CompressImageBC7 
+       (func == BC7C::Compress 
 #ifdef HAS_SSE_41
 	|| func == BC7C::CompressImageBC7SIMD
 #endif
@@ -122,7 +123,7 @@ ThreadGroup::ThreadGroup( int numThreads, const unsigned char *inBuf, unsigned i
          0
   )
   , m_UncompressedBlockSize(
-       (func == BC7C::CompressImageBC7 
+       (func == BC7C::Compress 
 #ifdef HAS_SSE_41
 	|| func == BC7C::CompressImageBC7SIMD
 #endif
@@ -162,13 +163,13 @@ ThreadGroup::ThreadGroup(
   , m_ThreadState(eThreadState_Done)
   , m_ExitFlag(false)
   , m_CompressedBlockSize(
-       (func == BC7C::CompressImageBC7Stats)? 
+       (func == BC7C::CompressWithStats)? 
          16 
        : 
          0
   )
   , m_UncompressedBlockSize(
-       (func == BC7C::CompressImageBC7Stats)? 
+       (func == BC7C::CompressWithStats)? 
          64 
        : 
          0

@@ -103,24 +103,13 @@ extern bool CompressImageData(
 // returns the compressed image data into outData. It is assumed that there is
 // enough space allocated for outData to store the compressed data. Allocation
 // is dependent on the compression format.
-typedef void (* CompressionFunc)(
-  const unsigned char *inData, // Raw image data
-  unsigned char *outData,      // Buffer to store compressed data.
-  unsigned int width,          // Image width
-  unsigned int height          // Image height
-);
+typedef void (* CompressionFunc)(const CompressionJob &);
 
 // A compression function format. It takes the raw data and image dimensions and 
 // returns the compressed image data into outData. It is assumed that there is
 // enough space allocated for outData to store the compressed data. Allocation
 // is dependent on the compression format.
-typedef void (* CompressionFuncWithStats)(
-  const unsigned char *inData, // Raw image data
-  unsigned char *outData,      // Buffer to store compressed data.
-  unsigned int width,          // Image width
-  unsigned int height,         // Image height
-  BlockStatManager &statManager// Stat manager
-);
+typedef void (* CompressionFuncWithStats)(const CompressionJob &, BlockStatManager &statManager);
 
 // This function computes the Peak Signal to Noise Ratio between a 
 // compressed image and a raw image.

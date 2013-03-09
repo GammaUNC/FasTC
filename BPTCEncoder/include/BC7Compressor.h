@@ -103,20 +103,12 @@ namespace BC7C
 
 	// Compress the image given as RGBA data to BC7 format. Width and Height are the dimensions of
 	// the image in pixels.
-	void CompressImageBC7(
-    const unsigned char *inBuf, 
-    unsigned char *outBuf, 
-    unsigned int width, 
-    unsigned int height
-  );
+	void Compress(const CompressionJob &);
 
-  void CompressImageBC7Stats(
-    const unsigned char *inBuf, 
-    unsigned char *outBuf, 
-    unsigned int width, 
-    unsigned int height,
-    BlockStatManager &statManager
-  );
+  // Perform a compression while recording all of the choices the compressor made into a 
+  // list of statistics. We can use this to see whether or not certain heuristics are working, such as
+  // whether or not certain modes are being chosen more often than others, etc.
+  void CompressWithStats(const CompressionJob &, BlockStatManager &statManager);
 
 #ifdef HAS_SSE_41
 	// Compress the image given as RGBA data to BC7 format using an algorithm optimized for SIMD
@@ -132,5 +124,5 @@ namespace BC7C
 #endif
 
 	// Decompress the image given as BC7 data to R8G8B8A8 format. Width and Height are the dimensions of the image in pixels.
-	void DecompressImageBC7(const unsigned char* inBuf, unsigned char* outBuf, unsigned int width, unsigned int height);
+	void Decompress(const DecompressionJob &);
 }

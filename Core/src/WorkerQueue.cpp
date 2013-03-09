@@ -100,10 +100,12 @@ void WorkerThread::operator()() {
       {
 	const uint8 *src = m_Parent->GetSrcForThread(m_ThreadIdx);
 	uint8 *dst = m_Parent->GetDstForThread(m_ThreadIdx);
+
+  CompressionJob cj (src, dst, 4 * m_Parent->GetNumBlocksForThread(m_ThreadIdx), 4);
 	if(f)
-	  (*f)(src, dst, 4 * m_Parent->GetNumBlocksForThread(m_ThreadIdx), 4);
+	  (*f)(cj);
 	else
-	  (*fStat)(src, dst, 4 * m_Parent->GetNumBlocksForThread(m_ThreadIdx), 4, *statManager);
+	  (*fStat)(cj, *statManager);
 
 	break;
       }

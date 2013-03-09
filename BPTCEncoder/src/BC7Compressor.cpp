@@ -1484,14 +1484,13 @@ namespace BC7C
   // 4-byte RGBA format. The width and height parameters specify the size of the image in pixels.
   // The buffer pointed to by outBuf should be large enough to store the compressed image. This
   // implementation has an 4:1 compression ratio.
-  void CompressImageBC7(const unsigned char *inBuf, unsigned char *outBuf, unsigned int width, unsigned int height)
+  void Compress(const CompressionJob &cj)
   {
-    const int kMaxIters = BC7CompressionMode::kMaxAnnealingIterations;
-    BC7CompressionMode::MaxAnnealingIterations = std::min(kMaxIters, GetQualityLevel());
-
-    for(uint32 j = 0; j < height; j += 4)
+    const unsigned char *inBuf = cj.inBuf;
+    unsigned char *outBuf = cj.outBuf;
+    for(uint32 j = 0; j < cj.height; j += 4)
     {
-      for(uint32 i = 0; i < width; i += 4)
+      for(uint32 i = 0; i < cj.width; i += 4)
       {
         // ExtractBlock(inBuf + i * 4, width, block);
         CompressBC7Block((const uint32 *)inBuf, outBuf);
@@ -1582,19 +1581,15 @@ namespace BC7C
   }
 #endif // HAS_ATOMICS
 
-  void CompressImageBC7Stats(
-    const unsigned char *inBuf, 
-    unsigned char *outBuf, 
-    unsigned int width, 
-    unsigned int height,
+  void CompressWithStats(
+    const CompressionJob &cj,
     BlockStatManager &statManager
   ) {
-    const int kMaxIters = BC7CompressionMode::kMaxAnnealingIterations;
-    BC7CompressionMode::MaxAnnealingIterations = std::min(kMaxIters, GetQualityLevel());
-
-    for(uint32 j = 0; j < height; j += 4)
+    const unsigned char *inBuf = cj.inBuf;
+    unsigned char *outBuf = cj.outBuf;
+    for(uint32 j = 0; j < cj.height; j += 4)
     {
-      for(uint32 i = 0; i < width; i += 4)
+      for(uint32 i = 0; i < cj.width; i += 4)
       {
         // ExtractBlock(inBuf + i * 4, width, block);
         CompressBC7Block((const uint32 *)inBuf, outBuf, statManager);
@@ -2567,16 +2562,17 @@ namespace BC7C
   }
 
   // Convert the image from a BC7 buffer to a RGBA8 buffer
-  void DecompressImageBC7(const uint8 *inBuf, uint8* outBuf, unsigned int width, unsigned int height) {
+  void Decompress(const DecompressionJob &dj) {
 
+    unsigned char *outBuf = dj.outBuf;
     unsigned int blockIdx = 0;
     //    for(unsigned int j = 0; j < height; j += 4, outBuf += width * 3 * 4)
-    for(unsigned int j = 0; j < height; j += 4)
+    for(unsigned int j = 0; j < dj.height; j += 4)
     {
-      for(unsigned int i = 0; i < width; i += 4)
+      for(unsigned int i = 0; i < dj.width; i += 4)
       {
         uint32 pixels[16];
-        DecompressBC7Block(inBuf + (16*(blockIdx++)), pixels);
+        DecompressBC7Block(dj.inBuf + (16*(blockIdx++)), pixels);
 
         memcpy(outBuf, pixels, 16 * sizeof(uint32));
         //memcpy(outBuf + (width * 4), pixels + 4, 4 * sizeof(uint32));
