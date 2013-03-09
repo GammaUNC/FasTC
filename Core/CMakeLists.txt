@@ -45,6 +45,7 @@ SET( SOURCES
 	"src/CompressedImage.cpp"
 	"src/Image.cpp"
 	"src/BlockStats.cpp"
+	"src/CompressionJob.cpp"
 )
 
 SET( HEADERS
@@ -53,6 +54,7 @@ SET( HEADERS
 	"include/TexCompTypes.h"
 	"include/Image.h"
 	"include/BlockStats.h"
+	"include/CompressionJob.h"
 )
 
 # Make sure to add the appropriate stopwatch files...
