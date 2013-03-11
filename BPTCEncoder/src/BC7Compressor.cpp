@@ -1563,20 +1563,20 @@ namespace BC7C
 
       // Help finish whatever texture we're compressing before we start again on my work...
       uint32 blockIdx;
-      while((blockIdx = FetchAndAdd(&(cjl.m_CurrentBlockIndex))) < nBlocks) {
+      while((blockIdx = FetchAndAdd(&(cjl.m_CurrentBlockIndex))) < nBlocks && jobIdx == cjl.m_CurrentJobIndex) {
         unsigned char *out = cj->outBuf + (16 * blockIdx);
         const unsigned char *in = cj->inBuf + (64 * blockIdx);
 
         CompressBC7Block((const uint32 *)in, out);
       }
 
-      if(TestAndSet(cjl.GetFinishedFlag(jobIdx))) {
+      if(TestAndSet(cjl.GetFinishedFlag(jobIdx)) != 0) {
         cjl.m_CurrentJobIndex++;
         cjl.m_CurrentBlockIndex = 0;
       }
 
       // Wait until this texture finishes.
-      while(cjl.m_CurrentJobIndex = jobIdx);
+      while(cjl.m_CurrentJobIndex == jobIdx);
     }
   }
 #endif // HAS_ATOMICS
