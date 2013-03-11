@@ -1555,7 +1555,7 @@ namespace BC7C
 
       // Help finish whatever texture we're compressing before we start again on my work...
       uint32 blockIdx;
-      while((blockIdx = FetchAndAdd(&(cjl.m_CurrentBlockIndex))) < nBlocks && jobIdx == cjl.m_CurrentJobIndex) {
+      while((blockIdx = FetchAndAdd(&(cjl.m_CurrentBlockIndex))) < nBlocks && *(cjl.GetFinishedFlag(jobIdx)) == 0) {
         unsigned char *out = cj->outBuf + (16 * blockIdx);
         const unsigned char *in = cj->inBuf + (64 * blockIdx);
 
@@ -1563,8 +1563,8 @@ namespace BC7C
       }
 
       if(TestAndSet(cjl.GetFinishedFlag(jobIdx)) == 0) {
-        cjl.m_CurrentJobIndex++;
         cjl.m_CurrentBlockIndex = 0;
+        cjl.m_CurrentJobIndex++;
       }
 
       // Wait until this texture finishes.
