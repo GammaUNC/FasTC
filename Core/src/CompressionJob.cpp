@@ -53,6 +53,8 @@
 CompressionJobList::CompressionJobList(const uint32 nJobs) 
   : m_NumJobs(0)
   , m_TotalNumJobs(nJobs)
+  , m_CurrentJobIndex(0)
+  , m_CurrentBlockIndex(0)
 {
   m_FinishedFlags = new FinishedFlag[nJobs];
   memset(m_FinishedFlags, 0, nJobs * sizeof(m_FinishedFlags[0]));
@@ -69,6 +71,8 @@ CompressionJobList::~CompressionJobList() {
 CompressionJobList::CompressionJobList(const CompressionJobList &other)
   : m_NumJobs(other.m_NumJobs)
   , m_TotalNumJobs(other.m_TotalNumJobs)
+  , m_CurrentJobIndex(other.m_CurrentJobIndex)
+  , m_CurrentBlockIndex(other.m_CurrentBlockIndex)
 {
   uint32 arraySz = m_TotalNumJobs * sizeof(m_Jobs[0]);
   m_Jobs = (CompressionJob *)malloc(arraySz);
@@ -82,6 +86,8 @@ CompressionJobList &CompressionJobList::operator =(const CompressionJobList &oth
   assert(m_TotalNumJobs == other.m_TotalNumJobs);
 
   m_NumJobs = other.m_NumJobs;
+  m_CurrentJobIndex = other.m_CurrentJobIndex;
+  m_CurrentBlockIndex = other.m_CurrentBlockIndex;
 
   // Get rid of old variables...
   free(m_Jobs);
@@ -108,7 +114,7 @@ bool CompressionJobList::AddJob(const CompressionJob &cj) {
 }
 
 const CompressionJob *CompressionJobList::GetJob(uint32 idx) const {
-  if(idx <= m_NumJobs) {
+  if(idx >= m_NumJobs) {
     return NULL;
   }
 
@@ -116,7 +122,7 @@ const CompressionJob *CompressionJobList::GetJob(uint32 idx) const {
 }
 
 uint32 *CompressionJobList::GetFinishedFlag(uint32 idx) const {
-  if(idx <= m_NumJobs) {
+  if(idx >= m_NumJobs) {
     return NULL;
   }
 

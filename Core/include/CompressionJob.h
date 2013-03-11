@@ -126,9 +126,6 @@ struct CompressionJobList {
     const CompressionJob *GetJob(uint32 idx) const;
     uint32 *GetFinishedFlag(uint32 idx) const;
     
-    ALIGN(32) uint32 m_CurrentBlockIndex;
-    ALIGN(32) uint32 m_CurrentJobIndex;
-
   private:
     CompressionJob *m_Jobs;
     uint32 m_NumJobs;
@@ -137,6 +134,10 @@ struct CompressionJobList {
     struct FinishedFlag{
       ALIGN(32) uint32 m_flag;
     } *m_FinishedFlags;
+
+  public:
+    ALIGN(32) uint32 m_CurrentJobIndex;
+    ALIGN(32) uint32 m_CurrentBlockIndex;
 };
 
 #endif // __COMPRESSION_JOBS_H__
