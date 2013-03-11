@@ -1570,7 +1570,7 @@ namespace BC7C
         CompressBC7Block((const uint32 *)in, out);
       }
 
-      if(TestAndSet(cjl.GetFinishedFlag(jobIdx)) != 0) {
+      if(TestAndSet(cjl.GetFinishedFlag(jobIdx)) == 0) {
         cjl.m_CurrentJobIndex++;
         cjl.m_CurrentBlockIndex = 0;
       }
