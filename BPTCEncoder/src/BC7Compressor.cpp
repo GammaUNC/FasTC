@@ -1531,10 +1531,6 @@ namespace BC7C
   static uint32 FetchAndAdd(uint32 *x) {
     return InterlockedIncrement(x)-1;
   }
-
-  static void ResetTestAndSet(uint32 *x) {
-    *x = 0;
-  }
 #elif defined HAS_GCC_ATOMICS
   static uint32 TestAndSet(uint32 *x) {
     return __sync_lock_test_and_set(x, 1);
@@ -1542,10 +1538,6 @@ namespace BC7C
 
   static uint32 FetchAndAdd(uint32 *x) {
     return __sync_fetch_and_add(x, 1);
-  }
-
-  static void ResetTestAndSet(uint32 *x) {
-    __sync_lock_release(x);
   }
 #endif
 
