@@ -362,9 +362,12 @@ double BC7CompressionMode::CompressSingleColor(const RGBAVector &p, RGBAVector &
       const uint8 val = (pixel >> (ci * 8)) & 0xFF;
       int nBits = ci == 3? GetAlphaChannelPrecision() : m_Attributes->colorChannelPrecision;
 
-      // If we don't handle this channel, then we don't need to
-      // worry about how well we interpolate.
-      if(nBits == 0) { bestValI[ci] = bestValJ[ci] = 0xFF; continue; }
+      // If we don't handle this channel, then it must be the full value (alpha)
+      if(nBits == 0) {
+        bestValI[ci] = bestValJ[ci] = 0xFF;
+        dist = std::max(dist, (uint32)((uint8)0xFF - val));
+        continue;
+      }
 
       const int nPossVals = (1 << nBits);
       int possValsH[256];
