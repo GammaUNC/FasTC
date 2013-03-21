@@ -40,10 +40,10 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
-INCLUDE_DIRECTORIES(${TexC_SOURCE_DIR}/Core/include)
+INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Core/include)
 
-INCLUDE_DIRECTORIES(${TexC_SOURCE_DIR}/BPTCEncoder/include)
-INCLUDE_DIRECTORIES(${TexC_BINARY_DIR}/BPTCEncoder/include)
+INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/BPTCEncoder/include)
+INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/BPTCEncoder/include)
 
 INCLUDE(CheckCXXSourceRuns)
 

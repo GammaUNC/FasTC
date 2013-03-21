@@ -41,7 +41,7 @@
 # <http://gamma.cs.unc.edu/FasTC/>
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
-PROJECT(TexC)
+PROJECT(FasTC)
 
 OPTION(TREAT_WARNINGS_AS_ERRORS "Treat compiler warnings as errors. We use the highest warnings levels for compilers." OFF)
 
