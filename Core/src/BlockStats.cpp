@@ -47,14 +47,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <algorithm>
 
 #include "FileStream.h"
 #include "Thread.h"
-
-template <typename T>
-static T max(const T &a, const T &b) {
-  return (a > b)? a : b;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -150,7 +146,7 @@ BlockStatManager &BlockStatManager::operator=(const BlockStatManager &other) {
 }
 
 BlockStatManager::BlockStatManager(int nBlocks) 
-  : m_BlockStatListSz(max(nBlocks, 0))
+  : m_BlockStatListSz(std::max(nBlocks, 0))
   , m_NextBlock(0)
   , m_Mutex(new TCMutex)
 {

@@ -66,6 +66,10 @@ class CompressedImage {
   void InitData(const unsigned char *withData);
  public:
   CompressedImage();
+
+  // Create a compressed image from the given data according to
+  // the passed format. The size of the data is expected to conform
+  // to the width, height, and format specified.
   CompressedImage(
     const unsigned int width, 
     const unsigned int height, 
@@ -79,6 +83,10 @@ class CompressedImage {
   CompressedImage( const CompressedImage &other );
   ~CompressedImage();
 
+  // Decompress the compressed image data into outBuf. outBufSz is expected
+  // to be the proper size determined by the width, height, and format.
+  // !FIXME! We should have a function to explicitly return the in/out buf
+  // size for a given compressed image.
   bool DecompressImage(unsigned char *outBuf, unsigned int outBufSz) const;
 };
 

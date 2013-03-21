@@ -62,7 +62,7 @@ class TCMutex;
 
 struct BlockStat {
   friend class BlockStatManager;
-public:
+ public:
   BlockStat(const CHAR *statName, int);
   BlockStat(const CHAR *statName, double stat);
 
@@ -71,7 +71,7 @@ public:
 
   void ToString(CHAR *buf, int bufSz) const;
   
-private:
+ private:
   const enum Type {
     eType_Float,
     eType_Int,
@@ -95,8 +95,14 @@ class BlockStatManager {
   BlockStatManager &operator=(const BlockStatManager &);
   ~BlockStatManager();
 
+  // A thread-safe version that returns a list index for recording
+  // block statistics.
   uint32 BeginBlock();
+
+  // Add a stat for a given block. This is thread-safe
   void AddStat(uint32 blockIdx, const BlockStat &stat);
+
+  // Write the statistics to a file.
   void ToFile(const CHAR *filename);
   
  private:
