@@ -74,171 +74,211 @@ struct VisitedState;
 const int kMaxEndpoints = 3;
 
 static const int kPBits[4][2] = {
-	{ 0, 0 },
-	{ 0, 1 },
-	{ 1, 0 },
-	{ 1, 1 }
+  { 0, 0 },
+  { 0, 1 },
+  { 1, 0 },
+  { 1, 1 }
 };
 
 // Abstract class that outlines all of the different settings for BC7 compression modes 
 // Note that at the moment, we only support modes 0-3, so we don't deal with alpha channels.
 class BC7CompressionMode {
-public:
 
-	static const uint32 kMaxNumSubsets = 3;
-	static const uint32 kNumModes = 8;
+ public:
 
-	explicit BC7CompressionMode(int mode, bool opaque = true) : m_IsOpaque(opaque), m_Attributes(&(kModeAttributes[mode])), m_RotateMode(0), m_IndexMode(0) { }
-	~BC7CompressionMode() { }
+  static const uint32 kMaxNumSubsets = 3;
+  static const uint32 kNumModes = 8;
 
-	double Compress(BitStream &stream, const int shapeIdx, const RGBACluster *clusters);
+  // This initializes the compression variables used in order to compress a list of clusters.
+  // We can increase the speed a tad by specifying whether or not the block is opaque or not.
+  explicit BC7CompressionMode(int mode, bool opaque = true) 
+    : m_IsOpaque(opaque)
+    , m_Attributes(&(kModeAttributes[mode]))
+    , m_RotateMode(0)
+    , m_IndexMode(0) 
+  { }
+  ~BC7CompressionMode() { }
 
-	// This switch controls the quality of the simulated annealing optimizer. We will not make
-	// more than this many steps regardless of how bad the error is. Higher values will produce
-	// better quality results but will run slower. Default is 20.
-	static int MaxAnnealingIterations; // This is a setting
-	static const int kMaxAnnealingIterations = 256; // This is a limit
+  // This function compresses a group of clusters into the passed bitstream. The size of the
+  // clusters array is determined by the BC7 compression mode.
+  double Compress(BitStream &stream, const int shapeIdx, const RGBACluster *clusters);
 
-	enum EPBitType {
-		ePBitType_Shared,
-		ePBitType_NotShared,
-		ePBitType_None
-	};
+  // This switch controls the quality of the simulated annealing optimizer. We will not make
+  // more than this many steps regardless of how bad the error is. Higher values will produce
+  // better quality results but will run slower. Default is 20.
+  static int MaxAnnealingIterations; // This is a setting
+  static const int kMaxAnnealingIterations = 256; // This is a limit
 
-	static struct Attributes {
-		int modeNumber;
-		int numPartitionBits;
-		int numSubsets;
-		int numBitsPerIndex;
-		int numBitsPerAlpha;
-		int colorChannelPrecision;
-		int alphaChannelPrecision;
-		bool hasRotation;
-		bool hasIdxMode;
-		EPBitType pbitType;
-	} kModeAttributes[kNumModes];
+  // P-bits are low-order bits that are shared across color channels. This enum says whether or not
+  // both endpoints share a p-bit or whether or not they even have a p-bit.
+  enum EPBitType {
+    ePBitType_Shared,
+    ePBitType_NotShared,
+    ePBitType_None
+  };
 
-	static const Attributes *GetAttributesForMode(int mode) {
-		if(mode < 0 || mode >= 8) return NULL;
-		return &kModeAttributes[mode];
-	}
+  // These are all the per-mode attributes that can be set. They are specified in a table
+  // and we access them through the private m_Attributes variable.
+  static struct Attributes {
+    int modeNumber;
+    int numPartitionBits;
+    int numSubsets;
+    int numBitsPerIndex;
+    int numBitsPerAlpha;
+    int colorChannelPrecision;
+    int alphaChannelPrecision;
+    bool hasRotation;
+    bool hasIdxMode;
+    EPBitType pbitType;
+  } kModeAttributes[kNumModes];
 
-private:
-	
-        const double m_IsOpaque;
-	const Attributes *const m_Attributes;
+  // This returns the above attributes structure for the given mode.
+  static const Attributes *GetAttributesForMode(int mode) {
+    if(mode < 0 || mode >= 8) return NULL;
+    return &kModeAttributes[mode];
+  }
 
-	int m_RotateMode;
-	int m_IndexMode;
+ private:
+    
+  const double m_IsOpaque;
+  const Attributes *const m_Attributes;
 
-	void SetIndexMode(int mode) { m_IndexMode = mode; }
-	void SetRotationMode(int mode) { m_RotateMode = mode; }
+  int m_RotateMode;
+  int m_IndexMode;
 
-	int GetRotationMode() const { return m_Attributes->hasRotation? m_RotateMode : 0; }
+  void SetIndexMode(int mode) { m_IndexMode = mode; }
+  void SetRotationMode(int mode) { m_RotateMode = mode; }
 
-	int GetModeNumber() const { return m_Attributes->modeNumber; }
-	int GetNumberOfPartitionBits() const { return m_Attributes->numPartitionBits; }
-	int GetNumberOfSubsets() const { return m_Attributes->numSubsets; }
+  int GetRotationMode() const { return m_Attributes->hasRotation? m_RotateMode : 0; }
+  int GetModeNumber() const { return m_Attributes->modeNumber; }
 
-	int GetNumberOfBitsPerIndex(int indexMode = -1) const { 
-		if(indexMode < 0) indexMode = m_IndexMode;
-		if(indexMode == 0)
-			return m_Attributes->numBitsPerIndex; 
-		else
-			return m_Attributes->numBitsPerAlpha; 
-	}
+  int GetNumberOfPartitionBits() const { return m_Attributes->numPartitionBits; }
+  int GetNumberOfSubsets() const { return m_Attributes->numSubsets; }
 
-	int GetNumberOfBitsPerAlpha(int indexMode = -1) const { 
-		if(indexMode < 0) indexMode = m_IndexMode;
-		if(indexMode == 0)
-			return m_Attributes->numBitsPerAlpha; 
-		else
-			return m_Attributes->numBitsPerIndex; 
-	}
+  int GetNumberOfBitsPerIndex(int indexMode = -1) const { 
+    if(indexMode < 0) indexMode = m_IndexMode;
+    if(indexMode == 0)
+      return m_Attributes->numBitsPerIndex; 
+    else
+      return m_Attributes->numBitsPerAlpha; 
+  }
 
-	// If we handle alpha separately, then we will consider the alpha channel
-	// to be not used whenever we do any calculations...
-	int GetAlphaChannelPrecision() const { 
-          return m_Attributes->alphaChannelPrecision;  
-	}
+  int GetNumberOfBitsPerAlpha(int indexMode = -1) const { 
+    if(indexMode < 0) indexMode = m_IndexMode;
+    if(indexMode == 0)
+      return m_Attributes->numBitsPerAlpha; 
+    else
+      return m_Attributes->numBitsPerIndex; 
+  }
 
-	RGBAVector GetErrorMetric() const {
-		const float *w = BC7C::GetErrorMetric();
-		switch(GetRotationMode()) {
-			default:
-			case 0: return RGBAVector(w[0], w[1], w[2], w[3]);
-			case 1: return RGBAVector(w[3], w[1], w[2], w[0]);
-			case 2: return RGBAVector(w[0], w[3], w[2], w[1]);
-			case 3: return RGBAVector(w[0], w[1], w[3], w[2]);
-		}
-	}
+  // If we handle alpha separately, then we will consider the alpha channel
+  // to be not used whenever we do any calculations...
+  int GetAlphaChannelPrecision() const { 
+    return m_Attributes->alphaChannelPrecision;  
+  }
 
-	EPBitType GetPBitType() const { return m_Attributes->pbitType; }
+  // This returns the proper error metric even if we have rotation bits set
+  RGBAVector GetErrorMetric() const {
+    const float *w = BC7C::GetErrorMetric();
+    switch(GetRotationMode()) {
+      default:
+      case 0: return RGBAVector(w[0], w[1], w[2], w[3]);
+      case 1: return RGBAVector(w[3], w[1], w[2], w[0]);
+      case 2: return RGBAVector(w[0], w[3], w[2], w[1]);
+      case 3: return RGBAVector(w[0], w[1], w[3], w[2]);
+    }
+  }
 
-	unsigned int GetQuantizationMask() const {	
-		const int maskSeed = 0x80000000;
-                const uint32 alphaPrec = GetAlphaChannelPrecision();
-                if(alphaPrec > 0) {
-                  return (
-                    (maskSeed >> (24 + m_Attributes->colorChannelPrecision - 1) & 0xFF) |
-                    (maskSeed >> (16 + m_Attributes->colorChannelPrecision - 1) & 0xFF00) |
-                    (maskSeed >> (8 + m_Attributes->colorChannelPrecision - 1) & 0xFF0000) |
-                    (maskSeed >> (GetAlphaChannelPrecision() - 1) & 0xFF000000)
-                  );
-                }
-                else {
-                  return (
-                    ((maskSeed >> (24 + m_Attributes->colorChannelPrecision - 1) & 0xFF) |
-                    (maskSeed >> (16 + m_Attributes->colorChannelPrecision - 1) & 0xFF00) |
-                    (maskSeed >> (8 + m_Attributes->colorChannelPrecision - 1) & 0xFF0000)) &
-                    (0x00FFFFFF)
-                  );
-                }
-	}
+  EPBitType GetPBitType() const { return m_Attributes->pbitType; }
 
-	int GetNumPbitCombos() const {
-		switch(GetPBitType()) {
-			case ePBitType_Shared: return 2;
-			case ePBitType_NotShared: return 4;
-			default:
-			case ePBitType_None: return 1;
-		}
-	}
+  // This function creates an integer that represents the maximum values in each
+  // channel. We can use this to figure out the proper endpoint values for a given
+  // mode.
+  unsigned int GetQuantizationMask() const {
+    const int maskSeed = 0x80000000;
+    const uint32 alphaPrec = GetAlphaChannelPrecision();
+    if(alphaPrec > 0) {
+      return (
+        (maskSeed >> (24 + m_Attributes->colorChannelPrecision - 1) & 0xFF) |
+        (maskSeed >> (16 + m_Attributes->colorChannelPrecision - 1) & 0xFF00) |
+        (maskSeed >> (8 + m_Attributes->colorChannelPrecision - 1) & 0xFF0000) |
+        (maskSeed >> (GetAlphaChannelPrecision() - 1) & 0xFF000000)
+      );
+    }
+    else {
+      return (
+        ((maskSeed >> (24 + m_Attributes->colorChannelPrecision - 1) & 0xFF) |
+         (maskSeed >> (16 + m_Attributes->colorChannelPrecision - 1) & 0xFF00) |
+         (maskSeed >> (8 + m_Attributes->colorChannelPrecision - 1) & 0xFF0000)) &
+        (0x00FFFFFF)
+      );
+    }
+  }
 
-	const int *GetPBitCombo(int idx) const {
-		switch(GetPBitType()) {
-			case ePBitType_Shared: return (idx)? kPBits[3] : kPBits[0];
-			case ePBitType_NotShared: return kPBits[idx % 4];
-			default:
-			case ePBitType_None: return kPBits[0];
-		}
-	}
-	
-	double OptimizeEndpointsForCluster(
+  int GetNumPbitCombos() const {
+    switch(GetPBitType()) {
+      case ePBitType_Shared: return 2;
+      case ePBitType_NotShared: return 4;
+      default:
+      case ePBitType_None: return 1;
+    }
+  }
+
+  const int *GetPBitCombo(int idx) const {
+    switch(GetPBitType()) {
+      case ePBitType_Shared: return (idx)? kPBits[3] : kPBits[0];
+      case ePBitType_NotShared: return kPBits[idx % 4];
+      default:
+      case ePBitType_None: return kPBits[0];
+    }
+  }
+
+  // This performs simulated annealing on the endpoints p1 and p2 based on the
+  // current MaxAnnealingIterations. This is set by calling the function 
+  // SetQualityLevel
+  double OptimizeEndpointsForCluster(
     const RGBACluster &cluster,
     RGBAVector &p1, RGBAVector &p2,
     int *bestIndices,
     int &bestPbitCombo
   ) const;
 
-	void PickBestNeighboringEndpoints(
-		const RGBACluster &cluster, 
-		const RGBAVector &p1, const RGBAVector &p2, 
-		const int curPbitCombo, 
-		RGBAVector &np1, RGBAVector &np2, 
-		int &nPbitCombo, 
-		const VisitedState *visitedStates, 
-		int nVisited, 
-		float stepSz = 1.0f
-	) const;
+  // This function performs the heuristic to choose the "best" neighboring
+  // endpoints to p1 and p2 based on the compression mode (index precision,
+  // endpoint precision etc)
+  void PickBestNeighboringEndpoints(
+    const RGBACluster &cluster, 
+    const RGBAVector &p1, const RGBAVector &p2, 
+    const int curPbitCombo, 
+    RGBAVector &np1, RGBAVector &np2, 
+    int &nPbitCombo, 
+    const VisitedState *visitedStates, 
+    int nVisited, 
+    float stepSz = 1.0f
+  ) const;
 
-	bool AcceptNewEndpointError(double newError, double oldError, float temp) const;
+  // This is used by simulated annealing to determine whether or not the newError
+  // (from the neighboring endpoints) is sufficient to continue the annealing process
+  // from these new endpoints based on how good the oldError was, and how long we've
+  // been annealing (temp)
+  bool AcceptNewEndpointError(double newError, double oldError, float temp) const;
 
-	double CompressSingleColor(const RGBAVector &p, RGBAVector &p1, RGBAVector &p2, int &bestPbitCombo) const;
-	double CompressCluster(const RGBACluster &cluster, RGBAVector &p1, RGBAVector &p2, int *bestIndices, int &bestPbitCombo) const;
-	double CompressCluster(const RGBACluster &cluster, RGBAVector &p1, RGBAVector &p2, int *bestIndices, int *alphaIndices) const;
+  // This function figures out the best compression for the single color p, and places
+  // the endpoints in p1 and p2. If the compression mode supports p-bits, then we 
+  // choose the best p-bit combo and return it as well.
+  double CompressSingleColor(const RGBAVector &p, RGBAVector &p1, RGBAVector &p2, int &bestPbitCombo) const;
 
-	void ClampEndpointsToGrid(RGBAVector &p1, RGBAVector &p2, int &bestPBitCombo) const;
+  // Compress the cluster using a generalized cluster fit. This figures out the proper endpoints
+  // assuming that we have no alpha.
+  double CompressCluster(const RGBACluster &cluster, RGBAVector &p1, RGBAVector &p2, int *bestIndices, int &bestPbitCombo) const;
+
+  // Compress the non-opaque cluster using a generalized cluster fit, and place the 
+  // endpoints within p1 and p2. The color indices and alpha indices are computed as well.
+  double CompressCluster(const RGBACluster &cluster, RGBAVector &p1, RGBAVector &p2, int *bestIndices, int *alphaIndices) const;
+
+  // This function takes two endpoints in the continuous domain (as floats) and clamps them
+  // to the nearest grid points based on the compression mode (and possible pbit values)
+  void ClampEndpointsToGrid(RGBAVector &p1, RGBAVector &p2, int &bestPBitCombo) const;
 };
 
 extern const uint32 kBC7InterpolationValues[4][16][2];
