@@ -57,17 +57,28 @@ class ImageFile {
 
 public:
 
+  // Opens and loads an image file from the given path. The file format
+  // is inferred from the filename.
   ImageFile(const char *filename);
+
+  // Opens and loads a given image file with the passed format.
   ImageFile(const char *filename, EImageFileFormat format);
+
+  // Creates an imagefile with the corresponding image data. This is ready
+  // to be written to disk with the passed filename.
   ImageFile(const char *filename, EImageFileFormat format, const Image &);
+
   ~ImageFile();
 
   unsigned int GetWidth() const { return m_Width; }
   unsigned int GetHeight() const { return m_Height; }
-  CompressedImage *Compress(const SCompressionSettings &) const;
   Image *GetImage() const { return m_Image; }
 
+  // Loads the image into memory. If this function returns true, then a valid
+  // m_Image will be created and available.
   bool Load();
+
+  // Writes the given image to disk. Returns true on success.
   bool Write();
 
  private:
