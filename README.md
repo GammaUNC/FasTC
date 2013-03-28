@@ -9,9 +9,9 @@ supports multi-threading through Boost's threading API and runs on Windows, OS X
 Requirements:
 --------------
 
-[CMake](http://www.cmake.org) (2.8.8)
-[Boost](http://www.boost.org) (tested with v1.50 and higher)
-[libpng](http://www.libpng.org/pub/png/libpng.html) (1.5.13)
+[CMake](http://www.cmake.org) (2.8.8) <br>
+[Boost](http://www.boost.org) (tested with v1.50 and higher) <br>
+[libpng](http://www.libpng.org/pub/png/libpng.html) (1.5.13) <br>
 [zlib](http://www.zlib.net) (1.2.5)
 
 Installation:
@@ -74,5 +74,5 @@ I would invoke the following command:
 If I wanted to compress a texture with the default amount of simulated annealing 100 times using the parallel algorithm
 with atomic synchronization primitives, I would invoke the following command:
 
-   CLTool/tc -n 100 -a path/to/image.png
+    CLTool/tc -n 100 -a path/to/image.png
 
