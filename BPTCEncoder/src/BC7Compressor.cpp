@@ -985,7 +985,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
       bestIndices[i] = 1;
     }
     
-    return bestErr;
+    return cluster.GetNumPoints() * bestErr;
   }
   
   const uint32 nBuckets = (1 << GetNumberOfBitsPerIndex());
