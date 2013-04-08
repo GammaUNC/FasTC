@@ -346,14 +346,14 @@ double BC7CompressionMode::CompressSingleColor(const RGBAVector &p, RGBAVector &
 
   const uint32 pixel = p.ToPixel();
 
-  uint32 bestDist = 0xFF;
+  float bestError = FLT_MAX;
   bestPbitCombo = -1;
 
   for(int pbi = 0; pbi < GetNumPbitCombos(); pbi++) {
 
     const int *pbitCombo = GetPBitCombo(pbi);
     
-    uint32 dist = 0x0;
+    uint32 dist[4] = { 0x0, 0x0, 0x0, 0x0 };
     uint32 bestValI[kNumColorChannels] = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
     uint32 bestValJ[kNumColorChannels] = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
 
@@ -365,7 +365,7 @@ double BC7CompressionMode::CompressSingleColor(const RGBAVector &p, RGBAVector &
       // If we don't handle this channel, then it must be the full value (alpha)
       if(nBits == 0) {
         bestValI[ci] = bestValJ[ci] = 0xFF;
-        dist = std::max(dist, (uint32)((uint8)0xFF - val));
+        dist[ci] = std::max(dist[ci], (uint32)((uint8)0xFF - val));
         continue;
       }
 
@@ -417,11 +417,18 @@ double BC7CompressionMode::CompressSingleColor(const RGBAVector &p, RGBAVector &
         }
       }
 
-      dist = std::max(bestChannelDist, dist);
+      dist[ci] = std::max(bestChannelDist, dist[ci]);
     }
 
-    if(dist < bestDist) {
-      bestDist = dist;
+    const float *errorWeights = BC7C::GetErrorMetric();
+    float error = 0.0;
+    for(int i = 0; i < kNumColorChannels; i++) {
+      float e = float(dist[i]) * errorWeights[i];
+      error += e * e;
+    }
+
+    if(error < bestError) {
+      bestError = error;
       bestPbitCombo = pbi;
 
       for(uint32 ci = 0; ci < kNumColorChannels; ci++) {
@@ -431,7 +438,7 @@ double BC7CompressionMode::CompressSingleColor(const RGBAVector &p, RGBAVector &
     }
   }
 
-  return bestDist;
+  return bestError;
 }
 
 // Fast random number generator. See more information at 
