@@ -744,7 +744,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
       alphaIndices[i] = 1;
     }
 
-    return bestErr;
+    return cluster.GetNumPoints() * bestErr;
   }
 
   RGBACluster rgbCluster;
@@ -1107,7 +1107,7 @@ double BC7CompressionMode::CompressCluster(const RGBACluster &cluster, RGBAVecto
       bestIndices[i] = 1;
     }
       
-    return bestErr;
+    return cluster.GetNumPoints() * bestErr;
   }
 
   // Now that we know the index of each pixel, we can assign the endpoints based on a least squares fit
