@@ -91,21 +91,21 @@ ImageFile::ImageFile(const CHAR *filename)
   : m_FileFormat(  DetectFileFormat(filename) )
   , m_Image(NULL)
 { 
-	strncpy(m_Filename, filename, kMaxFilenameSz);
+  strncpy(m_Filename, filename, kMaxFilenameSz);
 }
 
 ImageFile::ImageFile(const CHAR *filename, EImageFileFormat format)
   : m_FileFormat(format)
   , m_Image(NULL)
 { 
-	strncpy(m_Filename, filename, kMaxFilenameSz);
+  strncpy(m_Filename, filename, kMaxFilenameSz);
 }
 
 ImageFile::ImageFile(const char *filename, EImageFileFormat format, const Image &image)
-	: m_FileFormat(format)
-	, m_Image(new Image(image))
+  : m_FileFormat(format)
+  , m_Image(new Image(image))
 {
-	strncpy(m_Filename, filename, kMaxFilenameSz);
+  strncpy(m_Filename, filename, kMaxFilenameSz);
 }
 
 ImageFile::~ImageFile() { 
@@ -117,50 +117,48 @@ ImageFile::~ImageFile() {
 
 bool ImageFile::Load() {
 
-	if(m_Image) {
-		delete m_Image;
-		m_Image = NULL;
-	}
+  if(m_Image) {
+    delete m_Image;
+    m_Image = NULL;
+  }
 	
-	unsigned char *rawData = ReadFileData(m_Filename);
+  unsigned char *rawData = ReadFileData(m_Filename);
   if(rawData) {
     m_Image = LoadImage(rawData);
     delete [] rawData;
   }
 
-	return m_Image != NULL;
+  return m_Image != NULL;
 }
 
 bool ImageFile::Write() {
 
-	ImageWriter *writer = NULL;
+  ImageWriter *writer = NULL;
   switch(m_FileFormat) {
 
 #ifdef PNG_FOUND
     case eFileFormat_PNG:
-      {
-				writer = new ImageWriterPNG(*m_Image);
-      }
+      writer = new ImageWriterPNG(*m_Image);
       break;
 #endif // PNG_FOUND
 
-    default:
-      fprintf(stderr, "Unable to write image: unknown file format.\n");
-      return false;
+  default:
+    fprintf(stderr, "Unable to write image: unknown file format.\n");
+    return false;
   }
 
-	if(NULL == writer)
-		return false;
+  if(NULL == writer)
+    return false;
 
-	if(!writer->WriteImage()) {
-		delete writer;
-		return false;
-	}
+  if(!writer->WriteImage()) {
+    delete writer;
+    return false;
+  }
 
-	WriteImageDataToFile(writer->GetRawFileData(), uint32(writer->GetRawFileDataSz()), m_Filename);
+  WriteImageDataToFile(writer->GetRawFileData(), uint32(writer->GetRawFileDataSz()), m_Filename);
 
-	delete writer;
-	return true;
+  delete writer;
+  return true;
 }
 
 Image *ImageFile::LoadImage(const unsigned char *rawImageData) const {
@@ -170,9 +168,7 @@ Image *ImageFile::LoadImage(const unsigned char *rawImageData) const {
 
 #ifdef PNG_FOUND
     case eFileFormat_PNG:
-      {
-	loader = new ImageLoaderPNG(rawImageData);
-      }
+      loader = new ImageLoaderPNG(rawImageData);
       break;
 #endif // PNG_FOUND
 
@@ -245,8 +241,8 @@ unsigned char *ImageFile::ReadFileData(const CHAR *filename) {
   uint64 totalBytesLeft = fileSize;
   int32 bytesRead;
   while((bytesRead = fstr.Read(rawData, uint32(fileSize))) > 0) {
-	  totalBytesRead += bytesRead;
-	  totalBytesLeft -= bytesRead;
+    totalBytesRead += bytesRead;
+    totalBytesLeft -= bytesRead;
   }
 
   if(totalBytesRead != fileSize) {
@@ -259,16 +255,18 @@ unsigned char *ImageFile::ReadFileData(const CHAR *filename) {
   return rawData;
 }
 
-bool ImageFile::WriteImageDataToFile(const uint8 *data, const uint32 dataSz, const CHAR *filename) {
+bool ImageFile::WriteImageDataToFile(const uint8 *data,
+                                     const uint32 dataSz,
+                                     const CHAR *filename) {
 	
-	// Open a file stream and write out the data...
-	FileStream fstr (filename, eFileMode_WriteBinary);
+  // Open a file stream and write out the data...
+  FileStream fstr (filename, eFileMode_WriteBinary);
   if(fstr.Tell() < 0) {
     fprintf(stderr, "Error opening file for reading: %s\n", filename);
     return 0;
   }
 
-	fstr.Write(data, dataSz);
-	fstr.Flush();
-	return true;
+  fstr.Write(data, dataSz);
+  fstr.Flush();
+  return true;
 }
