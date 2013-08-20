@@ -61,6 +61,8 @@
 #  include "ImageWriterPNG.h"
 #endif
 
+#include "ImageLoaderPVR.h"
+
 //////////////////////////////////////////////////////////////////////////////////////////
 //
 // Static helper functions
@@ -172,6 +174,10 @@ Image *ImageFile::LoadImage(const unsigned char *rawImageData) const {
       break;
 #endif // PNG_FOUND
 
+    case eFileFormat_PVR:
+      loader = new ImageLoaderPVR(rawImageData);
+      break;
+
     default:
       fprintf(stderr, "Unable to load image: unknown file format.\n");
       return NULL;
@@ -215,6 +221,10 @@ EImageFileFormat ImageFile::DetectFileFormat(const CHAR *filename) {
   if(strcmp(ext, ".png") == 0) {
     return eFileFormat_PNG;
   }
+  else if(strcmp(ext, ".pvr") == 0) {
+    return eFileFormat_PVR;
+  }
+
   return kNumImageFileFormats;
 }
 
