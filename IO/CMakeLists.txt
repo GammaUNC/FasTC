@@ -44,6 +44,7 @@ SET( SOURCES
 	"src/ImageWriter.cpp"
 	"src/ImageLoader.cpp"
 	"src/ImageFile.cpp"
+    "src/ImageLoaderPVR.cpp"
 )
 
 SET( HEADERS
@@ -51,6 +52,7 @@ SET( HEADERS
 	"config/ImageLoader.h.in"
 	"include/ImageFile.h"
 	"include/FileStream.h"
+    "src/ImageLoaderPVR.h"
 )
 
 IF( WIN32 )
