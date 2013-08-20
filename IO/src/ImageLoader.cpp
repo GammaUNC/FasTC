@@ -117,15 +117,14 @@ unsigned int ImageLoader::GetChannelForPixel(uint32 x, uint32 y, uint32 ch) {
     for(uint32 precLeft = 8; precLeft > 0; precLeft -= min(prec, sad(prec, precLeft))) {
       
       if(prec > precLeft) {
-	const int toShift = prec - precLeft;
-	ret = ret << precLeft;
-	ret |= val >> toShift;
+        const int toShift = prec - precLeft;
+        ret = ret << precLeft;
+        ret |= val >> toShift;
       }
       else {
-	ret = ret << prec;
-	ret |= val;
+        ret = ret << prec;
+        ret |= val;
       }
-
     }
 
     return ret;
@@ -163,7 +162,8 @@ bool ImageLoader::LoadImage() {
 
 #ifndef NDEBUG
   if(aw != m_Width || ah != m_Height)
-    fprintf(stderr, "Warning: Image dimension not multiple of four. Space will be filled with black.\n");
+    fprintf(stderr, "Warning: Image dimension not multiple of four. "
+                    "Space will be filled with black.\n");
 #endif
 
   int byteIdx = 0;
