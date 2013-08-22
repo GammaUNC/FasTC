@@ -87,4 +87,8 @@ class ImageWriter {
 #cmakedefine PNG_FOUND
 #endif // PNG_FOUND
 
+#ifndef PVRTEXLIB_FOUND
+#cmakedefine PVRTEXLIB_FOUND
+#endif // PVRTEXLIB_FOUND
+
 #endif // _IMAGE_LOADER_H_

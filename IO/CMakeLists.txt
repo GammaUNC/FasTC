@@ -44,7 +44,6 @@ SET( SOURCES
 	"src/ImageWriter.cpp"
 	"src/ImageLoader.cpp"
 	"src/ImageFile.cpp"
-    "src/ImageLoaderPVR.cpp"
 )
 
 SET( HEADERS
@@ -52,7 +51,6 @@ SET( HEADERS
 	"config/ImageLoader.h.in"
 	"include/ImageFile.h"
 	"include/FileStream.h"
-    "src/ImageLoaderPVR.h"
 )
 
 IF( WIN32 )
@@ -74,6 +72,12 @@ IF( PNG_FOUND )
 	SET( HEADERS ${HEADERS} "src/ImageWriterPNG.h" )
 ENDIF()
 
+IF( PVRTEXLIB_FOUND )
+  INCLUDE_DIRECTORIES( ${PVRTEXLIB_INCLUDE_DIRS} )
+  SET( SOURCES ${SOURCES} "src/ImageLoaderPVR.cpp" )
+  SET( HEADERS ${HEADERS} "src/ImageLoaderPVR.h" )
+ENDIF( PVRTEXLIB_FOUND )
+
 CONFIGURE_FILE(
 	"config/ImageLoader.h.in"
 	"include/ImageLoader.h"
@@ -94,6 +98,10 @@ ADD_LIBRARY(TexCompIO
 )
 
 IF( PNG_FOUND )
-	TARGET_LINK_LIBRARIES( TexCompIO ${PNG_LIBRARY} )
+  TARGET_LINK_LIBRARIES( TexCompIO ${PNG_LIBRARY} )
   TARGET_LINK_LIBRARIES( TexCompIO ${ZLIB_LIBRARY} )
+ENDIF()
+
+IF( PVRTEXLIB_FOUND )
+  TARGET_LINK_LIBRARIES( TexCompIO ${PVRTEXLIB_LIBRARIES} )
 ENDIF()

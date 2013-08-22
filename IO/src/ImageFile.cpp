@@ -61,7 +61,9 @@
 #  include "ImageWriterPNG.h"
 #endif
 
-#include "ImageLoaderPVR.h"
+#ifdef PVRTEXLIB_FOUND
+#  include "ImageLoaderPVR.h"
+#endif
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -174,9 +176,11 @@ Image *ImageFile::LoadImage(const unsigned char *rawImageData) const {
       break;
 #endif // PNG_FOUND
 
+#ifdef PVRTEXLIB_FOUND
     case eFileFormat_PVR:
       loader = new ImageLoaderPVR(rawImageData);
       break;
+#endif // PVRTEXLIB_FOUND
 
     default:
       fprintf(stderr, "Unable to load image: unknown file format.\n");
