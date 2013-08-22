@@ -46,8 +46,11 @@
 #include <stdio.h>
 #include <assert.h>
 #include <algorithm>
+#include <iostream>
 
 #include "TexCompTypes.h"
+
+#include "PVRTextureUtilities.h"
 
 static void ReportError(const char *msg) {
   fprintf(stderr, "ERROR: ImageLoaderPVR -- %s\n", msg);
@@ -62,154 +65,42 @@ ImageLoaderPVR::~ImageLoaderPVR() {
 }
 
 bool ImageLoaderPVR::ReadData() {
-  const uint8 *d = m_RawData;
-  if((d[0] == 'P' && d[1] == 'V' && d[2] == 'R' && d[3] == '\03') ||
-     (d[0] == '\03' && d[1] == 'R' && d[2] == 'V' && d[3] == 'P')) {
-    return ReadPVR3();
-  }
-  else {
-    ReportError("Unsupported PVR version");
+  pvrtexture::CPVRTexture pvrTex((const void *)m_RawData);
+  if(!pvrtexture::Transcode(pvrTex,
+                            pvrtexture::PVRStandard8PixelType,
+                            ePVRTVarTypeUnsignedByte,
+                            ePVRTCSpacelRGB)) {
     return false;
   }
-}
 
-bool ImageLoaderPVR::ReadPVR1() {
-  return false;
-}
+  m_RedChannelPrecision = 8;
+  m_GreenChannelPrecision = 8;
+  m_BlueChannelPrecision = 8;
+  m_AlphaChannelPrecision = 8;
 
-bool ImageLoaderPVR::ReadPVR2() {
-  return false;
-}
+  const pvrtexture::CPVRTextureHeader &hdr = pvrTex.getHeader();
 
-struct PVR3TexHeader {
- private:
-  uint32 m_Version;
-  uint32 m_Flags;
-  uint64 m_PixelFormat;
-  uint32 m_ColorSpace;
-  uint32 m_ChannelType;
-  uint32 m_Height;
-  uint32 m_Width;
-  uint32 m_Depth;
-  uint32 m_NumSurfaces;
-  uint32 m_NumFaces;
-  uint32 m_MipMapCount;
-  uint32 m_MetadataSize;
+  m_Width = hdr.getWidth();
+  m_Height = hdr.getHeight();
 
-  static void FlipBytes(uint8 *bytes, int nBytes) {
-    for (int i = 0; i < (nBytes >> 1); i++) {
-      std::swap(bytes[i], bytes[nBytes - i - 1]);
+  const int nPixels = m_Width * m_Height;
+  m_RedData = new uint8[nPixels];
+  m_GreenData = new uint8[nPixels];
+  m_BlueData = new uint8[nPixels];
+  m_AlphaData = new uint8[nPixels];
+
+  uint32 *data = (uint32 *)(pvrTex.getDataPtr());
+  for (uint32 i = 0; i < m_Width; i++) {
+    for (uint32 j = 0; j < m_Height; j++) {
+      uint32 idx = j*m_Height + i;
+      uint32 pixel = data[idx];
+      m_RedData[idx] = pixel & 0xFF;
+      m_GreenData[idx] = (pixel >> 8) & 0xFF;
+      m_BlueData[idx] = (pixel >> 16) & 0xFF;
+      m_AlphaData[idx] = (pixel >> 24) & 0xFF;
     }
   }
 
-  static uint32 FlipInt32(uint32 in) {
-    uint8 *inPtr = (uint8 *)(&in);
-    FlipBytes(inPtr, 4);
-    return in;
-  }
-
-  static uint64 FlipInt64(uint64 in) {
-    uint8 *inPtr = (uint8 *)(&in);
-    FlipBytes(inPtr, 8);
-    return in;
-  }
-
-  bool ShouldFlip() const {
-    const uint8 *versionPtr = (const uint8 *)(&m_Version);
-    if(versionPtr[0] == 'P' &&
-       versionPtr[1] == 'V' &&
-       versionPtr[2] == 'R' &&
-       versionPtr[3] == '\03') {
-      return false;
-    }
-    return true;
-  }
-
- public:
-
-#define CONSTRUCT_GETTER(name) \
-  uint32 Get##name () const {  \
-    return ShouldFlip()? FlipInt32(m_##name) : m_##name; \
-  }
-
-  CONSTRUCT_GETTER(Flags)
-  CONSTRUCT_GETTER(ColorSpace)
-  CONSTRUCT_GETTER(ChannelType)
-  CONSTRUCT_GETTER(Height)
-  CONSTRUCT_GETTER(Width)
-  CONSTRUCT_GETTER(Depth)
-  CONSTRUCT_GETTER(NumSurfaces)
-  CONSTRUCT_GETTER(NumFaces)
-  CONSTRUCT_GETTER(MipMapCount)
-  CONSTRUCT_GETTER(MetadataSize)
-
-#undef CONSTRUCT_GETTER
-
-  uint64 GetPixelFormat() const {
-    return ShouldFlip()? FlipInt64(m_PixelFormat) : m_PixelFormat;
-  }
-
-  enum EFlag {
-    eFlag_Premultiplied = 0x02
-  };
-
-  enum EPixelFormat {
-    ePixelFormat_PVRTC_2BPP_RGB = 0,
-    ePixelFormat_PVRTC_2BPP_RGBA = 1,
-    ePixelFormat_PVRTC_4BPP_RGB = 2,
-    ePixelFormat_PVRTC_4BPP_RGBA = 3,
-    ePixelFormat_PVRTC2_2BPP = 4,
-    ePixelFormat_PVRTC2_4BPP = 5,
-    ePixelFormat_ETC1 = 6,
-    ePixelFormat_DXT1 = 7,
-    ePixelFormat_DXT2 = 8,
-    ePixelFormat_DXT3 = 9,
-    ePixelFormat_DXT4 = 10,
-    ePixelFormat_DXT5 = 11,
-    ePixelFormat_BC1 = ePixelFormat_DXT1,
-    ePixelFormat_BC2 = ePixelFormat_DXT3,
-    ePixelFormat_BC3 = ePixelFormat_DXT5,
-    ePixelFormat_BC4 = 12,
-    ePixelFormat_BC5 = 13,
-    ePixelFormat_BC6 = 14,
-    ePixelFormat_BC7 = 15,
-    ePixelFormat_UYVY = 16,
-    ePixelFormat_YUY2 = 17,
-    ePixelFormat_BW1BPP = 18,
-    ePixelFormat_R9G9B9E5_SE = 19,
-    ePixelFormat_RGBG8888 = 20,
-    ePixelFormat_GRGB8888 = 21,
-    ePixelFormat_ETC2_RGB = 22,
-    ePixelFormat_ETC2_RGBA = 23,
-    ePixelFormat_ETC2_RGB_A1 = 24,
-    ePixelFormat_EAC_R11_UNSIGNED = 25,
-    ePixelFormat_EAC_R11_SIGNED = 26,
-    ePixelFormat_EAC_RG11_UNSIGNED = 27,
-    ePixelFormat_EAC_RG11_SIGNED = 28
-  };
-
-  enum EColorSpace {
-    eColorSpace_Linear,
-    eColorSpace_sRGB
-  };
-
-  enum EChannelType {
-    eChannelType_UnsignedByteNormalized = 0,
-    eChannelType_SignedByteNormalized,
-    eChannelType_UnsignedByte,
-    eChannelType_SignedByte,
-    eChannelType_UnsignedShortNormalized,
-    eChannelType_SignedShortNormalized,
-    eChannelType_UnsignedShort,
-    eChannelType_SignedShort,
-    eChannelType_UnsignedIntegerNormalized,
-    eChannelType_SignedIntegerNormalized,
-    eChannelType_UnsignedInteger,
-    eChannelType_SignedInteger,
-    eChannelType_Float,
-  };
-};
-
-bool ImageLoaderPVR::ReadPVR3() {
-  return false;
+  return true;
 }
+

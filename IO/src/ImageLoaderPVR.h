@@ -52,10 +52,6 @@ class ImageLoaderPVR : public ImageLoader {
   virtual ~ImageLoaderPVR();
 
   virtual bool ReadData();
- private:
-  virtual bool ReadPVR1();
-  virtual bool ReadPVR2();
-  virtual bool ReadPVR3();
 };
 
 #endif // _IMAGE_LOADER_PVR_H_
