@@ -40,60 +40,31 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
-PROJECT(TexC)
+# - Try to find libPVRTexLib
+# Once done this will define
+#  PVRTEXLIB_FOUND - System has PVRTexLib
+#  PVRTEXLIB_INCLUDE_DIRS - The PVRTexLib include directories
+#  PVRTEXLIB_LIBRARIES - The libraries needed to use PVRTexLib
 
-OPTION(TREAT_WARNINGS_AS_ERRORS "Treat compiler warnings as errors. We use the highest warnings levels for compilers." OFF)
+IF (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  find_path(
+    PVRTEXLIB_INCLUDE_DIR PVRTexture.h
+    PATHS "/Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library/Include"
+  )
 
-IF(MSVC)
-	SET(MSVC_INSTALL_PATH "${PROJECT_SOURCE_DIR}/Windows")
-	SET(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${MSVC_INSTALL_PATH}")
+  find_library(PVRTEXLIB_LIB PVRTexLib
+    PATHS "/Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library/OSX_x86/Static"
+          "/Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library/OSX_x86/Dynamic"
+  )
+ENDIF()
 
-	IF(MSVC10)
-		SET(MSVC_VERSION_STRING vc100)
-	ELSEIF(MSVC11)
-		SET(MSVC_VERSION_STRING vc110)
-	ELSEIF(MSVC90)
-		SET(MSVC_VERSION_STRING vc90)
-	ELSEIF(MSVC80)
-		SET(MSVC_VERSION_STRING vc80)
-	ENDIF()
+set(PVRTEXLIB_LIBRARIES ${PVRTEXLIB_LIB} )
+set(PVRTEXLIB_INCLUDE_DIRS ${PVRTEXLIB_INCLUDE_DIR} )
 
-	# !FIXME! Actually detect compiler architecture version....
-	IF( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-		SET(MSVC_ARCHITECTURE_STRING x64)
-	ELSE()
-		SET(MSVC_ARCHITECTURE_STRING x86)
-	ENDIF()
+include(FindPackageHandleStandardArgs)
+# handle the QUIETLY and REQUIRED arguments and set LIBXML2_FOUND to TRUE
+# if all listed variables are TRUE
+find_package_handle_standard_args(PVRTexLib  DEFAULT_MSG
+                                  PVRTEXLIB_LIB PVRTEXLIB_INCLUDE_DIR)
 
-	SET(MSVC_LIB_DIR "${MSVC_INSTALL_PATH}/lib/${MSVC_ARCHITECTURE_STRING}/${MSVC_VERSION_STRING}")
-	SET(CMAKE_LIBRARY_PATH "${CMAKE_LIBRARY_PATH};${MSVC_LIB_DIR}")
-
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-
-ELSEIF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fms-extensions")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fms-extensions")
-
-ENDIF(MSVC)
-
-IF(TREAT_WARNINGS_AS_ERRORS)
-  IF(MSVC)
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /WX")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
-  ELSEIF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
-  ENDIF(MSVC)
-ENDIF(TREAT_WARNINGS_AS_ERRORS)
-
-SET(CMAKE_MODULE_PATH "${TexC_SOURCE_DIR}/CMakeModules" ${CMAKE_MODULE_PATH})
-FIND_PACKAGE(PVRTexLib)
-
-ADD_SUBDIRECTORY(BPTCEncoder)
-ADD_SUBDIRECTORY(IO)
-ADD_SUBDIRECTORY(Core)
-
-ADD_SUBDIRECTORY(CLTool)
+mark_as_advanced(PVRTEXLIB_INCLUDE_DIR PVRTEXLIB_LIB )
