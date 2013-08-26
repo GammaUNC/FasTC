@@ -125,7 +125,7 @@ bool ImageFile::Load() {
     delete m_Image;
     m_Image = NULL;
   }
-	
+  
   unsigned char *rawData = ReadFileData(m_Filename);
   if(rawData) {
     m_Image = LoadImage(rawData);
@@ -272,7 +272,7 @@ unsigned char *ImageFile::ReadFileData(const CHAR *filename) {
 bool ImageFile::WriteImageDataToFile(const uint8 *data,
                                      const uint32 dataSz,
                                      const CHAR *filename) {
-	
+
   // Open a file stream and write out the data...
   FileStream fstr (filename, eFileMode_WriteBinary);
   if(fstr.Tell() < 0) {

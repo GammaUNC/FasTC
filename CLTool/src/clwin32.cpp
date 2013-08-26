@@ -64,18 +64,18 @@ void PrintUsage() {
 }
 
 void ExtractBasename(const char *filename, char *buf, uint32 bufSz) {
-	size_t len = strlen(filename);
-	const char *end = filename + len;
-	while(--end != filename) {
-		if(*end == '.')
-		{
-			uint32 numChars = int32(end - filename + 1);
-			uint32 toCopy = (numChars > bufSz)? bufSz : numChars;
-			memcpy(buf, filename, toCopy);
-			buf[toCopy - 1] = '\0';
-			return;
-		}
-	}
+  size_t len = strlen(filename);
+  const char *end = filename + len;
+  while(--end != filename) {
+    if(*end == '.')
+    {
+      uint32 numChars = int32(end - filename + 1);
+      uint32 toCopy = (numChars > bufSz)? bufSz : numChars;
+      memcpy(buf, filename, toCopy);
+      buf[toCopy - 1] = '\0';
+      return;
+    }
+  }
 }
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -175,7 +175,7 @@ int _tmain(int argc, _TCHAR* argv[])
   if(numThreads > 1 && bSaveLog) {
     bSaveLog = false;
     fprintf(stderr, "WARNING: Will not save log because implementation is not thread safe.\n"
-	    "If you'd like, send a complaint to pavel@cs.unc.edu to get this done faster.\n");
+      "If you'd like, send a complaint to pavel@cs.unc.edu to get this done faster.\n");
   }
 
   if(fileArg == argc) {
@@ -183,16 +183,16 @@ int _tmain(int argc, _TCHAR* argv[])
     exit(1);
   }
 
-	char basename[256];
-	ExtractBasename(argv[fileArg], basename, 256);
+  char basename[256];
+  ExtractBasename(argv[fileArg], basename, 256);
 
   ImageFile file (argv[fileArg]);
-	if(!file.Load()) {
+  if(!file.Load()) {
     fprintf(stderr, "Error loading file: %s\n", argv[fileArg]);
     return 1;
-	}
+  }
 
-	const Image *img = file.GetImage();
+  const Image *img = file.GetImage();
 
   int numBlocks = (img->GetWidth() * img->GetHeight())/16;
   BlockStatManager *statManager = NULL;
@@ -224,14 +224,14 @@ int _tmain(int argc, _TCHAR* argv[])
   }
 
   if(bSaveLog) {
-	  strcat_s(basename, ".log");
+    strcat_s(basename, ".log");
     statManager->ToFile(basename);
-	basename[strlen(basename) - 4] = '\0';
+  basename[strlen(basename) - 4] = '\0';
   }
   strcat_s(basename, "-bc7.png");
-	Image cImg (*ci);
-	ImageFile cImgFile (basename, eFileFormat_PNG, cImg);
-	cImgFile.Write();
+  Image cImg (*ci);
+  ImageFile cImgFile (basename, eFileFormat_PNG, cImg);
+  cImgFile.Write();
 
   // Cleanup 
   delete ci;

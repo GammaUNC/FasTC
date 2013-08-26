@@ -54,7 +54,7 @@ class ImageLoader;
 class Image {
 
  public:
-	Image(const CompressedImage &);
+  Image(const CompressedImage &);
   Image(const ImageLoader &);
   ~Image();
   

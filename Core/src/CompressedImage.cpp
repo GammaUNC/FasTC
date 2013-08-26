@@ -70,16 +70,16 @@ CompressedImage::CompressedImage( const CompressedImage &other )
 }
 
 CompressedImage::CompressedImage(
-  const unsigned int width,				 
+  const unsigned int width,
   const unsigned int height,
   const ECompressionFormat format,
   const unsigned char *data
 ) 
-: m_Width(width)
-, m_Height(height)
-, m_Format(format)
-, m_Data(0)
-, m_DataSz(0)
+  : m_Width(width)
+  , m_Height(height)
+  , m_Format(format)
+  , m_Data(0)
+  , m_DataSz(0)
 {
   InitData(data);
 }
@@ -94,7 +94,7 @@ void CompressedImage::InitData(const unsigned char *withData) {
     case eCompressionFormat_DXT5: m_DataSz = uncompDataSz / 4; break;
     case eCompressionFormat_BPTC: m_DataSz = uncompDataSz / 4; break;
   }
-  
+
   if(m_DataSz > 0) {
     m_Data = new unsigned char[m_DataSz];
     memcpy(m_Data, withData, m_DataSz);

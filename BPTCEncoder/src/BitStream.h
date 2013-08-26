@@ -77,7 +77,7 @@ class BitStream {
   { }
 
   int GetBitsWritten() const { return m_BitsWritten; }
-	  
+
   ~BitStream() { }
   void WriteBitsR(unsigned int val, unsigned int nBits) {
     for(unsigned int i = 0; i < nBits; i++) {

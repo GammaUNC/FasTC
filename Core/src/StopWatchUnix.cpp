@@ -100,7 +100,7 @@ double StopWatch::TimeInSeconds() const {
 double StopWatch::TimeInMilliseconds() const {
   return impl->duration * 1000;
 }
-	
+
 double StopWatch::TimeInMicroseconds() const {
   return impl->duration * 1000000;
 }

@@ -54,10 +54,8 @@ static void ReportError(const char *msg) {
 
 class PNGStreamReader {
 public:
-  static void ReadDataFromStream(
-    png_structp png_ptr, 
-    png_bytep outBytes, 
-    png_size_t byteCountToRead
+  static void ReadDataFromStream(png_structp png_ptr, 
+           png_bytep outBytes, png_size_t byteCountToRead
   ) {
     png_voidp io_ptr = png_get_io_ptr( png_ptr );
     if( io_ptr == NULL ) {
@@ -120,9 +118,9 @@ bool ImageLoaderPNG::ReadData() {
   int colorType = -1;
 
   if( 1 != png_get_IHDR(png_ptr, info_ptr, 
-      (png_uint_32 *)(&m_Width), (png_uint_32 *)(&m_Height), 
-      &bitDepth, &colorType, 
-      NULL, NULL, NULL) 
+    (png_uint_32 *)(&m_Width), (png_uint_32 *)(&m_Height), 
+    &bitDepth, &colorType, 
+    NULL, NULL, NULL) 
   ) {
     ReportError("Could not read PNG header");
     png_destroy_read_struct(&png_ptr, NULL, NULL);
@@ -140,33 +138,33 @@ bool ImageLoaderPNG::ReadData() {
   png_bytep rowData = new png_byte[bpr];
 
   switch(colorType) {
-  default:
-  case PNG_COLOR_TYPE_PALETTE:
-    ReportError("PNG color type unsupported");
-    png_destroy_read_struct(&png_ptr, NULL, NULL);
-    return false;
+    default:
+    case PNG_COLOR_TYPE_PALETTE:
+      ReportError("PNG color type unsupported");
+      png_destroy_read_struct(&png_ptr, NULL, NULL);
+      return false;
 
-  case PNG_COLOR_TYPE_GRAY: {
+    case PNG_COLOR_TYPE_GRAY: {
       m_RedChannelPrecision = bitDepth;
       m_RedData = new unsigned char[numPixels];
 
       for(uint32 i = 0; i < m_Height; i++) {
-	
-	png_read_row(png_ptr, rowData, NULL);
+  
+        png_read_row(png_ptr, rowData, NULL);
 
-	unsigned int rowOffset = i * m_Width;
-	
-	unsigned int byteIdx = 0;
-	for(uint32 j = 0; j < m_Width; j++) {
- 	  m_RedData[rowOffset + j] = rowData[byteIdx++];
-	}
+        unsigned int rowOffset = i * m_Width;
+  
+        unsigned int byteIdx = 0;
+        for(uint32 j = 0; j < m_Width; j++) {
+          m_RedData[rowOffset + j] = rowData[byteIdx++];
+        }
 
-	assert(byteIdx == bpr);
+        assert(byteIdx == bpr);
       }
     }
     break;
 
-  case PNG_COLOR_TYPE_RGB:
+    case PNG_COLOR_TYPE_RGB:
       m_RedChannelPrecision = bitDepth;
       m_RedData = new unsigned char[numPixels];
       m_GreenChannelPrecision = bitDepth;
@@ -175,23 +173,23 @@ bool ImageLoaderPNG::ReadData() {
       m_BlueData = new unsigned char[numPixels];
 
       for(uint32 i = 0; i < m_Height; i++) {
-	
-	png_read_row(png_ptr, rowData, NULL);
+  
+        png_read_row(png_ptr, rowData, NULL);
 
-	unsigned int rowOffset = i * m_Width;
-	
-	unsigned int byteIdx = 0;
-	for(uint32 j = 0; j < m_Width; j++) {
- 	  m_RedData[rowOffset + j] = rowData[byteIdx++];
-	  m_GreenData[rowOffset + j] = rowData[byteIdx++];
-	  m_BlueData[rowOffset + j] = rowData[byteIdx++];
-	}
+        unsigned int rowOffset = i * m_Width;
+  
+        unsigned int byteIdx = 0;
+        for(uint32 j = 0; j < m_Width; j++) {
+          m_RedData[rowOffset + j] = rowData[byteIdx++];
+          m_GreenData[rowOffset + j] = rowData[byteIdx++];
+          m_BlueData[rowOffset + j] = rowData[byteIdx++];
+        }
 
-	assert(byteIdx == bpr);
+        assert(byteIdx == bpr);
       }
     break;
 
-  case PNG_COLOR_TYPE_RGB_ALPHA:
+    case PNG_COLOR_TYPE_RGB_ALPHA:
       m_RedChannelPrecision = bitDepth;
       m_RedData = new unsigned char[numPixels];
       m_GreenChannelPrecision = bitDepth;
@@ -202,42 +200,42 @@ bool ImageLoaderPNG::ReadData() {
       m_AlphaData = new unsigned char[numPixels];
 
       for(uint32 i = 0; i < m_Height; i++) {
-	
-	png_read_row(png_ptr, rowData, NULL);
+  
+        png_read_row(png_ptr, rowData, NULL);
 
-	unsigned int rowOffset = i * m_Width;
-	
-	unsigned int byteIdx = 0;
-	for(uint32 j = 0; j < m_Width; j++) {
- 	  m_RedData[rowOffset + j] = rowData[byteIdx++];
-	  m_GreenData[rowOffset + j] = rowData[byteIdx++];
-	  m_BlueData[rowOffset + j] = rowData[byteIdx++];
-	  m_AlphaData[rowOffset + j] = rowData[byteIdx++];
-	}
+        unsigned int rowOffset = i * m_Width;
+  
+        unsigned int byteIdx = 0;
+        for(uint32 j = 0; j < m_Width; j++) {
+          m_RedData[rowOffset + j] = rowData[byteIdx++];
+          m_GreenData[rowOffset + j] = rowData[byteIdx++];
+          m_BlueData[rowOffset + j] = rowData[byteIdx++];
+          m_AlphaData[rowOffset + j] = rowData[byteIdx++];
+        }
 
-	assert(byteIdx == bpr);
+        assert(byteIdx == bpr);
       }
     break;
 
-  case PNG_COLOR_TYPE_GRAY_ALPHA:
+    case PNG_COLOR_TYPE_GRAY_ALPHA:
       m_RedChannelPrecision = bitDepth;
       m_RedData = new unsigned char[numPixels];
       m_AlphaChannelPrecision = bitDepth;
       m_AlphaData = new unsigned char[numPixels];
 
       for(uint32 i = 0; i < m_Height; i++) {
-	
-	png_read_row(png_ptr, rowData, NULL);
+  
+        png_read_row(png_ptr, rowData, NULL);
 
-	unsigned int rowOffset = i * m_Width;
-	
-	unsigned int byteIdx = 0;
-	for(uint32 j = 0; j < m_Width; j++) {
- 	  m_RedData[rowOffset + j] = rowData[byteIdx++];
-	  m_AlphaData[rowOffset + j] = rowData[byteIdx++];
-	}
+        unsigned int rowOffset = i * m_Width;
+  
+        unsigned int byteIdx = 0;
+        for(uint32 j = 0; j < m_Width; j++) {
+          m_RedData[rowOffset + j] = rowData[byteIdx++];
+          m_AlphaData[rowOffset + j] = rowData[byteIdx++];
+        }
 
-	assert(byteIdx == bpr);
+        assert(byteIdx == bpr);
       }
     break;
   }

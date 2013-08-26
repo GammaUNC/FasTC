@@ -74,23 +74,23 @@ class StopWatchImpl;
 class StopWatch
 {
 public:
-	StopWatch();
-	StopWatch(const StopWatch &);
+  StopWatch();
+  StopWatch(const StopWatch &);
 
-	~StopWatch();
+  ~StopWatch();
 
-	StopWatch &operator=(const StopWatch &);
+  StopWatch &operator=(const StopWatch &);
 
-	void Start();
-	void Stop();
-	void Reset();
+  void Start();
+  void Stop();
+  void Reset();
 
-	double TimeInSeconds() const;
-	double TimeInMilliseconds() const;
-	double TimeInMicroseconds() const;
+  double TimeInSeconds() const;
+  double TimeInMilliseconds() const;
+  double TimeInMicroseconds() const;
 
 private:
-	StopWatchImpl *impl;
+  StopWatchImpl *impl;
 };
 
 #endif // __TEXCOMP_STOP_WATCH_H__

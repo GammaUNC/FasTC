@@ -81,40 +81,39 @@ void WorkerThread::operator()() {
   bool quitFlag = false;
   while(!quitFlag) {
     
-    switch(m_Parent->AcceptThreadData(m_ThreadIdx)) 
-    {
+    switch(m_Parent->AcceptThreadData(m_ThreadIdx)) {
 
       case eAction_Quit:
       {
-	quitFlag = true;
-	break;
+        quitFlag = true;
+        break;
       }
 
       case eAction_Wait:
       {
-	TCThread::Yield();
-	break;
+        TCThread::Yield();
+        break;
       }
 
       case eAction_DoWork:
       {
-	const uint8 *src = m_Parent->GetSrcForThread(m_ThreadIdx);
-	uint8 *dst = m_Parent->GetDstForThread(m_ThreadIdx);
+        const uint8 *src = m_Parent->GetSrcForThread(m_ThreadIdx);
+        uint8 *dst = m_Parent->GetDstForThread(m_ThreadIdx);
 
-  CompressionJob cj (src, dst, 4 * m_Parent->GetNumBlocksForThread(m_ThreadIdx), 4);
-	if(f)
-	  (*f)(cj);
-	else
-	  (*fStat)(cj, *statManager);
+        CompressionJob cj (src, dst, 4 * m_Parent->GetNumBlocksForThread(m_ThreadIdx), 4);
+        if(f)
+          (*f)(cj);
+        else
+          (*fStat)(cj, *statManager);
 
-	break;
+        break;
       }
 
       default:
       {
-	fprintf(stderr, "Unrecognized thread command!\n");
-	quitFlag = true;
-	break;
+        fprintf(stderr, "Unrecognized thread command!\n");
+        quitFlag = true;
+        break;
       }
     }
   }
@@ -244,10 +243,10 @@ WorkerThread::EAction WorkerQueue::AcceptThreadData(uint32 threadIdx) {
   if(m_NextBlock == totalBlocks) {
     if(m_NumCompressions < m_TotalNumCompressions) {
       if(++m_WaitingThreads == m_ActiveThreads) {
-	m_NextBlock = 0;
-	m_WaitingThreads = 0;
+        m_NextBlock = 0;
+        m_WaitingThreads = 0;
       } else {
-	return WorkerThread::eAction_Wait;
+        return WorkerThread::eAction_Wait;
       }
     }
     else {

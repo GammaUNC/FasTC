@@ -404,5 +404,5 @@ bool CompressImageData(
 }
 
 void YieldThread() {
-	TCThread::Yield();
+  TCThread::Yield();
 }

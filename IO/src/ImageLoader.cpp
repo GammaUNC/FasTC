@@ -172,54 +172,54 @@ bool ImageLoader::LoadImage() {
 
       // For each block, visit the pixels in sequential order
       for(uint32 y = i; y < i+4; y++) {
-		for(uint32 x = j; x < j+4; x++) {
+        for(uint32 x = j; x < j+4; x++) {
 
-		  if(y >= m_Height || x >= m_Width) {
-			m_PixelData[byteIdx++] = 0; // r
-			m_PixelData[byteIdx++] = 0; // g
-			m_PixelData[byteIdx++] = 0; // b
-			m_PixelData[byteIdx++] = 0; // a
-			continue;
-		  }
+          if(y >= m_Height || x >= m_Width) {
+            m_PixelData[byteIdx++] = 0; // r
+            m_PixelData[byteIdx++] = 0; // g
+            m_PixelData[byteIdx++] = 0; // b
+            m_PixelData[byteIdx++] = 0; // a
+            continue;
+          }
 
-		  unsigned int redVal = GetChannelForPixel(x, y, 0);
-		  if(redVal == INT_MAX)
-			return false;
+          unsigned int redVal = GetChannelForPixel(x, y, 0);
+          if(redVal == INT_MAX)
+            return false;
 
-		  unsigned int greenVal = redVal;
-		  unsigned int blueVal = redVal;
+          unsigned int greenVal = redVal;
+          unsigned int blueVal = redVal;
 
-		  if(GetGreenChannelPrecision() > 0) {
-			greenVal = GetChannelForPixel(x, y, 1);
-			if(greenVal == INT_MAX)
-			  return false;
-		  }
+          if(GetGreenChannelPrecision() > 0) {
+            greenVal = GetChannelForPixel(x, y, 1);
+            if(greenVal == INT_MAX)
+              return false;
+          }
 
-		  if(GetBlueChannelPrecision() > 0) {
-			blueVal = GetChannelForPixel(x, y, 2);
-			if(blueVal == INT_MAX)
-			  return false;
-		  }
+          if(GetBlueChannelPrecision() > 0) {
+            blueVal = GetChannelForPixel(x, y, 2);
+            if(blueVal == INT_MAX)
+              return false;
+          }
 
-		  unsigned int alphaVal = 0xFF;
-		  if(GetAlphaChannelPrecision() > 0) {
-			alphaVal = GetChannelForPixel(x, y, 3);
-			if(alphaVal == INT_MAX)
-			  return false;
-		  }
+          unsigned int alphaVal = 0xFF;
+          if(GetAlphaChannelPrecision() > 0) {
+            alphaVal = GetChannelForPixel(x, y, 3);
+            if(alphaVal == INT_MAX)
+              return false;
+          }
 
-		  // Red channel
-		  m_PixelData[byteIdx++] = redVal & 0xFF;
+          // Red channel
+          m_PixelData[byteIdx++] = redVal & 0xFF;
 
-		  // Green channel
-		  m_PixelData[byteIdx++] = greenVal & 0xFF;
+          // Green channel
+          m_PixelData[byteIdx++] = greenVal & 0xFF;
 
-		  // Blue channel
-		  m_PixelData[byteIdx++] = blueVal & 0xFF;
+          // Blue channel
+          m_PixelData[byteIdx++] = blueVal & 0xFF;
 
-		  // Alpha channel
-		  m_PixelData[byteIdx++] = alphaVal & 0xFF;
-		}
+          // Alpha channel
+          m_PixelData[byteIdx++] = alphaVal & 0xFF;
+        }
       }
     }
   }

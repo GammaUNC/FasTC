@@ -165,8 +165,8 @@ BlockStatManager::~BlockStatManager() {
 
   if(m_Mutex)
   {
-	delete m_Mutex;
-	m_Mutex = 0;
+    delete m_Mutex;
+    m_Mutex = 0;
   }
 }
 
@@ -206,15 +206,15 @@ void BlockStatManager::ToFile(const CHAR *filename) {
 
       CHAR str[256];
 #ifdef _MSC_VER
-	  _sntprintf_s(str, 256, _TRUNCATE, "%d,%s\n", i, statStr);
+      _sntprintf_s(str, 256, _TRUNCATE, "%d,%s\n", i, statStr);
 #else
       snprintf(str, 256, "%d,%s\n", i, statStr);
 #endif
       
       uint32 strLen = uint32(strlen(str));
       if(strLen > 255) {
-	    str[255] = '\n';
-	    strLen = 256;
+        str[255] = '\n';
+        strLen = 256;
       }
  
       fstr.Write((uint8 *)str, strLen);

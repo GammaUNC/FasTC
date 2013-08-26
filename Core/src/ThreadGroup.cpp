@@ -115,7 +115,7 @@ ThreadGroup::ThreadGroup( int numThreads, const unsigned char *inBuf, unsigned i
   , m_CompressedBlockSize(
        (func == BC7C::Compress 
 #ifdef HAS_SSE_41
-	|| func == BC7C::CompressImageBC7SIMD
+  || func == BC7C::CompressImageBC7SIMD
 #endif
        )? 
          16 
@@ -125,7 +125,7 @@ ThreadGroup::ThreadGroup( int numThreads, const unsigned char *inBuf, unsigned i
   , m_UncompressedBlockSize(
        (func == BC7C::Compress 
 #ifdef HAS_SSE_41
-	|| func == BC7C::CompressImageBC7SIMD
+  || func == BC7C::CompressImageBC7SIMD
 #endif
        )? 
          64 

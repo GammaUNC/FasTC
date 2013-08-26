@@ -1,3 +1,55 @@
+/* FasTC
+ * Copyright (c) 2012 University of North Carolina at Chapel Hill.
+ * All rights reserved.
+ *
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for educational, research, and non-profit purposes, without
+ * fee, and without a written agreement is hereby granted, provided that the
+ * above copyright notice, this paragraph, and the following four paragraphs
+ * appear in all copies.
+ *
+ * Permission to incorporate this software into commercial products may be
+ * obtained by contacting the authors or the Office of Technology Development
+ * at the University of North Carolina at Chapel Hill <otd@unc.edu>.
+ *
+ * This software program and documentation are copyrighted by the University of
+ * North Carolina at Chapel Hill. The software program and documentation are
+ * supplied "as is," without any accompanying services from the University of
+ * North Carolina at Chapel Hill or the authors. The University of North
+ * Carolina at Chapel Hill and the authors do not warrant that the operation of
+ * the program will be uninterrupted or error-free. The end-user understands
+ * that the program was developed for research purposes and is advised not to
+ * rely exclusively on the program for any reason.
+ *
+ * IN NO EVENT SHALL THE UNIVERSITY OF NORTH CAROLINA AT CHAPEL HILL OR THE
+ * AUTHORS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL,
+ * OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF THE USE OF
+ * THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF NORTH CAROLINA
+ * AT CHAPEL HILL OR THE AUTHORS HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH
+ * DAMAGE.
+ *
+ * THE UNIVERSITY OF NORTH CAROLINA AT CHAPEL HILL AND THE AUTHORS SPECIFICALLY
+ * DISCLAIM ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE AND ANY 
+ * STATUTORY WARRANTY OF NON-INFRINGEMENT. THE SOFTWARE PROVIDED HEREUNDER IS ON
+ * AN "AS IS" BASIS, AND THE UNIVERSITY  OF NORTH CAROLINA AT CHAPEL HILL AND
+ * THE AUTHORS HAVE NO OBLIGATIONS TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, 
+ * ENHANCEMENTS, OR MODIFICATIONS.
+ *
+ * Please send all BUG REPORTS to <pavel@cs.unc.edu>.
+ *
+ * The authors may be contacted via:
+ *
+ * Pavel Krajcevski
+ * Dept of Computer Science
+ * 201 S Columbia St
+ * Frederick P. Brooks, Jr. Computer Science Bldg
+ * Chapel Hill, NC 27599-3175
+ * USA
+ * 
+ * <http://gamma.cs.unc.edu/FasTC/>
+ */
+
 #include "FileStream.h"
 
 #include <Windows.h>
@@ -54,7 +106,7 @@ public:
     : m_ReferenceCount(1)
   {
 
-	DWORD dwDesiredAccess = GENERIC_READ;
+  DWORD dwDesiredAccess = GENERIC_READ;
   DWORD dwOpenAction = OPEN_EXISTING;
   switch(mode) {
     default:
@@ -71,13 +123,13 @@ public:
 
     case eFileMode_WriteAppend:
     case eFileMode_WriteBinaryAppend:
-		  dwDesiredAccess = FILE_APPEND_DATA;
+      dwDesiredAccess = FILE_APPEND_DATA;
       dwOpenAction = CREATE_NEW;
       break;
     }
 
     m_Handle = CreateFile(filename, dwDesiredAccess, 0, NULL, dwOpenAction, FILE_ATTRIBUTE_NORMAL, NULL);
-	  if(m_Handle == INVALID_HANDLE_VALUE) {
+    if(m_Handle == INVALID_HANDLE_VALUE) {
       ErrorExit(TEXT("CreateFile"));
     }
   }
@@ -145,15 +197,14 @@ FileStream::~FileStream() {
 
 int32 FileStream::Read(uint8 *buf, uint32 bufSz) {
 
-  if(
-     m_Mode == eFileMode_Write ||
+  if(m_Mode == eFileMode_Write ||
      m_Mode == eFileMode_WriteBinary ||
      m_Mode == eFileMode_WriteAppend ||
      m_Mode == eFileMode_WriteBinaryAppend
   ) {
     CHAR errStr[256];
-	_sntprintf_s(errStr, 256, "Cannot read from file '%s': File opened for reading.", m_Filename);
-	OutputDebugString(errStr);
+  _sntprintf_s(errStr, 256, "Cannot read from file '%s': File opened for reading.", m_Filename);
+  OutputDebugString(errStr);
     return -2;
   }
 
@@ -163,27 +214,27 @@ int32 FileStream::Read(uint8 *buf, uint32 bufSz) {
 
   DWORD oldPosition = SetFilePointer(fp, 0, NULL, FILE_CURRENT);
   if(INVALID_SET_FILE_POINTER == oldPosition) {
-	CHAR errStr[256];
-	_sntprintf_s(errStr, 256, "Error querying the file position before reading from file '%s'(0x%x).", m_Filename, GetLastError());
-	OutputDebugString(errStr);
-	return -1;
+    CHAR errStr[256];
+    _sntprintf_s(errStr, 256, "Error querying the file position before reading from file '%s'(0x%x).", m_Filename, GetLastError());
+    OutputDebugString(errStr);
+    return -1;
   }
 
   DWORD amtRead;
   BOOL success = ReadFile(fp, buf, bufSz, &amtRead, NULL);
   if(!success) {
-	CHAR errStr[256];
-	_sntprintf_s(errStr, 256, "Error reading from file '%s'.", m_Filename);
-	OutputDebugString(errStr);
+    CHAR errStr[256];
+    _sntprintf_s(errStr, 256, "Error reading from file '%s'.", m_Filename);
+    OutputDebugString(errStr);
     return -1;
   }
 
   DWORD newPosition = SetFilePointer(fp, 0, NULL, FILE_CURRENT);
   if(INVALID_SET_FILE_POINTER == newPosition) {
-	CHAR errStr[256];
-	_sntprintf_s(errStr, 256, "Error querying the file position after reading from file '%s'(0x%x).", m_Filename, GetLastError());
-	OutputDebugString(errStr);
-	return -1;
+    CHAR errStr[256];
+    _sntprintf_s(errStr, 256, "Error querying the file position after reading from file '%s'(0x%x).", m_Filename, GetLastError());
+    OutputDebugString(errStr);
+    return -1;
   }
 
   return newPosition - oldPosition;
@@ -194,9 +245,9 @@ int32 FileStream::Write(const uint8 *buf, uint32 bufSz) {
      m_Mode == eFileMode_Read ||
      m_Mode == eFileMode_ReadBinary
   ) {
-	CHAR errStr[256];
-	_sntprintf_s(errStr, 256, "Cannot write to file '%s': File opened for writing.", m_Filename);
-	OutputDebugString(errStr);
+  CHAR errStr[256];
+  _sntprintf_s(errStr, 256, "Cannot write to file '%s': File opened for writing.", m_Filename);
+  OutputDebugString(errStr);
     return -2;
   }
 
@@ -213,10 +264,10 @@ int32 FileStream::Write(const uint8 *buf, uint32 bufSz) {
   }
 
   if(INVALID_SET_FILE_POINTER == dwPos) {
-	CHAR errStr[256];
-	_sntprintf_s(errStr, 256, "Error querying the file position before reading to file '%s'(0x%x).", m_Filename, GetLastError());
-	OutputDebugString(errStr);
-	return -1;
+  CHAR errStr[256];
+  _sntprintf_s(errStr, 256, "Error querying the file position before reading to file '%s'(0x%x).", m_Filename, GetLastError());
+  OutputDebugString(errStr);
+  return -1;
   }
 
   while(!LockFile(fp, dwPos, 0, bufSz, 0)) Sleep(1);
@@ -227,9 +278,9 @@ int32 FileStream::Write(const uint8 *buf, uint32 bufSz) {
   UnlockFile(fp, dwPos, 0, bufSz, 0);
 
   if(!success) {
-	CHAR errStr[256];
-	_sntprintf_s(errStr, 256, "Error writing to file '%s'.", m_Filename);
-	OutputDebugString(errStr);
+  CHAR errStr[256];
+  _sntprintf_s(errStr, 256, "Error writing to file '%s'.", m_Filename);
+  OutputDebugString(errStr);
     return -1;
   }
 
@@ -244,17 +295,17 @@ int32 FileStream::Tell() {
 
   DWORD pos =  SetFilePointer(fp, 0, NULL, FILE_CURRENT);
   if(INVALID_SET_FILE_POINTER == pos) {
-	CHAR errStr[256];
-	_sntprintf_s(errStr, 256, "Error querying the file position before reading to file '%s'(0x%x).", m_Filename, GetLastError());
-	OutputDebugString(errStr);
-	return -1;
+    CHAR errStr[256];
+    _sntprintf_s(errStr, 256, "Error querying the file position before reading to file '%s'(0x%x).", m_Filename, GetLastError());
+    OutputDebugString(errStr);
+    return -1;
   }
 
   return pos;
 }
 
 bool FileStream::Seek(uint32 offset, ESeekPosition pos) {
-  
+
   // We cannot seek in append mode.
   if(m_Mode == eFileMode_WriteAppend || m_Mode == eFileMode_WriteBinaryAppend)
     return false;
@@ -264,17 +315,17 @@ bool FileStream::Seek(uint32 offset, ESeekPosition pos) {
 
   DWORD origin = FILE_BEGIN;
   switch(pos) {
-  default:
-  case eSeekPosition_Beginning:
-    // Do nothing
+    default:
+    case eSeekPosition_Beginning:
+      // Do nothing
     break;
 
-  case eSeekPosition_Current:
-    origin = FILE_CURRENT;
+    case eSeekPosition_Current:
+      origin = FILE_CURRENT;
     break;
 
-  case eSeekPosition_End:
-    origin = FILE_END;
+    case eSeekPosition_End:
+      origin = FILE_END;
     break;
   }
 

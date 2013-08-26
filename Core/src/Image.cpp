@@ -95,14 +95,14 @@ Image::Image(const CompressedImage &ci)
   : m_Width(ci.GetWidth())
   , m_Height(ci.GetHeight())
 {
-	unsigned int bufSz = ci.GetWidth() * ci.GetHeight() * 4;
-	m_PixelData = new uint8[ bufSz ];
-	if(!m_PixelData) { fprintf(stderr, "%s\n", "Out of memory!"); return; }
+  unsigned int bufSz = ci.GetWidth() * ci.GetHeight() * 4;
+  m_PixelData = new uint8[ bufSz ];
+  if(!m_PixelData) { fprintf(stderr, "%s\n", "Out of memory!"); return; }
 
-	if(!ci.DecompressImage(m_PixelData, bufSz)) {
-		fprintf(stderr, "Error decompressing image!\n");
-		return;
-	}
+  if(!ci.DecompressImage(m_PixelData, bufSz)) {
+    fprintf(stderr, "Error decompressing image!\n");
+    return;
+  }
 }
 
 Image::Image(const ImageLoader &loader) 
