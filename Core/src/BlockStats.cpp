@@ -103,7 +103,7 @@ void BlockStat::ToString(CHAR *buf, int bufSz) const {
 #ifdef _MSC_VER
       _sntprintf_s(buf, bufSz, _TRUNCATE, "%s,%lu", m_StatName, (unsigned long)m_IntStat);
 #else
-        snprintf(buf, bufSz, "%s,%lu", m_StatName, (unsigned long)m_IntStat);
+      snprintf(buf, bufSz, "%s,%lu", m_StatName, (unsigned long)m_IntStat);
 #endif
     break;
 
@@ -136,13 +136,13 @@ void BlockStatManager::Copy(const BlockStatManager &other) {
 }
 
 BlockStatManager::BlockStatManager(const BlockStatManager &other) {
-	Copy(other);
+  Copy(other);
 }
 
 BlockStatManager &BlockStatManager::operator=(const BlockStatManager &other) {
-	m_Counter = other.m_Counter;
-	Copy(other);
-	return *this;
+  m_Counter = other.m_Counter;
+  Copy(other);
+  return *this;
 }
 
 BlockStatManager::BlockStatManager(int nBlocks) 
@@ -241,12 +241,12 @@ BlockStatManager::BlockStatList::BlockStatList(const BlockStat &stat)
   : m_Tail(0)
   , m_Stat(stat)
 {
-	assert(!"If you're copying a block stat list then you're probably not using them properly.");
+  assert(!"If you're copying a block stat list then you're probably not using them properly.");
 }
 
 BlockStatManager::BlockStatList::BlockStatList(const BlockStatList &other)
-	: m_Tail(new BlockStatList(*other.m_Tail))
-	, m_Stat(other.m_Stat)
+  : m_Tail(new BlockStatList(*other.m_Tail))
+  , m_Stat(other.m_Stat)
 {}
 
 BlockStatManager::BlockStatList::~BlockStatList() {
@@ -256,7 +256,6 @@ BlockStatManager::BlockStatList::~BlockStatList() {
 }
 
 void BlockStatManager::BlockStatList::AddStat(const BlockStat &stat) {
-
   if(strncmp(stat.m_StatName, m_Stat.m_StatName, BlockStat::kStatNameSz) == 0) {
     m_Stat = stat;
   }
