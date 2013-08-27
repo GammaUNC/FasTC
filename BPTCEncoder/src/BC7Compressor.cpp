@@ -373,8 +373,8 @@ void BC7CompressionMode::ClampEndpointsToGrid(
       qp2 = p2.ToPixel(qmask);
     }
 
-    RGBAVector np1 = RGBAVector(qp1, 0);
-    RGBAVector np2 = RGBAVector(qp2, 0);
+    RGBAVector np1 = RGBAVector(0, qp1);
+    RGBAVector np2 = RGBAVector(0, qp2);
 
     RGBAVector d1 = np1 - p1;
     RGBAVector d2 = np2 - p2;
@@ -448,7 +448,7 @@ double BC7CompressionMode::CompressSingleColor(
         possValsL[i] |= (possValsL[i] >> nBits);
       }
 
-      const uin32 bpi = GetNumberOfBitsPerIndex() - 1;
+      const uint32 bpi = GetNumberOfBitsPerIndex() - 1;
       const uint32 interpVal0 = kBC7InterpolationValues[bpi][1][0];
       const uint32 interpVal1 = kBC7InterpolationValues[bpi][1][1];
 
@@ -720,8 +720,8 @@ double BC7CompressionMode::OptimizeEndpointsForCluster(
     qp2 = p2.ToPixel(qmask);
   }
 
-  p1 = RGBAVector(qp1, 0);
-  p2 = RGBAVector(qp2, 0);
+  p1 = RGBAVector(0, qp1);
+  p2 = RGBAVector(0, qp2);
 
   RGBAVector bp1 = p1, bp2 = p2;
 
@@ -1050,7 +1050,7 @@ double BC7CompressionMode::CompressCluster(
         uint32 a1i = static_cast<uint32>(a1b);
         uint32 a2i = static_cast<uint32>(a2b);
 
-        const uint8 ip = ((a1i * interp0) + (a2i * interp1) + 32) >> 6) & 0xFF;
+        const uint8 ip = (((a1i * interp0) + (a2i * interp1) + 32) >> 6) & 0xFF;
         float pxError =
           weight * static_cast<float>((val > ip)? val - ip : ip - val);
         pxError *= pxError;
@@ -1214,16 +1214,16 @@ double BC7CompressionMode::CompressCluster(
   float asq = 0.0, bsq = 0.0, ab = 0.0;
   RGBAVector ax(0.0), bx(0.0);
   for(uint32 i = 0; i < nBuckets; i++) {
+    const RGBAVector x = pts[i];
+    const int n = numPts[i];
+
     const float fbi = static_cast<float>(nBuckets - 1 - i);
     const float fb = static_cast<float>(nBuckets - 1);
     const float fi = static_cast<float>(i);
     const float fn = static_cast<float>(n);
 
-    float a = fbi / fb;
-    float b = fi / fb;
-
-    int n = numPts[i];
-    RGBAVector x = pts[i];
+    const float a = fbi / fb;
+    const float b = fi / fb;
 
     asq += fn * a * a;
     bsq += fn * b * b;
@@ -1404,8 +1404,8 @@ double BC7CompressionMode::Compress(
 
     const bool rotated = bestAlphaIndices[anchorIdx] >> (nAlphaIndexBits - 1);
     if(m_Attributes->hasRotation && rotated) {
-      uint8 * bp1 = static_cast<uit8 *>(&pixel1[sidx]);
-      uint8 * bp2 = static_cast<uint8 *>(&pixel2[sidx]);
+      uint8 * bp1 = reinterpret_cast<uint8 *>(&pixel1[sidx]);
+      uint8 * bp2 = reinterpret_cast<uint8 *>(&pixel2[sidx]);
       uint8 t = bp1[3]; bp1[3] = bp2[3]; bp2[3] = t;
 
       int nAlphaIndexVals = 1 << nAlphaIndexBits;
@@ -1630,10 +1630,10 @@ namespace BC7C {
         CompressBC7Block((const uint32 *)inBuf, outBuf);
 
 #ifndef NDEBUG
-        uint8 *block = static_cast<uint8 *>(outBuf);
+        uint8 *block = reinterpret_cast<uint8 *>(outBuf);
         uint32 unComp[16];
         DecompressBC7Block(block, unComp);
-        uint8* unCompData = static_cast<uint8 *>(unComp);
+        uint8* unCompData = reinterpret_cast<uint8 *>(unComp);
 
         double diffSum = 0.0;
         for(int k = 0; k < 64; k+=4) {
@@ -1723,10 +1723,10 @@ namespace BC7C {
         CompressBC7Block((const uint32 *)inBuf, outBuf, statManager);
 
 #ifndef NDEBUG
-        uint8 *block = static_cast<uint8 *>(outBuf);
+        uint8 *block = outBuf;
         uint32 unComp[16];
         DecompressBC7Block(block, unComp);
-        uint8* unCompData = static_cast<uint8 *>(unComp);
+        uint8* unCompData = reinterpret_cast<uint8 *>(unComp);
 
         int diffSum = 0;
         for(int i = 0; i < 64; i++) {
@@ -2084,7 +2084,7 @@ namespace BC7C {
     }
 
     if(opaque) {
-      const newError =
+      const double newError =
         CompressThreeClusters(bestShapeIdx[1],
                               bestClusters[1],
                               tempBuf2,
@@ -2709,7 +2709,7 @@ namespace BC7C {
 
           const uint32 ep1 = static_cast<uint32>(eps[subset][0][3]);
           const uint32 ep2 = static_cast<uint32>(eps[subset][1][3]);
-          const uint8 ip = ((ep1 * i0 + ep2 * i1) + 32) >> 6) & 0xFF;
+          const uint8 ip = (((ep1 * i0 + ep2 * i1) + 32) >> 6) & 0xFF;
           pixel |= ip << 24;
 
         } else {
@@ -2720,13 +2720,13 @@ namespace BC7C {
 
           const uint32 ep1 = static_cast<uint32>(eps[subset][0][ch]);
           const uint32 ep2 = static_cast<uint32>(eps[subset][1][ch]);
-          const uint8 ip = ((ep1 * i0 + ep2 * i1) + 32) >> 6) & 0xFF;
+          const uint8 ip = (((ep1 * i0 + ep2 * i1) + 32) >> 6) & 0xFF;
           pixel |= ip << (8*ch);
         }
       }
 
       // Swap colors if necessary...
-      uint8 *pb = static_cast<uint8 *>(&pixel);
+      uint8 *pb = reinterpret_cast<uint8 *>(&pixel);
       switch(rotMode) {
         default:
         case 0:
