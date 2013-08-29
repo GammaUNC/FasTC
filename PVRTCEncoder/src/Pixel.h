@@ -61,18 +61,18 @@ class Pixel {
  public:
   Pixel(): m_R(0), m_G(0), m_B(0), m_A(0) { }
 
-  explicit Pixel(uint8 *bits,
-                 uint8 channelDepth[4] = static_cast<uint8 *>(0),
+  explicit Pixel(const uint8 *bits,
+                 const uint8 channelDepth[4] = static_cast<uint8 *>(0),
                  uint8 bitOffset = 0) {
-    FromBits(bits, channelDepth);
+    FromBits(bits, channelDepth, bitOffset);
   }
 
   // Reads a pixel from memory given the bit depth. If NULL then
   // it is assumed to be 8 bit RGBA. The bit offset is the offset
   // from the least significant bit from which we start reading
   // the pixel values.
-  void FromBits(uint8 *bits,
-                uint8 channelDepth[4] = static_cast<uint8 *>(0),
+  void FromBits(const uint8 *bits,
+                const uint8 channelDepth[4] = static_cast<uint8 *>(0),
                 uint8 bitOffset = 0);
 
   // Changes the depth of each pixel. This scales the values to
