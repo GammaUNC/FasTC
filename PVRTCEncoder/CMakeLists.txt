@@ -57,11 +57,13 @@ INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/PVRTCEncoder/include)
 SET( HEADERS
   include/PVRTCCompressor.h
   src/Pixel.h
+  src/Block.h
 )
 
 SET( SOURCES
   src/Decompressor.cpp
   src/Pixel.cpp
+  src/Block.cpp
 )
 
 ADD_LIBRARY( PVRTCEncoder
