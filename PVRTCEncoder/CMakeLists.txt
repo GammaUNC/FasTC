@@ -58,12 +58,14 @@ SET( HEADERS
   include/PVRTCCompressor.h
   src/Pixel.h
   src/Block.h
+  src/Image.h
 )
 
 SET( SOURCES
   src/Decompressor.cpp
   src/Pixel.cpp
   src/Block.cpp
+  src/Image.cpp
 )
 
 ADD_LIBRARY( PVRTCEncoder
