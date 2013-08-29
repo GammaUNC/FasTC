@@ -88,6 +88,29 @@ class Pixel {
   // above for how we do this.
   static uint8 ChangeBitDepth(uint8 val, uint8 oldDepth, uint8 newDepth);
 
+  const uint8 &A() const { return m_A; }
+  uint8 &A() { return m_A; }
+  const uint8 &R() const { return m_R; }
+  uint8 &R() { return m_R; }
+  const uint8 &G() const { return m_G; }
+  uint8 &G() { return m_G; }
+  const uint8 &B() const { return m_B; }
+  uint8 &B() { return m_B; }
+  const uint8 &Component(uint32 idx) const { return m_Component[idx]; }
+  uint8 &Component(uint32 idx) { return m_Component[idx]; }
+
+  uint32 PackRGBA() const {
+    uint32 r = 0;
+    r |= m_A;
+    r <<= 8;
+    r |= m_B;
+    r <<= 8;
+    r |= m_G;
+    r <<= 8;
+    r |= m_R;
+    return r;
+  }
+
  private:
   union {
     struct {
