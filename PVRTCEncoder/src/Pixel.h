@@ -80,7 +80,7 @@ class Pixel {
   // significant bits when going from larger to smaller bit depth
   // or by repeating the most significant bits when going from
   // smaller to larger bit depths.
-  void ChangeBitDepth(uint8 (&newDepth)[4]);
+  void ChangeBitDepth(const uint8 (&newDepth)[4]);
 
   // Changes the bit depth of a single component. See the comment
   // above for how we do this.

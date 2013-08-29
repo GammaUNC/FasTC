@@ -130,7 +130,7 @@ namespace PVRTCC {
     return 0;
   }
 
-  void Pixel::ChangeBitDepth(uint8 (&depth)[4]) {
+  void Pixel::ChangeBitDepth(const uint8 (&depth)[4]) {
     for(uint32 i = 0; i < 4; i++) {
       m_Component[i] = ChangeBitDepth(m_Component[i], m_BitDepth[i], depth[i]);
       m_BitDepth[i] = depth[i];

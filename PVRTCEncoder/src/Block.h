@@ -61,7 +61,7 @@ namespace PVRTCC {
 
 class Block {
  public:
-  explicit Block(uint8 *data);
+  explicit Block(const uint8 *data);
 
   Pixel GetColorA();
   Pixel GetColorB();

@@ -57,7 +57,7 @@
 
 namespace PVRTCC {
 
-  Block::Block(uint8 *data)
+  Block::Block(const uint8 *data)
     : m_ColorACached(false)
     , m_ColorBCached(false) {
     assert(data);
