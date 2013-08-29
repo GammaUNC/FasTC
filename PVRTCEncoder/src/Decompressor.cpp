@@ -52,9 +52,119 @@
 
 #include "PVRTCCompressor.h"
 
+#include <cassert>
+#include <vector>
+
+#include "Pixel.h"
+#include "Block.h"
+#include "Image.h"
+
 namespace PVRTCC {
 
   void Decompress(const DecompressionJob &dcj, const EWrapMode wrapMode) {
+    const uint32 w = dcj.width;
+    const uint32 h = dcj.height;
+
+    assert(w > 0);
+    assert(h > 0);
+    assert(w % 4 == 0);
+    assert(h % 4 == 0);
+
+    // First, extract all of the block information...
+    std::vector<Block> blocks;
+    blocks.reserve(w * h);
+
+    const uint32 blocksW = w / 4;
+    const uint32 blocksH = h / 4;
+    const uint32 blockSz = 8;
+
+    for(uint32 j = 0; j < blocksH; j++) {
+      for(uint32 i = 0; i < blocksW; i++) {
+        uint32 offset = (j * blocksW + i) * blockSz;
+        blocks.push_back( Block(dcj.inBuf + offset) );
+      }
+    }
+
+    // Extract the endpoints into A and B images
+    Image imgA(blocksH, blocksW);
+    Image imgB(blocksH, blocksW);
+
+    for(uint32 j = 0; j < blocksH; j++) {
+      for(uint32 i = 0; i < blocksW; i++) {
+        Block &b = blocks[j * blocksW + i];
+        imgA(i, j) = b.GetColorA();
+        imgB(i, j) = b.GetColorB();
+      }
+    }
+
+    // Change the pixel mode so that all of the pixels are at the same
+    // bit depth.
+    const uint8 scaleDepths[4] = { 4, 5, 5, 5 };
+    imgA.ChangeBitDepth(scaleDepths);
+    imgB.ChangeBitDepth(scaleDepths);
+
+    // Bilinearly upscale the images.
+    imgA.BilinearUpscale(2, wrapMode);
+    imgB.BilinearUpscale(2, wrapMode);
+
+    // Change the bitdepth to full resolution
+    const uint8 fullDepths[4] = { 8, 8, 8, 8 };
+    imgA.ChangeBitDepth(fullDepths);
+    imgB.ChangeBitDepth(fullDepths);
+
+    // Pack the pixels based on their modulation into the resulting buffer
+    // in RGBA format...
+    for(uint32 j = 0; j < h; j++) {
+      for(uint32 i = 0; i < w; i++) {
+        const uint32 blockIdx = (j/4) * blocksW + (i / 4);
+        const Block &b = blocks[blockIdx];
+
+        const uint32 texelIndex = (j % 4) * 4 + (i % 4);
+        const Pixel &pa = imgA(i, j);
+        const Pixel &pb = imgB(i, j);
+
+        Pixel result;
+        if(b.GetModeBit()) {
+          const uint8 lerpVals[3] = { 0, 4, 8 };
+          uint8 modVal = b.GetLerpValue(texelIndex);
+          bool punchThrough = false;
+
+          if(modVal == 2) {
+            modVal = 1;
+            punchThrough = true;
+          } else if(modVal == 3) {
+            modVal = 2;
+          }
+
+          const uint8 lerpVal = lerpVals[modVal];
+
+          for(uint32 c = 0; c < 4; c++) {
+            int16 va = static_cast<int16>(pa.Component(c));
+            int16 vb = static_cast<int16>(pb.Component(c));
+
+            result.Component(c) = va + ((vb - va) * lerpVal) / 8;
+          }
+
+          if(punchThrough) {
+            result.A() = 0;
+          }
+
+        } else {
+          const uint8 lerpVals[4] = { 0, 3, 5, 8 };
+          const uint8 lerpVal = lerpVals[b.GetLerpValue(texelIndex)];
+
+          for(uint32 c = 0; c < 4; c++) {
+            int16 va = static_cast<int16>(pa.Component(c));
+            int16 vb = static_cast<int16>(pb.Component(c));
+
+            result.Component(c) = va + ((vb - va) * lerpVal) / 8;
+          }
+        }
+
+        uint32 *outPixels = reinterpret_cast<uint32 *>(dcj.outBuf);
+        outPixels[(j * h) + i] = result.PackRGBA();
+      }
+    }
   }
 
 }  // namespace PVRTCC
