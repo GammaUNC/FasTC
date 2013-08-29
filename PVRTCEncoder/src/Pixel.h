@@ -89,10 +89,10 @@ class Pixel {
  private:
   union {
     struct {
+      uint8 m_A;
       uint8 m_R;
       uint8 m_G;
       uint8 m_B;
-      uint8 m_A;
     };
     uint8 m_Component[4];
   };
