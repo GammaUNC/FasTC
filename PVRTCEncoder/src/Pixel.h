@@ -59,7 +59,9 @@ namespace PVRTCC {
 
 class Pixel {
  public:
-  Pixel(): m_R(0), m_G(0), m_B(0), m_A(0) { }
+  Pixel(): m_R(0), m_G(0), m_B(0), m_A(0) {
+    for(int i = 0; i < 4; i++) m_BitDepth[i] = 8;
+  }
 
   explicit Pixel(const uint8 *bits,
                  const uint8 channelDepth[4] = static_cast<uint8 *>(0),
