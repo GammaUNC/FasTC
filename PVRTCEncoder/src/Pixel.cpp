@@ -85,7 +85,9 @@ namespace PVRTCC {
       assert(depth <= 8);
 
       channel = 0;
-      if(depth + bitIdx < 8) {
+      if(0 == depth) {
+        channel = 0xFF;
+      } else if(depth + bitIdx < 8) {
         channel = bits[byteIdx] & ((1 << depth) - 1);
         bitIdx += depth;
       } else {
