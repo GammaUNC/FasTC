@@ -60,11 +60,17 @@ namespace PVRTCC {
   void Pixel::FromBits(const uint8 *bits,
                        const uint8 channelDepth[4],
                        uint8 bitOffset) {
-    memcpy(m_BitDepth, channelDepth, sizeof(m_BitDepth));
+    if(channelDepth) {
+      memcpy(m_BitDepth, channelDepth, sizeof(m_BitDepth));
+    } else {
+      for(int i = 0; i < 4; i++) {
+        m_BitDepth[i] = 8;
+      }
+    }
 
     uint32 nBits = bitOffset;
     for(uint32 i = 0; i < 4; i++) {
-      nBits += channelDepth[i];
+      nBits += m_BitDepth[i];
     }
 
     const uint32 nBytes = (nBits >> 3) + ((nBits & 0x7) > 0);
@@ -80,7 +86,7 @@ namespace PVRTCC {
 
     for(int32 i = 3; i >= 0; i--) {
       uint8 &channel = m_Component[i];
-      uint32 depth = channelDepth[i];
+      uint32 depth = m_BitDepth[i];
 
       assert(depth <= 8);
 
