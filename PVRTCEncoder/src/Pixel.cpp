@@ -88,7 +88,7 @@ namespace PVRTCC {
       if(0 == depth) {
         channel = 0xFF;
       } else if(depth + bitIdx < 8) {
-        channel = bits[byteIdx] & ((1 << depth) - 1);
+        channel = (bits[byteIdx] >> bitIdx) & ((1 << depth) - 1);
         bitIdx += depth;
       } else {
         const uint32 numLowBits = 8 - bitIdx;
