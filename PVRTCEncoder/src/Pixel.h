@@ -99,6 +99,12 @@ class Pixel {
   const uint8 &Component(uint32 idx) const { return m_Component[idx]; }
   uint8 &Component(uint32 idx) { return m_Component[idx]; }
 
+  void GetBitDepth(uint8 (&outDepth)[4]) const {
+    for(int i = 0; i < 4; i++) {
+      outDepth[i] = m_BitDepth[i];
+    }
+  }
+
   uint32 PackRGBA() const {
     uint32 r = 0;
     r |= m_A;
