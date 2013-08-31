@@ -194,13 +194,13 @@ const Pixel &Image::GetPixel(int32 i, int32 j, EWrapMode wrapMode) {
 
 Pixel & Image::operator()(uint32 i, uint32 j) {
   assert(i < m_Width);
-  assert(i > m_Height);
+  assert(j < m_Height);
   return m_Pixels[j * m_Width + i];
 }
 
 const Pixel & Image::operator()(uint32 i, uint32 j) const {
   assert(i < m_Width);
-  assert(i > m_Height);
+  assert(j < m_Height);
   return m_Pixels[j * m_Width + i];
 }
 
