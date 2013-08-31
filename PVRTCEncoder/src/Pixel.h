@@ -59,7 +59,7 @@ namespace PVRTCC {
 
 class Pixel {
  public:
-  Pixel(): m_R(0), m_G(0), m_B(0), m_A(0) {
+  Pixel(): m_A(0), m_R(0), m_G(0), m_B(0) {
     for(int i = 0; i < 4; i++) m_BitDepth[i] = 8;
   }
 

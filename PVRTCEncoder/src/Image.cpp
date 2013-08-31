@@ -157,7 +157,7 @@ const Pixel &Image::GetPixel(int32 i, int32 j, EWrapMode wrapMode) {
     }
   }
 
-  while(i >= m_Width) {
+  while(i >= static_cast<int32>(m_Width)) {
     if(wrapMode == eWrapMode_Clamp) {
       i = m_Width - 1;
     } else {
@@ -173,7 +173,7 @@ const Pixel &Image::GetPixel(int32 i, int32 j, EWrapMode wrapMode) {
     }
   }
 
-  while(j >= m_Height) {
+  while(j >= static_cast<int32>(m_Height)) {
     if(wrapMode == eWrapMode_Clamp) {
       j = m_Height - 1;
     } else {
