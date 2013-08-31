@@ -147,4 +147,21 @@ namespace PVRTCC {
     }
   }
 
+  uint32 Pixel::PackRGBA() const {
+    Pixel eightBit(*this);
+    const uint8 eightBitDepth[4] = { 8, 8, 8, 8 };
+    eightBit.ChangeBitDepth(eightBitDepth);
+
+    uint32 r = 0;
+    r |= eightBit.A();
+    r <<= 8;
+    r |= eightBit.B();
+    r <<= 8;
+    r |= eightBit.G();
+    r <<= 8;
+    r |= eightBit.R();
+    return r;
+  }
+
+
 }  // namespace PVRTCC

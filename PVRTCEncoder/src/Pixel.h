@@ -105,17 +105,7 @@ class Pixel {
     }
   }
 
-  uint32 PackRGBA() const {
-    uint32 r = 0;
-    r |= m_A;
-    r <<= 8;
-    r |= m_B;
-    r <<= 8;
-    r |= m_G;
-    r <<= 8;
-    r |= m_R;
-    return r;
-  }
+  uint32 PackRGBA() const;
 
  private:
   union {
