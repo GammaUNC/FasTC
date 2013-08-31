@@ -84,6 +84,14 @@ Image::Image(const Image &other)
   memcpy(m_Pixels, other.m_Pixels, m_Width * m_Height * sizeof(Pixel));
 }
 
+Image &Image::operator=(const Image &other) {
+  m_Width = other.m_Width;
+  m_Height = other.m_Height;
+  m_Pixels = new Pixel[other.m_Width * other.m_Height];
+  memcpy(m_Pixels, other.m_Pixels, m_Width * m_Height * sizeof(Pixel));
+  return *this;
+}
+
 Image::~Image() {
   assert(m_Pixels);
   delete [] m_Pixels;

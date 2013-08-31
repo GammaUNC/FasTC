@@ -65,6 +65,7 @@ class Image {
   Image(uint32 height, uint32 width);
   Image(uint32 height, uint32 width, const Pixel *pixels);
   Image(const Image &);
+  Image &operator=(const Image &);
   ~Image();
 
   void BilinearUpscale(uint32 times, EWrapMode wrapMode = eWrapMode_Clamp);
