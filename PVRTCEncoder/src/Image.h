@@ -74,6 +74,9 @@ class Image {
   Pixel &operator()(uint32 i, uint32 j);
   const Pixel &operator()(uint32 i, uint32 j) const;
 
+  uint32 GetWidth() const { return m_Width; }
+  uint32 GetHeight() const { return m_Height; }
+
  private:
   uint32 m_Width;
   uint32 m_Height;
