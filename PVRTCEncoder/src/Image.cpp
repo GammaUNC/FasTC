@@ -115,28 +115,28 @@ void Image::BilinearUpscale(uint32 times, EWrapMode wrapMode) {
       int32 highYIdx = (j + offset) / scale;
       int32 lowYIdx = highYIdx - 1;
 
-      uint32 lowXWeight = (i + offset) % scale;
-      uint32 highXWeight = scale - lowXWeight;
-      uint32 lowYWeight = (j + offset) % scale;
-      uint32 highYWeight = scale - lowYWeight;
+      uint32 highXWeight = (i + offset) % scale;
+      uint32 lowXWeight = scale - highXWeight;
+      uint32 highYWeight = (j + offset) % scale;
+      uint32 lowYWeight = scale - highYWeight;
 
-      const Pixel &topLeft = GetPixel(highXIdx, lowYIdx, wrapMode);
-      const Pixel &topRight = GetPixel(lowXIdx, lowYIdx, wrapMode);
-      const Pixel &bottomLeft = GetPixel(highXIdx, highYIdx, wrapMode);
-      const Pixel &bottomRight = GetPixel(lowXIdx, highYIdx, wrapMode);
+      const Pixel &topLeft = GetPixel(lowXIdx, lowYIdx, wrapMode);
+      const Pixel &topRight = GetPixel(highXIdx, lowYIdx, wrapMode);
+      const Pixel &bottomLeft = GetPixel(lowXIdx, highYIdx, wrapMode);
+      const Pixel &bottomRight = GetPixel(highXIdx, highYIdx, wrapMode);
 
       // bilerp each channel....
       for(uint32 c = 0; c < 4; c++) {
         const uint16 left =
           (lowYWeight * static_cast<uint16>(topLeft.Component(c)) +
            highYWeight * static_cast<uint16>(bottomLeft.Component(c)))
-          >> scale;
+          / scale;
         const uint16 right =
           (lowYWeight * static_cast<uint16>(topRight.Component(c)) +
            highYWeight * static_cast<uint16>(bottomRight.Component(c)))
-          >> scale;
+          / scale;
 
-        p.Component(c) = (left * lowXWeight + right * highXWeight) >> scale;
+        p.Component(c) = (left * lowXWeight + right * highXWeight) / scale;
       }
     }
   }
