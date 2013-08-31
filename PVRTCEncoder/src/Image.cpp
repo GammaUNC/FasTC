@@ -65,7 +65,6 @@ Image::Image(uint32 height, uint32 width)
   , m_Pixels(new Pixel[width * height]) {
   assert(width > 0);
   assert(height > 0);
-  memset(m_Pixels, 0, width * height * sizeof(Pixel));
 }
 
 Image::Image(uint32 height, uint32 width, const Pixel *pixels)
