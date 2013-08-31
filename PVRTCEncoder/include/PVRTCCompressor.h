@@ -53,7 +53,7 @@
 #ifndef PVRTCENCODER_INCLUDE_PVRTCCOMPRESSOR_H_
 #define PVRTCENCODER_INCLUDE_PVRTCCOMPRESSOR_H_
 
-#include "CompressionJob.h"
+#include "Core/include/CompressionJob.h"
 
 namespace PVRTCC {
 
