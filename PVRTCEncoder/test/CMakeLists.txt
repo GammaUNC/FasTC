@@ -57,7 +57,7 @@ INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/PVRTCEncoder/src)
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/GTest/include)
 
 SET(TESTS
-  Block Pixel
+  Block Pixel Image
 )
 
 FOREACH(TEST ${TESTS})
