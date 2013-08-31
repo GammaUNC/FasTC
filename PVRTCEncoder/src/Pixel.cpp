@@ -163,5 +163,19 @@ namespace PVRTCC {
     return r;
   }
 
+  bool Pixel::operator==(const Pixel &other) const {
+    uint8 depths[4];
+    other.GetBitDepth(depths);
+
+    bool ok = true;
+    for(int i = 0; i < 4; i++) {
+      ok = ok && m_BitDepth[i] == depths[i];
+
+      uint8 mask = (1 << depths[i]) - 1;
+      const uint8 c = other.Component(i) & mask;
+      ok = ok && (c == (Component(i) & mask));
+    }
+    return ok;
+  }
 
 }  // namespace PVRTCC

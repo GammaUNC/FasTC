@@ -111,6 +111,9 @@ class Pixel {
   // up in the most-significant byte.
   uint32 PackRGBA() const;
 
+  // Tests for equality by comparing the values and the bit depths.
+  bool operator==(const Pixel &) const;
+
  private:
   union {
     struct {
