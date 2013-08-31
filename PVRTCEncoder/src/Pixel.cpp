@@ -112,7 +112,7 @@ namespace PVRTCC {
     assert(newDepth <= 8);
     assert(oldDepth <= 8);
 
-    if(oldDepth == newDepth) {
+    if(oldDepth == newDepth || oldDepth == 0) {
       // Do nothing
       return val;
     } else if(newDepth > oldDepth) {
@@ -128,8 +128,12 @@ namespace PVRTCC {
 
     } else {
       // oldDepth > newDepth
-      uint8 bitsWasted = oldDepth - newDepth;
-      return val >> bitsWasted;
+      if(newDepth == 0) {
+        return 0xFF;
+      } else {
+        uint8 bitsWasted = oldDepth - newDepth;
+        return val >> bitsWasted;
+      }
     }
 
     assert(!"We shouldn't get here.");
