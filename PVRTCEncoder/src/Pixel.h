@@ -105,6 +105,10 @@ class Pixel {
     }
   }
 
+  // Take all of the components, transform them to their 8-bit variants,
+  // and then pack each channel into an R8G8B8A8 32-bit integer. We assume
+  // that the architecture is little-endian, so the alpha channel will end
+  // up in the most-significant byte.
   uint32 PackRGBA() const;
 
  private:
