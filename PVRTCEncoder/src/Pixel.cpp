@@ -54,6 +54,7 @@
 
 #include <cstring>
 #include <cassert>
+#include <algorithm>
 
 namespace PVRTCC {
 
@@ -119,8 +120,8 @@ namespace PVRTCC {
       uint8 ret = 0;
       while(bitsLeft > oldDepth) {
         ret |= val;
-        ret <<= oldDepth;
         bitsLeft -= oldDepth;
+        ret <<= std::min(bitsLeft, oldDepth);
       }
 
       return ret | (val >> (oldDepth - bitsLeft));
