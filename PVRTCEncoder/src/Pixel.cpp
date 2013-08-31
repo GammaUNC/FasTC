@@ -73,18 +73,14 @@ namespace PVRTCC {
       nBits += m_BitDepth[i];
     }
 
-    const uint32 nBytes = (nBits >> 3) + ((nBits & 0x7) > 0);
-    assert(nBytes > 0);
-
-    int32 byteIdx = nBytes - 1;
+    int32 byteIdx = 0;
     uint32 bitIdx = bitOffset;
     while(bitIdx >= 8) {
       bitIdx -= 8;
-      byteIdx--;
-      assert(byteIdx >= 0);
+      byteIdx++;
     }
 
-    for(int32 i = 3; i >= 0; i--) {
+    for(int32 i = 0; i < 4; i++) {
       uint8 &channel = m_Component[i];
       uint32 depth = m_BitDepth[i];
 
@@ -94,17 +90,18 @@ namespace PVRTCC {
       if(0 == depth) {
         channel = 0xFF;
       } else if(depth + bitIdx < 8) {
-        channel = (bits[byteIdx] >> bitIdx) & ((1 << depth) - 1);
         bitIdx += depth;
+        channel = (bits[byteIdx] >> (8 - bitIdx)) & ((1 << depth) - 1);
       } else {
         const uint32 numLowBits = 8 - bitIdx;
         uint32 bitsLeft = depth - numLowBits;
-        channel |= (bits[byteIdx] >> bitIdx) & ((1 << numLowBits) - 1);
-        byteIdx--;
-        assert(byteIdx >= 0 || (i == 0 && bitsLeft == 0));
+        channel |= bits[byteIdx] & ((1 << numLowBits) - 1);
+        byteIdx++;
 
-        uint8 highBits = bits[byteIdx] & ((1 << bitsLeft) - 1);
-        channel |= highBits << numLowBits;
+        const uint8 highBitsMask = ((1 << bitsLeft) - 1);
+        const uint8 highBits = (bits[byteIdx] >> (8 - bitsLeft)) & highBitsMask;
+        channel <<= bitsLeft;
+        channel |= highBits;
         bitIdx = bitsLeft;
       }
     }

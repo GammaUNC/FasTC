@@ -73,7 +73,7 @@ namespace PVRTCC {
     const uint8 opaqueBitDepths[4] = { 0, 5, 5, 5 };
     const uint8 transBitDepths[4] = { 3, 4, 4, 4 };
 
-    m_ColorA = Pixel(m_ByteData, isOpaque? opaqueBitDepths : transBitDepths);
+    m_ColorA = Pixel(m_ByteData, isOpaque? opaqueBitDepths : transBitDepths, 1);
     m_ColorACached = true;
     return m_ColorA;
   }
