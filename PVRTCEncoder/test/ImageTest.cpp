@@ -151,6 +151,13 @@ TEST(Image, BilinearUpscale) {
 
 TEST(Image, BilinearUpscaleWrapped) {
   PVRTCC::Pixel pxs[16];
+
+  // Make sure that our bit depth is less than full...
+  for(int i = 0; i < 16; i++) {
+    const uint8 newBitDepth[4] = { 6, 5, 6, 5 };
+    pxs[i].ChangeBitDepth(newBitDepth);
+  }
+
   for(int i = 0; i < 4; i++) {
     for(int j = 0; j < 4; j++) {
       pxs[j*4 + i].R() = i*4;
@@ -166,6 +173,16 @@ TEST(Image, BilinearUpscaleWrapped) {
   for(uint32 i = 0; i < img.GetWidth(); i++) {
     for(uint32 j = 0; j < img.GetHeight(); j++) {
       const PVRTCC::Pixel &p = img(i, j);
+
+      // First make sure that the bit depth didn't change
+      uint8 depth[4];
+      p.GetBitDepth(depth);
+      EXPECT_EQ(depth[0], 6);
+      EXPECT_EQ(depth[1], 5);
+      EXPECT_EQ(depth[2], 6);
+      EXPECT_EQ(depth[3], 5);
+
+      // Now make sure that the values are correct.
       if(i == 0) {
         EXPECT_EQ(p.R(), 6);
       } else if(i == 1) {

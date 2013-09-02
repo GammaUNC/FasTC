@@ -96,6 +96,17 @@ Image::~Image() {
   delete [] m_Pixels;
 }
 
+#ifndef NDEBUG
+static bool CompareBitDepths(const uint8 (&depth1)[4],
+                             const uint8 (&depth2)[4]) {
+  bool ok = true;
+  for(uint32 i = 0; i < 4; i++) {
+    ok = ok && depth1[i] == depth2[i];
+  }
+  return ok;
+}
+#endif
+
 void Image::BilinearUpscale(uint32 times, EWrapMode wrapMode) {
   const uint32 newWidth = m_Width << times;
   const uint32 newHeight = m_Height << times;
@@ -124,6 +135,23 @@ void Image::BilinearUpscale(uint32 times, EWrapMode wrapMode) {
       const Pixel &topRight = GetPixel(highXIdx, lowYIdx, wrapMode);
       const Pixel &bottomLeft = GetPixel(lowXIdx, highYIdx, wrapMode);
       const Pixel &bottomRight = GetPixel(highXIdx, highYIdx, wrapMode);
+
+      // Make sure the bit depth matches the original...
+      uint8 bitDepth[4];
+      topLeft.GetBitDepth(bitDepth);
+      p.ChangeBitDepth(bitDepth);
+#ifndef NDEBUG
+      uint8 debugDepth[4];
+
+      topRight.GetBitDepth(debugDepth);
+      assert(CompareBitDepths(bitDepth, debugDepth));
+
+      bottomLeft.GetBitDepth(debugDepth);
+      assert(CompareBitDepths(bitDepth, debugDepth));
+
+      bottomRight.GetBitDepth(debugDepth);
+      assert(CompareBitDepths(bitDepth, debugDepth));
+#endif //NDEBUG
 
       // bilerp each channel....
       for(uint32 c = 0; c < 4; c++) {
