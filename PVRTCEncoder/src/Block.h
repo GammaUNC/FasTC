@@ -67,7 +67,7 @@ class Block {
   Pixel GetColorB();
 
   bool GetModeBit() const {
-    return static_cast<bool>(m_ByteData[3] & 0x1);
+    return static_cast<bool>((m_LongData >> 32) & 0x1);
   }
 
   // Returns the modulation value for the texel in the 4x4 block. The texels are
@@ -79,7 +79,10 @@ class Block {
   uint8 GetLerpValue(uint32 texelIdx) const;
 
  private:
-  uint8 m_ByteData[8];
+  union {
+    uint8 m_ByteData[8];
+    uint64 m_LongData;
+  };
 
   bool m_ColorACached;
   Pixel m_ColorA;

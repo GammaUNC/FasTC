@@ -60,7 +60,7 @@ TEST(Block, ConstructorFromBytes) {
 }
 
 TEST(Block, CopyConstructor) {
-  const uint8 data[8] = { 0, 0, 0, 0, 0xAA, 0xAA, 0xAA, 0xAA };
+  const uint8 data[8] = { 0xAA, 0xAA, 0xAA, 0xAA, 0, 0, 0, 0 };
   PVRTCC::Block b (data);
   PVRTCC::Block b2 (b);
   for(int i = 0; i < 16; i++) {
@@ -71,7 +71,7 @@ TEST(Block, CopyConstructor) {
 TEST(Block, GetColorA) {
 
   // Test a 555 opaque block
-  uint8 data[8] = { 0x96, 0x8A, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
+  uint8 data[8] = { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x8A, 0x96 };
   PVRTCC::Block b(data);
   PVRTCC::Pixel p = b.GetColorA();
   EXPECT_EQ(p.A(), 255);
@@ -90,7 +90,7 @@ TEST(Block, GetColorA) {
   }
 
   // Test a 3444 transparent block
-  data[0] = 0x16;
+  data[7] = 0x16;
   b = PVRTCC::Block(data);
   p = b.GetColorA();
   EXPECT_EQ(p.A(), 1);
@@ -111,7 +111,7 @@ TEST(Block, GetColorA) {
 TEST(Block, GetColorB) {
 
   // Test a 554 opaque block
-  uint8 data[8] = { 0x0, 0x0, 0x96, 0x8A, 0x0, 0x0, 0x0, 0x0 };
+  uint8 data[8] = { 0x0, 0x0, 0x0, 0x0, 0x8A, 0x96, 0x0, 0x0 };
   PVRTCC::Block b(data);
   PVRTCC::Pixel p = b.GetColorB();
   EXPECT_EQ(p.A(), 255);
@@ -132,7 +132,7 @@ TEST(Block, GetColorB) {
   }
 
   // Test a 3443 transparent block
-  data[2] = 0x16;
+  data[5] = 0x16;
   b = PVRTCC::Block(data);
   p = b.GetColorB();
   EXPECT_EQ(p.A(), 1);
@@ -151,7 +151,7 @@ TEST(Block, GetColorB) {
 }
 
 TEST(Block, GetModeBit) {
-  const uint8 modeData[8] = { 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0 };
+  const uint8 modeData[8] = { 0x0, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0 };
   const uint8 noModeData[8] = { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
 
   PVRTCC::Block b (modeData);
@@ -162,7 +162,7 @@ TEST(Block, GetModeBit) {
 }
 
 TEST(Block, GetLerpValue) {
-  const uint8 data[8] = { 0x0, 0x0, 0x0, 0x0, 0x1B, 0xE4, 0x27, 0xD8 };
+  const uint8 data[8] = { 0xD8, 0x27, 0xE4, 0x1B, 0x0, 0x0, 0x0, 0x0 };
   PVRTCC::Block b(data);
 
   EXPECT_EQ(b.GetLerpValue(0), 0);

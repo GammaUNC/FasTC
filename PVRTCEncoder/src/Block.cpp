@@ -61,7 +61,7 @@ namespace PVRTCC {
     : m_ColorACached(false)
     , m_ColorBCached(false) {
     assert(data);
-    memcpy(m_ByteData, data, sizeof(m_ByteData));
+    m_LongData = *(reinterpret_cast<const uint64 *>(data));
   }
 
   Pixel Block::GetColorA() {
@@ -69,11 +69,16 @@ namespace PVRTCC {
       return m_ColorA;
     }
 
-    bool isOpaque = static_cast<bool>(m_ByteData[0] & 0x80);
+    bool isOpaque = static_cast<bool>((m_LongData >> 63) & 0x1);
     const uint8 opaqueBitDepths[4] = { 0, 5, 5, 5 };
     const uint8 transBitDepths[4] = { 3, 4, 4, 4 };
+    const uint8 *bitDepths = isOpaque? opaqueBitDepths : transBitDepths;
 
-    m_ColorA = Pixel(m_ByteData, isOpaque? opaqueBitDepths : transBitDepths, 1);
+    uint8 pixelBytes[2];
+    pixelBytes[0] = (m_LongData >> 56) & 0xFF;
+    pixelBytes[1] = (m_LongData >> 48) & 0xFF;
+
+    m_ColorA = Pixel(pixelBytes, bitDepths, 1);
     m_ColorACached = true;
     return m_ColorA;
   }
@@ -83,12 +88,16 @@ namespace PVRTCC {
       return m_ColorB;
     }
 
-    bool isOpaque = static_cast<bool>(m_ByteData[2] & 0x80);
+    bool isOpaque = static_cast<bool>((m_LongData >> 47) & 0x1);
     const uint8 opaqueBitDepths[4] = { 0, 5, 5, 4 };
     const uint8 transBitDepths[4] = { 3, 4, 4, 3 };
     const uint8 *bitDepths = isOpaque? opaqueBitDepths : transBitDepths;
 
-    m_ColorB = Pixel(m_ByteData + 2, bitDepths, 1);
+    uint8 pixelBytes[2];
+    pixelBytes[0] = (m_LongData >> 40) & 0xFF;
+    pixelBytes[1] = (m_LongData >> 32) & 0xFF;
+
+    m_ColorB = Pixel(pixelBytes, bitDepths, 1);
     m_ColorBCached = true;
     return m_ColorB;
   }
@@ -97,9 +106,7 @@ namespace PVRTCC {
     assert(texelIdx >= 0);
     assert(texelIdx <= 15);
 
-    const uint8 texel = 15 - texelIdx;
-    const uint8 *texelData = m_ByteData + 4;
-    return (texelData[texel / 4] >> (2 * (3 - (texel % 4)))) & 0x3;
+    return (m_LongData >> (texelIdx * 2)) & 0x3;
   }
 
 }  // namespace PVRTCC
