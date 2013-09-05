@@ -190,7 +190,7 @@ namespace PVRTCC {
             int16 va = static_cast<int16>(pa.Component(c));
             int16 vb = static_cast<int16>(pb.Component(c));
 
-            result.Component(c) = va + ((vb - va) * lerpVal) / 8;
+            result.Component(c) = (va * (8 - lerpVal) + vb * lerpVal) / 8;
           }
         }
 
