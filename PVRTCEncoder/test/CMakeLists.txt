@@ -69,3 +69,33 @@ FOREACH(TEST ${TESTS})
   ADD_TEST(${TEST_NAME} ${TEST_NAME})
 ENDFOREACH()
 
+# Test the decompressor against the included PVR Texture library....
+IF(PVRTEXLIB_FOUND)
+
+  SET(TEST_NAME TestDecompVersusPVRLib)
+
+  # Copy the .pvr files that we will use for testing...
+  SET(TEST_IMAGES
+    gradient white gray
+  )
+  FOREACH(IMAGE ${TEST_IMAGES})
+    FILE(COPY
+      ${FasTC_SOURCE_DIR}/PVRTCEncoder/test/data/${IMAGE}.pvr
+      DESTINATION ${CMAKE_BINARY_DIR}
+      USE_SOURCE_PERMISSIONS
+    )
+  ENDFOREACH()
+
+  # Make sure to include the PVR library headers...
+  INCLUDE_DIRECTORIES( ${PVRTEXLIB_INCLUDE_DIRS} )
+
+  # The cpp file to compile for the test
+  ADD_EXECUTABLE(${TEST_NAME} DecompTestPVR.cpp)
+
+  # Libraries that we need...
+  TARGET_LINK_LIBRARIES(${TEST_NAME} PVRTCEncoder)
+  TARGET_LINK_LIBRARIES(${TEST_NAME} gtest_main)
+  TARGET_LINK_LIBRARIES(${TEST_NAME} ${PVRTEXLIB_LIBRARIES} )
+
+  ADD_TEST(${TEST_NAME} ${TEST_NAME})
+ENDIF(PVRTEXLIB_FOUND)
