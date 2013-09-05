@@ -99,7 +99,7 @@ TEST(Decompressor, DecompressGray) {
   for(int i = 0; i < kWidth; i++) {
     for(int j = 0; j < kHeight; j++) {
       const uint32 *pixelData = reinterpret_cast<const uint32 *>(outData);
-      EXPECT_EQ(PixelPrinter(pixelData[j*kWidth + i]), PixelPrinter(0xFF808081));
+      EXPECT_EQ(PixelPrinter(pixelData[j*kWidth + i]), PixelPrinter(0xFF818080));
     }
   }
 }
