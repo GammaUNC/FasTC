@@ -108,6 +108,8 @@ namespace PVRTCC {
       }
     }
 
+    assert(blocks.size() > 0);
+
     // Extract the endpoints into A and B images
     Image imgA(blocksH, blocksW);
     Image imgB(blocksH, blocksW);
@@ -181,7 +183,7 @@ namespace PVRTCC {
           }
 
         } else {
-          const uint8 lerpVals[4] = { 0, 3, 5, 8 };
+          const uint8 lerpVals[4] = { 8, 5, 3, 0 };
           const uint8 lerpVal = lerpVals[b.GetLerpValue(texelIndex)];
 
           for(uint32 c = 0; c < 4; c++) {
