@@ -61,6 +61,29 @@
 
 namespace PVRTCC {
 
+  static uint32 Interleave(uint16 inx, uint16 iny) {
+    // Taken from:
+    // http://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN
+
+    static const uint32 B[] = {0x55555555, 0x33333333, 0x0F0F0F0F, 0x00FF00FF};
+    static const uint32 S[] = {1, 2, 4, 8};
+
+    uint32 x = static_cast<uint32>(inx);
+    uint32 y = static_cast<uint32>(iny);
+
+    x = (x | (x << S[3])) & B[3];
+    x = (x | (x << S[2])) & B[2];
+    x = (x | (x << S[1])) & B[1];
+    x = (x | (x << S[0])) & B[0];
+
+    y = (y | (y << S[3])) & B[3];
+    y = (y | (y << S[2])) & B[2];
+    y = (y | (y << S[1])) & B[1];
+    y = (y | (y << S[0])) & B[0];
+
+    return x | (y << 1);
+  }
+
   void Decompress(const DecompressionJob &dcj, const EWrapMode wrapMode) {
     const uint32 w = dcj.width;
     const uint32 h = dcj.height;
@@ -91,7 +114,15 @@ namespace PVRTCC {
 
     for(uint32 j = 0; j < blocksH; j++) {
       for(uint32 i = 0; i < blocksW; i++) {
-        Block &b = blocks[j * blocksW + i];
+
+        // The blocks are initially arranged in morton order. Let's
+        // linearize them... (yes I know there are faster algorithms
+        // to do this out there)
+        uint32 idx = Interleave(i, j);
+        // uint32 idx = j * blocksW + i;
+        assert(idx < static_cast<uint32>(blocks.size()));
+
+        Block &b = blocks[idx];
         imgA(i, j) = b.GetColorA();
         imgB(i, j) = b.GetColorB();
       }
