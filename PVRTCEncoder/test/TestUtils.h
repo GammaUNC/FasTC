@@ -50,56 +50,34 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "gtest/gtest.h"
+#ifndef PVRTCENCODER_TEST_TESTUTILS_H_
+#define PVRTCENCODER_TEST_TESTUTILS_H_
 
-#include "TestUtils.h"
+#include "Core/include/TexCompTypes.h"
+#include <iostream>
 
-#include "PVRTCCompressor.h"
-
-TEST(Decompressor, DecompressWhite) {
-  const uint32 kWidth = 32;
-  const uint32 kHeight = 32;
-
-  uint8 pvrData[512];
-
-  for(int i = 0; i < 512; i += 8) {
-    uint8 whiteBlock[8] = { 0xAA, 0xAA, 0xAA, 0xAA, 0xFE, 0xFF, 0xFF, 0xFF };
-    memcpy(pvrData + i, whiteBlock, 8);
+class PixelPrinter {
+ private:
+  uint32 m_PixelValue;
+ public:
+  PixelPrinter(uint32 p) : m_PixelValue(p) { }
+  bool operator==(const PixelPrinter &other) const {
+    return other.m_PixelValue == this->m_PixelValue;
   }
+  uint32 Value() const { return m_PixelValue; }
+};
 
-  uint8 outData[4 * kWidth * kHeight];
-
-  DecompressionJob dcj (pvrData, outData, kWidth, kHeight);
-  PVRTCC::Decompress(dcj);
-
-  for(int i = 0; i < kWidth; i++) {
-    for(int j = 0; j < kHeight; j++) {
-      const uint32 *pixelData = reinterpret_cast<const uint32 *>(outData);
-      EXPECT_EQ(PixelPrinter(pixelData[j*kWidth + i]), PixelPrinter(0xFFFFFFFF));
-    }
-  }
+inline ::std::ostream& operator<<(::std::ostream& os, const PixelPrinter& pp) {
+  uint32 p = pp.Value();
+  uint32 r = p & 0xFF;
+  uint32 g = (p >> 8) & 0xFF;
+  uint32 b = (p >> 16) & 0xFF;
+  uint32 a = (p >> 24) & 0xFF;
+  return os <<
+    "R: 0x" << ::std::hex << r << " " <<
+    "G: 0x" << ::std::hex << g << " " <<
+    "B: 0x" << ::std::hex << b << " " <<
+    "A: 0x" << ::std::hex << a;
 }
 
-TEST(Decompressor, DecompressGray) {
-  const uint32 kWidth = 32;
-  const uint32 kHeight = 32;
-
-  uint8 pvrData[512];
-
-  for(int i = 0; i < 512; i += 8) {
-    uint8 grayBlock[8] = { 0xAA, 0xAA, 0xAA, 0xAA, 0xF0, 0xBD, 0x0F, 0xC2 };
-    memcpy(pvrData + i, grayBlock, 8);
-  }
-
-  uint8 outData[4 * kWidth * kHeight];
-
-  DecompressionJob dcj (pvrData, outData, kWidth, kHeight);
-  PVRTCC::Decompress(dcj);
-
-  for(int i = 0; i < kWidth; i++) {
-    for(int j = 0; j < kHeight; j++) {
-      const uint32 *pixelData = reinterpret_cast<const uint32 *>(outData);
-      EXPECT_EQ(PixelPrinter(pixelData[j*kWidth + i]), PixelPrinter(0xFF808081));
-    }
-  }
-}
+#endif  // PVRTCENCODER_TEST_TESTUTILS_H_
