@@ -54,6 +54,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <cstdio>
 
 #include "Pixel.h"
 
@@ -65,7 +66,8 @@ namespace PVRTCC {
 Image::Image(uint32 height, uint32 width)
   : m_Width(width)
   , m_Height(height)
-  , m_Pixels(new Pixel[width * height]) {
+  , m_Pixels(new Pixel[width * height])
+  , m_FractionalPixels(new Pixel[width * height]) {
   assert(width > 0);
   assert(height > 0);
 }
@@ -73,7 +75,8 @@ Image::Image(uint32 height, uint32 width)
 Image::Image(uint32 height, uint32 width, const Pixel *pixels)
   : m_Width(width)
   , m_Height(height)
-  , m_Pixels(new Pixel[width * height]) {
+  , m_Pixels(new Pixel[width * height])
+  , m_FractionalPixels(new Pixel[width * height]) {
   assert(width > 0);
   assert(height > 0);
   memcpy(m_Pixels, pixels, width * height * sizeof(Pixel));
@@ -82,21 +85,35 @@ Image::Image(uint32 height, uint32 width, const Pixel *pixels)
 Image::Image(const Image &other)
   : m_Width(other.m_Width)
   , m_Height(other.m_Height)
-  , m_Pixels(new Pixel[other.m_Width * other.m_Height]) {
+  , m_Pixels(new Pixel[other.m_Width * other.m_Height])
+  , m_FractionalPixels(new Pixel[other.m_Width * other.m_Height]) {
   memcpy(m_Pixels, other.m_Pixels, m_Width * m_Height * sizeof(Pixel));
 }
 
 Image &Image::operator=(const Image &other) {
   m_Width = other.m_Width;
   m_Height = other.m_Height;
+
+  assert(m_Pixels);
+  delete m_Pixels;
   m_Pixels = new Pixel[other.m_Width * other.m_Height];
   memcpy(m_Pixels, other.m_Pixels, m_Width * m_Height * sizeof(Pixel));
+
+  assert(m_FractionalPixels);
+  delete m_FractionalPixels;
+  m_FractionalPixels = new Pixel[other.m_Width * other.m_Height];
+  memcpy(m_FractionalPixels, other.m_FractionalPixels,
+         m_Width * m_Height * sizeof(Pixel));
+
   return *this;
 }
 
 Image::~Image() {
   assert(m_Pixels);
   delete [] m_Pixels;
+
+  assert(m_FractionalPixels);
+  delete [] m_FractionalPixels;
 }
 
 #ifndef NDEBUG
@@ -119,20 +136,31 @@ void Image::BilinearUpscale(uint32 times, EWrapMode wrapMode) {
 
   Pixel *upscaledPixels = new Pixel[newWidth * newHeight];
 
+  assert(m_FractionalPixels);
+  delete m_FractionalPixels;
+  m_FractionalPixels = new Pixel[newWidth * newHeight];
+
   for(uint32 j = 0; j < newHeight; j++) {
     for(uint32 i = 0; i < newWidth; i++) {
 
-      Pixel &p = upscaledPixels[j * newWidth + i];
+      const uint32 pidx = j * newWidth + i;
+      Pixel &p = upscaledPixels[pidx];
+      Pixel &fp = m_FractionalPixels[pidx];
 
-      int32 highXIdx = (i + offset) / scale;
-      int32 lowXIdx = highXIdx - 1;
-      int32 highYIdx = (j + offset) / scale;
-      int32 lowYIdx = highYIdx - 1;
+      const int32 highXIdx = (i + offset) / scale;
+      const int32 lowXIdx = highXIdx - 1;
+      const int32 highYIdx = (j + offset) / scale;
+      const int32 lowYIdx = highYIdx - 1;
 
-      uint32 highXWeight = (i + offset) % scale;
-      uint32 lowXWeight = scale - highXWeight;
-      uint32 highYWeight = (j + offset) % scale;
-      uint32 lowYWeight = scale - highYWeight;
+      const uint32 highXWeight = (i + offset) % scale;
+      const uint32 lowXWeight = scale - highXWeight;
+      const uint32 highYWeight = (j + offset) % scale;
+      const uint32 lowYWeight = scale - highYWeight;
+
+      const uint32 topLeftWeight = lowXWeight * lowYWeight;
+      const uint32 topRightWeight = highXWeight * lowYWeight;
+      const uint32 bottomLeftWeight = lowXWeight * highYWeight;
+      const uint32 bottomRightWeight = highXWeight * highYWeight;
 
       const Pixel &topLeft = GetPixel(lowXIdx, lowYIdx, wrapMode);
       const Pixel &topRight = GetPixel(highXIdx, lowYIdx, wrapMode);
@@ -143,6 +171,7 @@ void Image::BilinearUpscale(uint32 times, EWrapMode wrapMode) {
       uint8 bitDepth[4];
       topLeft.GetBitDepth(bitDepth);
       p.ChangeBitDepth(bitDepth);
+
 #ifndef NDEBUG
       uint8 debugDepth[4];
 
@@ -157,17 +186,19 @@ void Image::BilinearUpscale(uint32 times, EWrapMode wrapMode) {
 #endif //NDEBUG
 
       // bilerp each channel....
-      for(uint32 c = 0; c < 4; c++) {
-        const uint16 left =
-          (lowYWeight * static_cast<uint16>(topLeft.Component(c)) +
-           highYWeight * static_cast<uint16>(bottomLeft.Component(c)))
-          / scale;
-        const uint16 right =
-          (lowYWeight * static_cast<uint16>(topRight.Component(c)) +
-           highYWeight * static_cast<uint16>(bottomRight.Component(c)))
-          / scale;
+      const uint16 scaleMask = (scale * scale) - 1;
+      uint8 fpDepths[4];
+      for(uint32 c = 0; c < 4; c++) fpDepths[c] = times * times;
+      fp.ChangeBitDepth(fpDepths);
 
-        p.Component(c) = (left * lowXWeight + right * highXWeight) / scale;
+      for(uint32 c = 0; c < 4; c++) {
+        const uint32 tl = topLeft.Component(c) * topLeftWeight;
+        const uint32 tr = topRight.Component(c) * topRightWeight;
+        const uint32 bl = bottomLeft.Component(c) * bottomLeftWeight;
+        const uint32 br = bottomRight.Component(c) * bottomRightWeight;
+        const uint32 sum = tl + tr + bl + br;
+        fp.Component(c) = sum & scaleMask;
+        p.Component(c) = sum / (scale * scale);
       }
     }
   }
@@ -181,7 +212,41 @@ void Image::BilinearUpscale(uint32 times, EWrapMode wrapMode) {
 void Image::ChangeBitDepth(const uint8 (&depths)[4]) {
   for(uint32 j = 0; j < m_Height; j++) {
     for(uint32 i = 0; i < m_Width; i++) {
-      m_Pixels[j * m_Width + i].ChangeBitDepth(depths);
+      uint32 pidx = j * m_Width + i;
+      m_Pixels[pidx].ChangeBitDepth(depths);
+    }
+  }
+}
+
+void Image::ExpandTo8888() {
+  uint8 currentDepth[4];
+  m_Pixels[0].GetBitDepth(currentDepth);
+
+  uint8 fractionDepth[4];
+  const uint8 fullDepth[4] = { 8, 8, 8, 8 };
+
+  for(uint32 j = 0; j < m_Height; j++) {
+    for(uint32 i = 0; i < m_Width; i++) {
+
+      uint32 pidx = j * m_Width + i;
+      m_Pixels[pidx].ChangeBitDepth(fullDepth);
+      m_FractionalPixels[pidx].GetBitDepth(fractionDepth);
+
+      for(uint32 c = 0; c < 4; c++) {
+        uint32 denominator = (1 << currentDepth[c]);
+        uint32 numerator = denominator + 1;
+
+        uint32 shift = fractionDepth[c] - (fullDepth[c] - currentDepth[c]);
+        uint32 fractionBits = m_FractionalPixels[pidx].Component(c) >> shift;
+        assert(fractionBits < 8);
+
+        uint32 component = m_Pixels[pidx].Component(c);
+        component += ((fractionBits * numerator) / denominator);
+        if(component > 255)
+          component = 255;
+
+        m_Pixels[pidx].Component(c) = component;
+      }
     }
   }
 }

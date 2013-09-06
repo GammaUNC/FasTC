@@ -70,6 +70,7 @@ class Image {
 
   void BilinearUpscale(uint32 times, EWrapMode wrapMode = eWrapMode_Clamp);
   void ChangeBitDepth(const uint8 (&depths)[4]);
+  void ExpandTo8888();
 
   Pixel &operator()(uint32 i, uint32 j);
   const Pixel &operator()(uint32 i, uint32 j) const;
@@ -83,6 +84,7 @@ class Image {
   uint32 m_Width;
   uint32 m_Height;
   Pixel *m_Pixels;
+  Pixel *m_FractionalPixels;
 
   const Pixel &GetPixel(int32 i, int32 j, EWrapMode wrapMode = eWrapMode_Clamp);
 };
