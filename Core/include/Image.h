@@ -56,6 +56,7 @@ class Image {
  public:
   Image(const CompressedImage &);
   Image(const ImageLoader &);
+  Image(uint32 width, uint32 height, const uint32 *pixels);
   ~Image();
   
   Image(const Image &);
@@ -69,9 +70,14 @@ class Image {
   uint32 GetWidth() const { return m_Width; }
   uint32 GetHeight() const { return m_Height; }
 
+  void SetBlockStreamOrder(bool flag) { m_bBlockStreamOrder = flag; }
+  bool GetBlockStreamOrder() const { return m_bBlockStreamOrder; }
+
  private:
   uint32 m_Width;
   uint32 m_Height;
+
+  bool m_bBlockStreamOrder;
 
   uint8 *m_PixelData;
 };

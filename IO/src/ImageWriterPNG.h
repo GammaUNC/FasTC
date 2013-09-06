@@ -55,6 +55,7 @@ class ImageWriterPNG : public ImageWriter {
 
   virtual bool WriteImage();
  private:
+  bool m_bBlockStreamOrder;
   uint32 m_StreamPosition;
   friend class PNGStreamWriter;
 };

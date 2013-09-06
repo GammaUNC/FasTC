@@ -56,9 +56,10 @@ static inline T sad( const T &a, const T &b ) {
 }
 
 Image::Image(const Image &other)
-: m_Width(other.m_Width)
-, m_Height(other.m_Height)
-, m_PixelData(new uint8[m_Width * m_Height * 4])
+  : m_Width(other.m_Width)
+  , m_Height(other.m_Height)
+  , m_PixelData(new uint8[m_Width * m_Height * 4])
+  , m_bBlockStreamOrder(other.GetBlockStreamOrder())
 {
   if(m_PixelData) {
     memcpy(m_PixelData, other.m_PixelData, m_Width * m_Height * 4);
@@ -68,10 +69,22 @@ Image::Image(const Image &other)
   }
 }
 
+Image::Image(uint32 width, uint32 height, const uint32 *pixels) 
+  : m_Width(width)
+  , m_Height(height)
+  , m_PixelData(new uint8[4 * m_Width * m_Height])
+  , m_bBlockStreamOrder(false)
+{
+  if(m_PixelData && pixels)
+    memcpy(m_PixelData, pixels, m_Width * m_Height * sizeof(uint32));
+}
+
+
 Image &Image::operator=(const Image &other) {
   
   m_Width = other.m_Width;
   m_Height = other.m_Height;
+  m_bBlockStreamOrder = other.GetBlockStreamOrder();
   
   if(m_PixelData) {
     delete [] m_PixelData;
@@ -94,6 +107,7 @@ Image &Image::operator=(const Image &other) {
 Image::Image(const CompressedImage &ci)
   : m_Width(ci.GetWidth())
   , m_Height(ci.GetHeight())
+  , m_bBlockStreamOrder(true)
 {
   unsigned int bufSz = ci.GetWidth() * ci.GetHeight() * 4;
   m_PixelData = new uint8[ bufSz ];
@@ -109,6 +123,7 @@ Image::Image(const ImageLoader &loader)
   : m_Width(loader.GetWidth())
   , m_Height(loader.GetHeight())
   , m_PixelData(0)
+  , m_bBlockStreamOrder(true)
 {
   if(loader.GetImageData()) {
     m_PixelData = new uint8[ loader.GetImageDataSz() ];

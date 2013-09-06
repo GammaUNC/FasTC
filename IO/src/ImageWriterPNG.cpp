@@ -86,6 +86,7 @@ public:
 
 ImageWriterPNG::ImageWriterPNG(const Image &im)
   : ImageWriter(im.GetWidth(), im.GetHeight(), im.RawData())
+  , m_bBlockStreamOrder(im.GetBlockStreamOrder())
   , m_StreamPosition(0)
 {
 }
@@ -130,8 +131,13 @@ bool ImageWriterPNG::WriteImage() {
     row_pointers[y] = row;
 
     for (uint32 x = 0; x < m_Width; ++x) {
-      for(uint32 ch = 0; ch < 4; ch++) {
-        *row++ = GetChannelForPixel(x, y, ch);
+      if(m_bBlockStreamOrder) {
+        for(uint32 ch = 0; ch < 4; ch++) {
+          *row++ = GetChannelForPixel(x, y, ch);
+        }
+      } else {
+        *(reinterpret_cast<uint32 *>(row) + x) =
+          (reinterpret_cast<const uint32 *>(m_PixelData))[y * m_Width + x];
       }
     }
   }
