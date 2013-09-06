@@ -216,7 +216,7 @@ namespace PVRTCC {
         }
 
         uint32 *outPixels = reinterpret_cast<uint32 *>(dcj.outBuf);
-        outPixels[(j * h) + i] = result.PackRGBA();
+        outPixels[(j * w) + i] = result.PackRGBA();
       }
     }
     if(bDebugImages) {
