@@ -68,7 +68,9 @@ namespace PVRTCC {
   // Takes a stream of compressed PVRTC data and decompresses it into R8G8B8A8
   // format. The width and height must be specified in order to properly
   // decompress the data.
-  void Decompress(const DecompressionJob &, const EWrapMode wrapMode = eWrapMode_Clamp);
+  void Decompress(const DecompressionJob &,
+                  const EWrapMode wrapMode = eWrapMode_Clamp,
+                  bool bDebugImages = false);
 
 }  // namespace PVRTCC
 

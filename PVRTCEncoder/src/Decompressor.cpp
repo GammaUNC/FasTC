@@ -84,7 +84,9 @@ namespace PVRTCC {
     return x | (y << 1);
   }
 
-  void Decompress(const DecompressionJob &dcj, const EWrapMode wrapMode) {
+  void Decompress(const DecompressionJob &dcj,
+                  const EWrapMode wrapMode,
+                  bool bDebugImages) {
     const uint32 w = dcj.width;
     const uint32 h = dcj.height;
 
@@ -134,19 +136,27 @@ namespace PVRTCC {
     // bit depth.
     const uint8 scaleDepths[4] = { 4, 5, 5, 5 };
     imgA.ChangeBitDepth(scaleDepths);
+    if(bDebugImages)
+      imgA.DebugOutput("UnscaledImgA");
     imgB.ChangeBitDepth(scaleDepths);
+    if(bDebugImages)
+      imgB.DebugOutput("UnscaledImgB");
 
     // Bilinearly upscale the images.
     imgA.BilinearUpscale(2, wrapMode);
     imgB.BilinearUpscale(2, wrapMode);
 
     // Change the bitdepth to full resolution
-    const uint8 fullDepths[4] = { 8, 8, 8, 8 };
-    imgA.ChangeBitDepth(fullDepths);
-    imgB.ChangeBitDepth(fullDepths);
+    imgA.ExpandTo8888();
+    if(bDebugImages)
+      imgA.DebugOutput("ScaledImgA");
+    imgB.ExpandTo8888();
+    if(bDebugImages)
+      imgB.DebugOutput("ScaledImgB");
 
     // Pack the pixels based on their modulation into the resulting buffer
     // in RGBA format...
+    Image modulation(h, w);
     for(uint32 j = 0; j < h; j++) {
       for(uint32 i = 0; i < w; i++) {
         const uint32 blockIdx = (j/4) * blocksW + (i / 4);
@@ -157,10 +167,11 @@ namespace PVRTCC {
         const Pixel &pb = imgB(i, j);
 
         Pixel result;
+        bool punchThrough = false;
+        uint8 lerpVal = 0;
         if(b.GetModeBit()) {
-          const uint8 lerpVals[3] = { 0, 4, 8 };
+          const uint8 lerpVals[3] = { 8, 4, 0 };
           uint8 modVal = b.GetLerpValue(texelIndex);
-          bool punchThrough = false;
 
           if(modVal == 2) {
             modVal = 1;
@@ -169,34 +180,46 @@ namespace PVRTCC {
             modVal = 2;
           }
 
-          const uint8 lerpVal = lerpVals[modVal];
-
-          for(uint32 c = 0; c < 4; c++) {
-            int16 va = static_cast<int16>(pa.Component(c));
-            int16 vb = static_cast<int16>(pb.Component(c));
-
-            result.Component(c) = va + ((vb - va) * lerpVal) / 8;
-          }
-
-          if(punchThrough) {
-            result.A() = 0;
-          }
+          lerpVal = lerpVals[modVal];
 
         } else {
           const uint8 lerpVals[4] = { 8, 5, 3, 0 };
-          const uint8 lerpVal = lerpVals[b.GetLerpValue(texelIndex)];
+          lerpVal = lerpVals[b.GetLerpValue(texelIndex)];
+        }
 
-          for(uint32 c = 0; c < 4; c++) {
-            int16 va = static_cast<int16>(pa.Component(c));
-            int16 vb = static_cast<int16>(pb.Component(c));
+        for(uint32 c = 0; c < 4; c++) {
+          uint16 va = static_cast<uint16>(pa.Component(c));
+          uint16 vb = static_cast<uint16>(pb.Component(c));
 
-            result.Component(c) = (va * (8 - lerpVal) + vb * lerpVal) / 8;
+          uint16 res = (va * (8 - lerpVal) + vb * lerpVal) / 8;
+          result.Component(c) = static_cast<uint8>(res);
+        }
+
+        if(bDebugImages) {
+          Pixel iv;
+          const uint8 modDepth[4] = { 8, 3, 3, 3 };
+          iv.ChangeBitDepth(modDepth);
+          iv.A() = punchThrough? 0 : 0xFF;
+          for(int i = 1; i < 4; i++) {
+            if(lerpVal == 8) {
+              iv.Component(i) = 7;
+            } else {
+              iv.Component(i) = lerpVal;
+            }
           }
+          modulation(i, j) = iv;
+        }
+
+        if(punchThrough) {
+          result.A() = 0;
         }
 
         uint32 *outPixels = reinterpret_cast<uint32 *>(dcj.outBuf);
         outPixels[(j * h) + i] = result.PackRGBA();
       }
+    }
+    if(bDebugImages) {
+      modulation.DebugOutput("DebugModulation");
     }
   }
 
