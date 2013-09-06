@@ -53,6 +53,9 @@
 #include "gtest/gtest.h"
 #include "Image.h"
 #include "Pixel.h"
+#include "TestUtils.h"
+
+#include <cstdlib>
 
 TEST(Image, NonSpecificConstructor) {
   PVRTCC::Pixel p;
@@ -145,6 +148,38 @@ TEST(Image, BilinearUpscale) {
       } else {
         EXPECT_EQ(img(i, j).G(), j-1);
       }
+    }
+  }
+}
+
+
+TEST(Image, BilinearUpscaleMaintainsPixels) {
+
+  srand(0xabd1ca7e);
+
+  const uint32 w = 4;
+  const uint32 h = 4;
+
+  PVRTCC::Pixel pxs[16];
+  for(int i = 0; i < w; i++) {
+    for(int j = 0; j < h; j++) {
+      pxs[j*w + i].R() = rand() % 256;
+      pxs[j*w + i].G() = rand() % 256;
+      pxs[j*w + i].B() = rand() % 256;
+      pxs[j*w + i].A() = rand() % 256;
+    }
+  }
+
+  PVRTCC::Image img(w, h, pxs);
+  img.BilinearUpscale(2);
+  EXPECT_EQ(img.GetWidth(), w << 2);
+  EXPECT_EQ(img.GetHeight(), h << 2);
+
+  for(uint32 i = 2; i < img.GetWidth(); i+=4) {
+    for(uint32 j = 2; j < img.GetHeight(); j+=4) {
+      PVRTCC::Pixel p = img(i, j);
+      uint32 idx = ((j - 2) / 4) * w + ((i-2)/4);
+      EXPECT_EQ(PixelPrinter(p.PackRGBA()), PixelPrinter(pxs[idx].PackRGBA()));
     }
   }
 }
