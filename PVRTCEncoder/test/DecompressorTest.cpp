@@ -75,7 +75,8 @@ TEST(Decompressor, DecompressWhite) {
   for(int i = 0; i < kWidth; i++) {
     for(int j = 0; j < kHeight; j++) {
       const uint32 *pixelData = reinterpret_cast<const uint32 *>(outData);
-      EXPECT_EQ(PixelPrinter(pixelData[j*kWidth + i]), PixelPrinter(0xFFFFFFFF));
+      const uint32 p = pixelData[j*kWidth + i];
+      EXPECT_EQ(PixelPrinter(p), PixelPrinter(0xFFFFFFFF));
     }
   }
 }
@@ -99,7 +100,8 @@ TEST(Decompressor, DecompressGray) {
   for(int i = 0; i < kWidth; i++) {
     for(int j = 0; j < kHeight; j++) {
       const uint32 *pixelData = reinterpret_cast<const uint32 *>(outData);
-      EXPECT_EQ(PixelPrinter(pixelData[j*kWidth + i]), PixelPrinter(0xFF818080));
+      const uint32 p = pixelData[j*kWidth + i];
+      EXPECT_EQ(PixelPrinter(p), PixelPrinter(0xFF818080));
     }
   }
 }

@@ -68,13 +68,13 @@
 #endif  // OUTPUT_DEBUG_IMAGE
 
 class ImageTester {
-public:
-  ImageTester(const char *filename) {
+ public:
+  explicit ImageTester(const char *filename) {
     pvrtexture::CPVRTexture pvrTex(filename);
 
     const uint8 *data = static_cast<const uint8 *>(pvrTex.getDataPtr());
     ASSERT_TRUE(data);
-  
+
     const pvrtexture::CPVRTextureHeader &hdr = pvrTex.getHeader();
     const uint32 w = hdr.getWidth();
     const uint32 h = hdr.getHeight();
@@ -98,7 +98,7 @@ public:
 
 #ifdef OUTPUT_DEBUG_IMAGE
     char dbgfname[256];
-    sprintf(dbgfname, "Debug%s.png", filename);
+    snprintf(dbgfname, sizeof(dgbfname), "Debug%s.png", filename);
     ::ImageFile imgFile(dbgfname, eFileFormat_PNG, ::Image(w, h, outPixels));
     imgFile.Write();
 #endif  // OUTPUT_DEBUG_IMAGE

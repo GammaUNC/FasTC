@@ -183,7 +183,7 @@ void Image::BilinearUpscale(uint32 times, EWrapMode wrapMode) {
 
       bottomRight.GetBitDepth(debugDepth);
       assert(CompareBitDepths(bitDepth, debugDepth));
-#endif //NDEBUG
+#endif  // NDEBUG
 
       // bilerp each channel....
       const uint16 scaleMask = (scale * scale) - 1;
@@ -314,7 +314,7 @@ void Image::DebugOutput(const char *filename) const {
   ::Image img(m_Height, m_Width, outPixels);
 
   char debugFilename[256];
-  sprintf(debugFilename, "%s.png", filename);
+  snprintf(debugFilename, sizeof(debugFilename), "%s.png", filename);
 
   ::ImageFile imgFile(debugFilename, eFileFormat_PNG, img);
   imgFile.Write();

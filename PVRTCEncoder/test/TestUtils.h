@@ -54,13 +54,12 @@
 #define PVRTCENCODER_TEST_TESTUTILS_H_
 
 #include "Core/include/TexCompTypes.h"
-#include <iostream>
 
 class PixelPrinter {
  private:
   uint32 m_PixelValue;
  public:
-  PixelPrinter(uint32 p) : m_PixelValue(p) { }
+  explicit PixelPrinter(uint32 p) : m_PixelValue(p) { }
   bool operator==(const PixelPrinter &other) const {
     return other.m_PixelValue == this->m_PixelValue;
   }
