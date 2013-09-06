@@ -60,6 +60,13 @@
 
 #include "TestUtils.h"
 
+// #define OUTPUT_DEBUG_IMAGE
+
+#ifdef OUTPUT_DEBUG_IMAGE
+#  include "Core/include/Image.h"
+#  include "IO/include/ImageFile.h"
+#endif  // OUTPUT_DEBUG_IMAGE
+
 class ImageTester {
 public:
   ImageTester(const char *filename) {
@@ -89,6 +96,13 @@ public:
       EXPECT_EQ(PixelPrinter(libPixels[i]), PixelPrinter(outPixels[i]));
     }
 
+#ifdef OUTPUT_DEBUG_IMAGE
+    char dbgfname[256];
+    sprintf(dbgfname, "Debug%s.png", filename);
+    ::ImageFile imgFile(dbgfname, eFileFormat_PNG, ::Image(w, h, outPixels));
+    imgFile.Write();
+#endif  // OUTPUT_DEBUG_IMAGE
+
     delete outPixels;
   }
 };
@@ -104,3 +118,4 @@ TEST(Decompressor, DecompressWhite) {
 TEST(Decompressor, DecompressGray) {
   ImageTester("gray.pvr");
 }
+
