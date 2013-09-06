@@ -77,6 +77,8 @@ class Image {
   uint32 GetWidth() const { return m_Width; }
   uint32 GetHeight() const { return m_Height; }
 
+  void DebugOutput(const char *filename) const;
+
  private:
   uint32 m_Width;
   uint32 m_Height;

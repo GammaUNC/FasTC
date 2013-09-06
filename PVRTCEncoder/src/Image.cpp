@@ -57,6 +57,9 @@
 
 #include "Pixel.h"
 
+#include "Core/include/Image.h"
+#include "IO/include/ImageFile.h"
+
 namespace PVRTCC {
 
 Image::Image(uint32 height, uint32 width)
@@ -229,6 +232,27 @@ const Pixel & Image::operator()(uint32 i, uint32 j) const {
   assert(i < m_Width);
   assert(j < m_Height);
   return m_Pixels[j * m_Width + i];
+}
+
+void Image::DebugOutput(const char *filename) const {
+  uint32 *outPixels = new uint32[m_Width * m_Height];
+  const uint8 fullDepth[4] = { 8, 8, 8, 8 };
+  for(int j = 0; j < m_Height; j++) {
+    for(int i = 0; i < m_Width; i++) {
+      uint32 idx = j * m_Width + i;
+      Pixel p = m_Pixels[idx];
+      p.ChangeBitDepth(fullDepth);
+      outPixels[idx] = p.PackRGBA();
+    }
+  }
+
+  ::Image img(m_Height, m_Width, outPixels);
+
+  char debugFilename[256];
+  sprintf(debugFilename, "%s.png", filename);
+
+  ::ImageFile imgFile(debugFilename, eFileFormat_PNG, img);
+  imgFile.Write();
 }
 
 }  // namespace PVRTCC
