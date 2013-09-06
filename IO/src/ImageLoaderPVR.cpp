@@ -70,6 +70,7 @@ bool ImageLoaderPVR::ReadData() {
                             pvrtexture::PVRStandard8PixelType,
                             ePVRTVarTypeUnsignedByte,
                             ePVRTCSpacelRGB)) {
+    ReportError("Unable to convert PVRTexture... possibly failed to load file");
     return false;
   }
 
