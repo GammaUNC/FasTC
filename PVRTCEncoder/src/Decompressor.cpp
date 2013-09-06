@@ -105,7 +105,12 @@ namespace PVRTCC {
 
     for(uint32 j = 0; j < blocksH; j++) {
       for(uint32 i = 0; i < blocksW; i++) {
-        uint32 offset = (j * blocksW + i) * blockSz;
+
+        // The blocks are initially arranged in morton order. Let's
+        // linearize them...
+        uint32 idx = Interleave(j, i);
+
+        uint32 offset = idx * blockSz;
         blocks.push_back( Block(dcj.inBuf + offset) );
       }
     }
@@ -119,11 +124,7 @@ namespace PVRTCC {
     for(uint32 j = 0; j < blocksH; j++) {
       for(uint32 i = 0; i < blocksW; i++) {
 
-        // The blocks are initially arranged in morton order. Let's
-        // linearize them... (yes I know there are faster algorithms
-        // to do this out there)
-        uint32 idx = Interleave(i, j);
-        // uint32 idx = j * blocksW + i;
+        uint32 idx = j * blocksW + i;
         assert(idx < static_cast<uint32>(blocks.size()));
 
         Block &b = blocks[idx];
