@@ -238,12 +238,9 @@ void Image::ExpandTo8888() {
 
         uint32 shift = fractionDepth[c] - (fullDepth[c] - currentDepth[c]);
         uint32 fractionBits = m_FractionalPixels[pidx].Component(c) >> shift;
-        assert(fractionBits < 8);
 
         uint32 component = m_Pixels[pidx].Component(c);
         component += ((fractionBits * numerator) / denominator);
-        if(component > 255)
-          component = 255;
 
         m_Pixels[pidx].Component(c) = component;
       }
