@@ -119,3 +119,7 @@ TEST(Decompressor, DecompressGray) {
   ImageTester("gray.pvr");
 }
 
+TEST(Decompressor, DecompressTransparent) {
+  ImageTester("transparent.pvr");
+}
+
