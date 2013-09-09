@@ -174,11 +174,11 @@ namespace PVRTCC {
           const uint8 lerpVals[3] = { 8, 4, 0 };
           uint8 modVal = b.GetLerpValue(texelIndex);
 
-          if(modVal == 2) {
-            modVal = 1;
-            punchThrough = true;
-          } else if(modVal == 3) {
-            modVal = 2;
+          if(modVal >= 2) {
+            if(modVal == 2) {
+              punchThrough = true;
+            }
+            modVal -= 1;
           }
 
           lerpVal = lerpVals[modVal];
