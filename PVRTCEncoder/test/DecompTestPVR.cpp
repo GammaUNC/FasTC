@@ -123,3 +123,7 @@ TEST(Decompressor, DecompressTransparent) {
   ImageTester("transparent.pvr");
 }
 
+TEST(Decompressor, DecompressTransGradient) {
+  ImageTester("trans-gradient.pvr");
+}
+
