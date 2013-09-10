@@ -112,9 +112,11 @@ namespace PVRTCC {
     assert(newDepth <= 8);
     assert(oldDepth <= 8);
 
-    if(oldDepth == newDepth || oldDepth == 0) {
+    if(oldDepth == newDepth) {
       // Do nothing
       return val;
+    } else if(oldDepth == 0 && newDepth != 0) {
+      return (1 << newDepth) - 1;
     } else if(newDepth > oldDepth) {
       uint8 bitsLeft = newDepth;
       uint8 ret = 0;

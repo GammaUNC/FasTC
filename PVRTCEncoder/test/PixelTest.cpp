@@ -153,6 +153,19 @@ TEST(Pixel, ChangeChannelBitDepth) {
   EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 0), 0xFF);
 }
 
+TEST(Pixel, ChangeChannelBitDepthFromZero) {
+  uint8 val = 0x43;
+  uint8 depth = 0;
+
+  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 8), 0xFF);
+  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 7), 0x7F);
+  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 6), 0x3F);
+  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 2), 0x03);
+
+  // Shouldn't change it...
+  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 0), 0x43);
+}
+
 TEST(Pixel, ChangePixelBitDepth) {
   const uint8 bits[4] = { 0x86, 0xC0, 0x0, 0x0 };
   const uint8 depth[4] = {7, 3, 0, 0};
