@@ -143,6 +143,30 @@ namespace PVRTCC {
     if(bDebugImages)
       imgB.DebugOutput("UnscaledImgB");
 
+    // Go through and change the alpha value of any pixel that came from
+    // a transparent block. For some reason, alpha is not treated the same
+    // as the other channels (to minimize hardware costs?) and the channels
+    // do not their MSBs replicated.
+    for(uint32 j = 0; j < blocksH; j++) {
+      for(uint32 i = 0; i < blocksW; i++) {
+        const uint32 blockIdx = j * blocksW + i;
+        Block &b = blocks[blockIdx];
+
+        uint8 bitDepths[4];
+        b.GetColorA().GetBitDepth(bitDepths);
+        if(bitDepths[0] > 0) {
+          Pixel &p = imgA(i, j);
+          p.A() = p.A() & 0xFE;
+        }
+
+        b.GetColorB().GetBitDepth(bitDepths);
+        if(bitDepths[0] > 0) {
+          Pixel &p = imgB(i, j);
+          p.A() = p.A() & 0xFE;
+        }
+      }
+    }
+
     // Bilinearly upscale the images.
     imgA.BilinearUpscale(2, wrapMode);
     imgB.BilinearUpscale(2, wrapMode);
