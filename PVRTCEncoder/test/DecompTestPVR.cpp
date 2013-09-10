@@ -98,7 +98,7 @@ class ImageTester {
 
 #ifdef OUTPUT_DEBUG_IMAGE
     char dbgfname[256];
-    snprintf(dbgfname, sizeof(dgbfname), "Debug%s.png", filename);
+    snprintf(dbgfname, sizeof(dbgfname), "Debug%s.png", filename);
     ::ImageFile imgFile(dbgfname, eFileFormat_PNG, ::Image(w, h, outPixels));
     imgFile.Write();
 #endif  // OUTPUT_DEBUG_IMAGE
