@@ -69,7 +69,7 @@
 
 class ImageTester {
  public:
-  explicit ImageTester(const char *filename) {
+  explicit ImageTester(const char *filename, bool twobpp) {
     pvrtexture::CPVRTexture pvrTex(filename);
 
     const uint8 *data = static_cast<const uint8 *>(pvrTex.getDataPtr());
@@ -107,23 +107,42 @@ class ImageTester {
   }
 };
 
-TEST(Decompressor, DecompressGradient) {
-  ImageTester("gradient.pvr");
+TEST(Decompressor, DecompressWhite2BPP) {
+  ImageTester("2bpp-white.pvr", true);
 }
 
-TEST(Decompressor, DecompressWhite) {
-  ImageTester("white.pvr");
+TEST(Decompressor, DecompressGray2BPP) {
+  ImageTester("2bpp-gray.pvr", true);
 }
 
-TEST(Decompressor, DecompressGray) {
-  ImageTester("gray.pvr");
+TEST(Decompressor, DecompressGradient2BPP) {
+  ImageTester("2bpp-gradient.pvr", true);
 }
 
-TEST(Decompressor, DecompressTransparent) {
-  ImageTester("transparent.pvr");
+TEST(Decompressor, DecompressTransparent2BPP) {
+  ImageTester("2bpp-transparent.pvr", true);
 }
 
-TEST(Decompressor, DecompressTransGradient) {
-  ImageTester("trans-gradient.pvr");
+TEST(Decompressor, DecompressTransGradient2BPP) {
+  ImageTester("2bpp-trans-gradient.pvr", true);
 }
 
+TEST(Decompressor, DecompressWhite4BPP) {
+  ImageTester("4bpp-white.pvr", false);
+}
+
+TEST(Decompressor, DecompressGray4BPP) {
+  ImageTester("4bpp-gray.pvr", false);
+}
+
+TEST(Decompressor, DecompressGradient4BPP) {
+  ImageTester("4bpp-gradient.pvr", false);
+}
+
+TEST(Decompressor, DecompressTransparent4BPP) {
+  ImageTester("4bpp-transparent.pvr", false);
+}
+
+TEST(Decompressor, DecompressTransGradient4BPP) {
+  ImageTester("4bpp-trans-gradient.pvr", false);
+}

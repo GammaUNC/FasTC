@@ -76,7 +76,8 @@ IF(PVRTEXLIB_FOUND)
 
   # Copy the .pvr files that we will use for testing...
   SET(TEST_IMAGES
-    gradient white gray transparent trans-gradient
+    4bpp-gradient 4bpp-white 4bpp-gray 4bpp-transparent 4bpp-trans-gradient
+    2bpp-gradient 2bpp-white 2bpp-gray 2bpp-transparent 2bpp-trans-gradient
   )
   FOREACH(IMAGE ${TEST_IMAGES})
     FILE(COPY
