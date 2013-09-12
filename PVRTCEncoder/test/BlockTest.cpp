@@ -185,3 +185,54 @@ TEST(Block, GetLerpValue) {
   EXPECT_EQ(b.GetLerpValue(14), 1);
   EXPECT_EQ(b.GetLerpValue(15), 0);
 }
+
+TEST(Block, Get2BPPLerpValue) {
+  uint8 noModData[8] = { 0xDA, 0x27, 0xE4, 0x1B, 0x0, 0x0, 0x0, 0x0 };
+  PVRTCC::Block b(noModData);
+
+  uint32 dataInt = *(reinterpret_cast<const uint32 *>(noModData));
+  for(uint32 i = 0; i < 32; i++) {
+    EXPECT_EQ(b.Get2BPPLerpValue(i), (dataInt >> i) & 0x1);
+  }
+
+  uint8 modData[8];
+  memcpy(modData, noModData, sizeof(modData));
+  modData[4] = 0x1;
+
+  b = PVRTCC::Block(modData);
+
+  EXPECT_EQ(b.Get2BPPLerpValue(0), 3);
+  EXPECT_EQ(b.Get2BPPLerpValue(1), 2);
+  EXPECT_EQ(b.Get2BPPLerpValue(2), 1);
+  EXPECT_EQ(b.Get2BPPLerpValue(3), 3);
+
+  EXPECT_EQ(b.Get2BPPLerpValue(4), 3);
+  EXPECT_EQ(b.Get2BPPLerpValue(5), 1);
+  EXPECT_EQ(b.Get2BPPLerpValue(6), 2);
+  EXPECT_EQ(b.Get2BPPLerpValue(7), 0);
+
+  EXPECT_EQ(b.Get2BPPLerpValue(8), 0);
+  EXPECT_EQ(b.Get2BPPLerpValue(9), 1);
+  EXPECT_EQ(b.Get2BPPLerpValue(10), 2);
+  EXPECT_EQ(b.Get2BPPLerpValue(11), 3);
+
+  EXPECT_EQ(b.Get2BPPLerpValue(12), 3);
+  EXPECT_EQ(b.Get2BPPLerpValue(13), 2);
+  EXPECT_EQ(b.Get2BPPLerpValue(14), 1);
+  EXPECT_EQ(b.Get2BPPLerpValue(15), 0);
+}
+
+TEST(Block, Get2BPPSubMode) {
+  uint8 data[8] = { 0xDA, 0x27, 0xE4, 0x1B, 0x1, 0x0, 0x0, 0x0 };
+  PVRTCC::Block b(data);
+
+  EXPECT_EQ(b.Get2BPPSubMode(), PVRTCC::Block::e2BPPSubMode_All);
+
+  data[0] = 0xDB;
+  b = PVRTCC::Block(data);
+  EXPECT_EQ(b.Get2BPPSubMode(), PVRTCC::Block::e2BPPSubMode_Horizontal);
+
+  data[2] = 0xF4;
+  b = PVRTCC::Block(data);
+  EXPECT_EQ(b.Get2BPPSubMode(), PVRTCC::Block::e2BPPSubMode_Vertical);
+}

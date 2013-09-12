@@ -109,4 +109,40 @@ namespace PVRTCC {
     return (m_LongData >> (texelIdx * 2)) & 0x3;
   }
 
+  Block::E2BPPSubMode Block::Get2BPPSubMode() const {
+    uint8 first = GetLerpValue(0);
+    if(!(first & 0x1)) {
+      return e2BPPSubMode_All;
+    }
+
+    uint8 center = GetLerpValue(10);
+    if(center & 0x1) {
+      return e2BPPSubMode_Vertical;
+    }
+
+    return e2BPPSubMode_Horizontal;
+  }
+
+  uint8 Block::Get2BPPLerpValue(uint32 texelIdx) const {
+
+    if(!(GetModeBit())) {
+      assert(texelIdx >= 0);
+      assert(texelIdx < 32);
+      return static_cast<uint8>((m_LongData >> texelIdx) & 0x1);
+    }
+
+    bool firstBitOnly = false;
+    if(texelIdx == 0 ||
+       (texelIdx == 10 && Get2BPPSubMode() != e2BPPSubMode_All)) {
+      firstBitOnly = true;
+    }
+
+    uint8 ret = GetLerpValue(texelIdx);
+    if(firstBitOnly) {
+      // Change 0, 1 => 0 and 2, 3 => 3
+      ret = (ret & 0x2) | ((ret >> 1) & 0x1);
+    }
+
+    return ret;
+  }
 }  // namespace PVRTCC

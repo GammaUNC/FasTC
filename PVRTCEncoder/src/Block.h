@@ -70,6 +70,29 @@ class Block {
     return static_cast<bool>((m_LongData >> 32) & 0x1);
   }
 
+  // For 2BPP PVRTC, if the mode bit is set, then we use the modulation data
+  // as 2 bits for every other texel in the 8x4 block in a checkerboard pattern.
+  // The interleaved texel data is decided by averaging nearby texel modulation
+  // values. There are three different ways to average nearby texels: Either we
+  // average the neighboring horizontal or vertical pixels using (a + b) / 2, or
+  // we neighbor all four neighbors using (a + b + c + d + 1) / 4.
+  enum E2BPPSubMode {
+    e2BPPSubMode_All,
+    e2BPPSubMode_Horizontal,
+    e2BPPSubMode_Vertical
+  };
+
+  // For 2BPP PVRTC, this function determines the submode of the given block. The
+  // submode is determined by first checking the first 2bit texel index. This texel
+  // uses the high bit as a 1 bit modulation value (i.e. chooses colors A or B) and
+  // the low bit is used to determine the sub-mode. If the low bit is 0, then we
+  // will use e2BPPSubMode_All as defined above. If the low bit is 1, then we must
+  // look at the center texel (index 10) to determine the sub-mode. In this case,
+  // we treat the center texel as 1 bit modulation as well, and we use the low bit to
+  // determine the sub-mode where 0 is e2BPPSubMode_Horizontal and 1 is
+  // e2BPPSubMode_Vertical
+  E2BPPSubMode Get2BPPSubMode() const;
+
   // Returns the modulation value for the texel in the 4x4 block. The texels are
   // numbered as follows:
   //  0  1  2  3
@@ -77,6 +100,15 @@ class Block {
   //  8  9 10 11
   // 12 13 14 15
   uint8 GetLerpValue(uint32 texelIdx) const;
+
+  // This returns the modulation value for the texel in the block interpreted as
+  // 2BPP. If the modulation bit is not set, then it expects a number from 0-31
+  // and does the same operation as GetLerpValue. If the modulation bit is set,
+  // then this function expects a number from 0-15 and returns the corresponding
+  // modulation bits given the sub-mode. Note, this function does not do the
+  // averaging described for E2BPPSubMode because this averaging relies on
+  // global information.
+  uint8 Get2BPPLerpValue(uint32 texelIdx) const;
 
  private:
   union {
