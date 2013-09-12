@@ -86,12 +86,17 @@ namespace PVRTCC {
 
   static void Decompress4BPP(const Image &imgA, const Image &imgB,
                              const std::vector<Block> &blocks,
-                             uint8 *const outBuf) {
+                             uint8 *const outBuf,
+                             bool bDebugImages = false) {
     const uint32 w = imgA.GetWidth();
     const uint32 h = imgA.GetHeight();
 
     assert(imgA.GetWidth() == imgB.GetWidth());
     assert(imgA.GetHeight() == imgB.GetHeight());
+
+    Image debugModulation(h, w);
+    const uint8 debugModulationBitDepth[4] = { 8, 4, 4, 4 };
+    debugModulation.ChangeBitDepth(debugModulationBitDepth);
 
     for(uint32 j = 0; j < h; j++) {
       for(uint32 i = 0; i < w; i++) {
@@ -128,6 +133,20 @@ namespace PVRTCC {
           lerpVal = lerpVals[b.GetLerpValue(texelIndex)];
         }
 
+        if(bDebugImages) {
+          Pixel &modPx = debugModulation(i, j);
+          modPx.A() = 0xFF;
+          for(uint32 c = 1; c < 4; c++) {
+            float fv = (static_cast<float>(lerpVal) / 8.0f) * 15.0f;
+            modPx.Component(c) = static_cast<uint8>(fv);
+          }
+
+          // Make punch through pixels red.
+          if(punchThrough) {
+            modPx.G() = modPx.B() = 0;
+          }
+        }
+
         for(uint32 c = 0; c < 4; c++) {
           uint16 va = static_cast<uint16>(pa.Component(c));
           uint16 vb = static_cast<uint16>(pb.Component(c));
@@ -144,11 +163,16 @@ namespace PVRTCC {
         outPixels[(j * w) + i] = result.PackRGBA();
       }
     }
+
+    if(bDebugImages) {
+      debugModulation.DebugOutput("Modulation");
+    }
   }
 
   static void Decompress2BPP(const Image &imgA, const Image &imgB,
                              const std::vector<Block> &blocks,
-                             uint8 *const outBuf) {
+                             uint8 *const outBuf,
+                             bool bDebugImages) {
     const uint32 w = imgA.GetWidth();
     const uint32 h = imgA.GetHeight();
 
@@ -201,7 +225,7 @@ namespace PVRTCC {
         const Block &b = blocks[blockIdx];
 
         uint8 lerpVal = 0;
-        #define GET_LERP_VAL(x, y) (modValues[(y) * w + (x)])
+        #define GET_LERP_VAL(x, y) modValues[(y) * w + (x)]
         if(b.GetModeBit() && ((i ^ j) & 0x1)) {
 
           switch(b.Get2BPPSubMode()) {
@@ -229,6 +253,7 @@ namespace PVRTCC {
               // lerpVal /= 4;
             break;
           }
+          GET_LERP_VAL(i, j) = lerpVal;
         } else {
           lerpVal = GET_LERP_VAL(i, j);
         }
@@ -249,6 +274,23 @@ namespace PVRTCC {
         uint32 *outPixels = reinterpret_cast<uint32 *>(outBuf);
         outPixels[(j * w) + i] = result.PackRGBA();
       }
+    }
+
+    if(bDebugImages) {
+      Image dbgMod(h, w);
+      uint8 modDepth[4] = { 8, 4, 4, 4 };
+
+      for(int i = 0; i < h*w; i++) {
+        float fb = static_cast<float>(modValues[i]);
+        uint8 val = static_cast<uint8>((fb / 8.0f) * 15.0f);
+
+        for(int k = 1; k < 4; k++) {
+          dbgMod(i%w, i/w).Component(k) = val;
+        }
+        dbgMod(i%w, i/w).A() = 0xFF;
+      }
+
+      dbgMod.DebugOutput("Modulation");
     }
   }
 
@@ -360,57 +402,10 @@ namespace PVRTCC {
       imgB.DebugOutput("ScaledImgB");
     }
 
-    // Pack the pixels based on their modulation into the resulting buffer
-    // in RGBA format...
-    if(bDebugImages && !bTwoBitMode) {
-      Image modulation(h, w);
-      for(uint32 j = 0; j < h; j++) {
-        for(uint32 i = 0; i < w; i++) {
-          const uint32 blockWidth = bTwoBitMode? 8 : 4;
-          const uint32 blockHeight = 4;
-
-          const uint32 blockIdx = (j/blockHeight) * blocksW + (i/blockWidth);
-          const Block &b = blocks[blockIdx];
-
-          const uint32 texelIndex =
-            (j % blockHeight) * blockWidth + (i % blockWidth);
-
-          uint8 lerpVal;
-          if(b.GetModeBit()) {
-            const uint8 lerpVals[3] = { 8, 4, 0 };
-            uint8 modVal = b.GetLerpValue(texelIndex);
-
-            if(modVal >= 2) {
-              modVal -= 1;
-            }
-
-            lerpVal = lerpVals[modVal];
-          } else {
-            const uint8 lerpVals[4] = { 8, 5, 3, 0 };
-            lerpVal = lerpVals[b.GetLerpValue(texelIndex)];
-          }
-
-          Pixel iv;
-          const uint8 modDepth[4] = { 8, 3, 3, 3 };
-          iv.ChangeBitDepth(modDepth);
-          iv.A() = 0xFF;
-          for(int i = 1; i < 4; i++) {
-            if(lerpVal == 8) {
-              iv.Component(i) = 7;
-            } else {
-              iv.Component(i) = lerpVal;
-            }
-          }
-          modulation(i, j) = iv;
-        }
-        modulation.DebugOutput("DebugModulation");
-      }
-    }
-
     if(bTwoBitMode) {
-      Decompress2BPP(imgA, imgB, blocks, dcj.outBuf);
+      Decompress2BPP(imgA, imgB, blocks, dcj.outBuf, bDebugImages);
     } else {
-      Decompress4BPP(imgA, imgB, blocks, dcj.outBuf);
+      Decompress4BPP(imgA, imgB, blocks, dcj.outBuf, bDebugImages);
     }
   }
 
