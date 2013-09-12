@@ -84,7 +84,176 @@ namespace PVRTCC {
     return x | (y << 1);
   }
 
+  static void Decompress4BPP(const Image &imgA, const Image &imgB,
+                             const std::vector<Block> &blocks,
+                             uint8 *const outBuf) {
+    const uint32 w = imgA.GetWidth();
+    const uint32 h = imgA.GetHeight();
+
+    assert(imgA.GetWidth() == imgB.GetWidth());
+    assert(imgA.GetHeight() == imgB.GetHeight());
+
+    for(uint32 j = 0; j < h; j++) {
+      for(uint32 i = 0; i < w; i++) {
+        const uint32 blockWidth = 4;
+        const uint32 blockHeight = 4;
+
+        const uint32 blockIdx =
+          (j/blockHeight) * (w/blockWidth) + (i/blockWidth);
+        const Block &b = blocks[blockIdx];
+
+        const uint32 texelIndex =
+          (j % blockHeight) * blockWidth + (i % blockWidth);
+
+        const Pixel &pa = imgA(i, j);
+        const Pixel &pb = imgB(i, j);
+
+        Pixel result;
+        bool punchThrough = false;
+        uint8 lerpVal = 0;
+        if(b.GetModeBit()) {
+          const uint8 lerpVals[3] = { 8, 4, 0 };
+          uint8 modVal = b.GetLerpValue(texelIndex);
+
+          if(modVal >= 2) {
+            if(modVal == 2) {
+              punchThrough = true;
+            }
+            modVal -= 1;
+          }
+
+          lerpVal = lerpVals[modVal];
+        } else {
+          const uint8 lerpVals[4] = { 8, 5, 3, 0 };
+          lerpVal = lerpVals[b.GetLerpValue(texelIndex)];
+        }
+
+        for(uint32 c = 0; c < 4; c++) {
+          uint16 va = static_cast<uint16>(pa.Component(c));
+          uint16 vb = static_cast<uint16>(pb.Component(c));
+
+          uint16 res = (va * (8 - lerpVal) + vb * lerpVal) / 8;
+          result.Component(c) = static_cast<uint8>(res);
+        }
+
+        if(punchThrough) {
+          result.A() = 0;
+        }
+
+        uint32 *outPixels = reinterpret_cast<uint32 *>(outBuf);
+        outPixels[(j * w) + i] = result.PackRGBA();
+      }
+    }
+  }
+
+  static void Decompress2BPP(const Image &imgA, const Image &imgB,
+                             const std::vector<Block> &blocks,
+                             uint8 *const outBuf) {
+    const uint32 w = imgA.GetWidth();
+    const uint32 h = imgA.GetHeight();
+
+    assert(w > 0);
+    assert(h > 0);
+    assert(imgA.GetWidth() == imgB.GetWidth());
+    assert(imgA.GetHeight() == imgB.GetHeight());
+
+    std::vector<uint8> modValues;
+    modValues.reserve(w * h);
+
+    const uint32 blockWidth = 8;
+    const uint32 blockHeight = 4;
+
+    for(uint32 j = 0; j < h; j++) {
+      for(uint32 i = 0; i < w; i++) {
+
+        const uint32 blockIdx =
+          (j/blockHeight) * (w/blockWidth) + (i/blockWidth);
+        const Block &b = blocks[blockIdx];
+
+        const uint32 texelIndex =
+          (j % blockHeight) * blockWidth + (i % blockWidth);
+
+        uint8 lerpVal = 0;
+        if(b.GetModeBit()) {
+          uint32 texelX = texelIndex % blockWidth;
+          uint32 texelY = texelIndex / blockWidth;
+
+          const uint8 lerpVals[4] = { 8, 5, 3, 0 };
+          if(((texelX ^ texelY) & 0x1) == 0) {
+            uint32 lerpIdx = texelY * (blockWidth / 2) + (texelX / 2);
+            lerpVal = lerpVals[b.Get2BPPLerpValue(lerpIdx)];
+          }
+        } else {
+          lerpVal = b.Get2BPPLerpValue(texelIndex);
+          lerpVal = lerpVal? 0 : 8;
+        }
+        modValues.push_back(lerpVal);
+      }
+    }
+
+    assert(modValues.size() == w * h);
+
+    for(uint32 j = 0; j < h; j++) {
+      for(uint32 i = 0; i < w; i++) {
+
+        const uint32 blockIdx =
+          (j/blockHeight) * (w/blockWidth) + (i/blockWidth);
+        const Block &b = blocks[blockIdx];
+
+        uint8 lerpVal = 0;
+        #define GET_LERP_VAL(x, y) (modValues[(y) * w + (x)])
+        if(b.GetModeBit() && ((i ^ j) & 0x1)) {
+
+          switch(b.Get2BPPSubMode()) {
+            case Block::e2BPPSubMode_Horizontal:
+              lerpVal += GET_LERP_VAL((i + w - 1) % w, j);
+              lerpVal += GET_LERP_VAL((i + w + 1) % w, j);
+              // lerpVal = (lerpVal + 1) / 2;
+              lerpVal /= 2;
+            break;
+
+            case Block::e2BPPSubMode_Vertical:
+              lerpVal += GET_LERP_VAL(i, (j + h - 1) % h);
+              lerpVal += GET_LERP_VAL(i, (j + h + 1) % h);
+              // lerpVal = (lerpVal + 1) / 2;
+              lerpVal /= 2;
+            break;
+
+            default:
+            case Block::e2BPPSubMode_All:
+              lerpVal += GET_LERP_VAL(i, (j + h - 1) % h);
+              lerpVal += GET_LERP_VAL(i, (j + h + 1) % h);
+              lerpVal += GET_LERP_VAL((i + w - 1) % w, j);
+              lerpVal += GET_LERP_VAL((i + w + 1) % w, j);
+              lerpVal = (lerpVal + 1) / 4;
+              // lerpVal /= 4;
+            break;
+          }
+        } else {
+          lerpVal = GET_LERP_VAL(i, j);
+        }
+        #undef GET_LERP_VAL
+
+        const Pixel &pa = imgA(i, j);
+        const Pixel &pb = imgB(i, j);
+
+        Pixel result;
+        for(uint32 c = 0; c < 4; c++) {
+          uint16 va = static_cast<uint16>(pa.Component(c));
+          uint16 vb = static_cast<uint16>(pb.Component(c));
+
+          uint16 res = (va * (8 - lerpVal) + vb * lerpVal) / 8;
+          result.Component(c) = static_cast<uint8>(res);
+        }
+
+        uint32 *outPixels = reinterpret_cast<uint32 *>(outBuf);
+        outPixels[(j * w) + i] = result.PackRGBA();
+      }
+    }
+  }
+
   void Decompress(const DecompressionJob &dcj,
+                  const bool bTwoBitMode,
                   const EWrapMode wrapMode,
                   bool bDebugImages) {
     const uint32 w = dcj.width;
@@ -92,14 +261,15 @@ namespace PVRTCC {
 
     assert(w > 0);
     assert(h > 0);
-    assert(w % 4 == 0);
+    assert(bTwoBitMode || w % 4 == 0);
+    assert(!bTwoBitMode || w % 8 == 0);
     assert(h % 4 == 0);
 
     // First, extract all of the block information...
     std::vector<Block> blocks;
     blocks.reserve(w * h);
 
-    const uint32 blocksW = w / 4;
+    const uint32 blocksW = bTwoBitMode? (w / 8) : (w / 4);
     const uint32 blocksH = h / 4;
     const uint32 blockSz = 8;
 
@@ -168,63 +338,62 @@ namespace PVRTCC {
     }
 
     // Bilinearly upscale the images.
-    imgA.BilinearUpscale(2, 2, wrapMode);
-    imgB.BilinearUpscale(2, 2, wrapMode);
+    if(bTwoBitMode) {
+      imgA.BilinearUpscale(3, 2, wrapMode);
+      imgB.BilinearUpscale(3, 2, wrapMode);
+    } else {
+      imgA.BilinearUpscale(2, 2, wrapMode);
+      imgB.BilinearUpscale(2, 2, wrapMode);
+    }
+
+    if(bDebugImages) {
+      imgA.DebugOutput("RawScaledImgA");
+      imgB.DebugOutput("RawScaledImgB");
+    }
 
     // Change the bitdepth to full resolution
     imgA.ExpandTo8888();
-    if(bDebugImages)
-      imgA.DebugOutput("ScaledImgA");
     imgB.ExpandTo8888();
-    if(bDebugImages)
+
+    if(bDebugImages) {
+      imgA.DebugOutput("ScaledImgA");
       imgB.DebugOutput("ScaledImgB");
+    }
 
     // Pack the pixels based on their modulation into the resulting buffer
     // in RGBA format...
-    Image modulation(h, w);
-    for(uint32 j = 0; j < h; j++) {
-      for(uint32 i = 0; i < w; i++) {
-        const uint32 blockIdx = (j/4) * blocksW + (i / 4);
-        const Block &b = blocks[blockIdx];
+    if(bDebugImages && !bTwoBitMode) {
+      Image modulation(h, w);
+      for(uint32 j = 0; j < h; j++) {
+        for(uint32 i = 0; i < w; i++) {
+          const uint32 blockWidth = bTwoBitMode? 8 : 4;
+          const uint32 blockHeight = 4;
 
-        const uint32 texelIndex = (j % 4) * 4 + (i % 4);
-        const Pixel &pa = imgA(i, j);
-        const Pixel &pb = imgB(i, j);
+          const uint32 blockIdx = (j/blockHeight) * blocksW + (i/blockWidth);
+          const Block &b = blocks[blockIdx];
 
-        Pixel result;
-        bool punchThrough = false;
-        uint8 lerpVal = 0;
-        if(b.GetModeBit()) {
-          const uint8 lerpVals[3] = { 8, 4, 0 };
-          uint8 modVal = b.GetLerpValue(texelIndex);
+          const uint32 texelIndex =
+            (j % blockHeight) * blockWidth + (i % blockWidth);
 
-          if(modVal >= 2) {
-            if(modVal == 2) {
-              punchThrough = true;
+          uint8 lerpVal;
+          if(b.GetModeBit()) {
+            const uint8 lerpVals[3] = { 8, 4, 0 };
+            uint8 modVal = b.GetLerpValue(texelIndex);
+
+            if(modVal >= 2) {
+              modVal -= 1;
             }
-            modVal -= 1;
+
+            lerpVal = lerpVals[modVal];
+          } else {
+            const uint8 lerpVals[4] = { 8, 5, 3, 0 };
+            lerpVal = lerpVals[b.GetLerpValue(texelIndex)];
           }
 
-          lerpVal = lerpVals[modVal];
-
-        } else {
-          const uint8 lerpVals[4] = { 8, 5, 3, 0 };
-          lerpVal = lerpVals[b.GetLerpValue(texelIndex)];
-        }
-
-        for(uint32 c = 0; c < 4; c++) {
-          uint16 va = static_cast<uint16>(pa.Component(c));
-          uint16 vb = static_cast<uint16>(pb.Component(c));
-
-          uint16 res = (va * (8 - lerpVal) + vb * lerpVal) / 8;
-          result.Component(c) = static_cast<uint8>(res);
-        }
-
-        if(bDebugImages) {
           Pixel iv;
           const uint8 modDepth[4] = { 8, 3, 3, 3 };
           iv.ChangeBitDepth(modDepth);
-          iv.A() = punchThrough? 0 : 0xFF;
+          iv.A() = 0xFF;
           for(int i = 1; i < 4; i++) {
             if(lerpVal == 8) {
               iv.Component(i) = 7;
@@ -234,17 +403,14 @@ namespace PVRTCC {
           }
           modulation(i, j) = iv;
         }
-
-        if(punchThrough) {
-          result.A() = 0;
-        }
-
-        uint32 *outPixels = reinterpret_cast<uint32 *>(dcj.outBuf);
-        outPixels[(j * w) + i] = result.PackRGBA();
+        modulation.DebugOutput("DebugModulation");
       }
     }
-    if(bDebugImages) {
-      modulation.DebugOutput("DebugModulation");
+
+    if(bTwoBitMode) {
+      Decompress2BPP(imgA, imgB, blocks, dcj.outBuf);
+    } else {
+      Decompress4BPP(imgA, imgB, blocks, dcj.outBuf);
     }
   }
 

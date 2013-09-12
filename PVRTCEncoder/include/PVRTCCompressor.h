@@ -69,6 +69,7 @@ namespace PVRTCC {
   // format. The width and height must be specified in order to properly
   // decompress the data.
   void Decompress(const DecompressionJob &,
+                  bool bTwoBitMode = false,
                   const EWrapMode wrapMode = eWrapMode_Clamp,
                   bool bDebugImages = false);
 
