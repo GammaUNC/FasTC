@@ -195,3 +195,22 @@ TEST(Pixel, PackRGBA) {
   uint32 val = p.PackRGBA();
   EXPECT_EQ(val, 0x87FFFF6D);
 }
+
+TEST(Pixel, UnpackRGBA) {
+  uint32 rgba = 0x4619B3FE;
+  PVRTCC::Pixel p;
+
+  p.UnpackRGBA(rgba);
+  EXPECT_EQ(p.A(), 0x46);
+  EXPECT_EQ(p.B(), 0x19);
+  EXPECT_EQ(p.G(), 0xB3);
+  EXPECT_EQ(p.R(), 0xFE);
+
+  uint8 newBitDepth[4] = { 3, 5, 2, 1 };  // A R G B
+  p.ChangeBitDepth(newBitDepth);
+
+  EXPECT_EQ(p.A(), 0x2);
+  EXPECT_EQ(p.B(), 0x0);
+  EXPECT_EQ(p.G(), 0x2);
+  EXPECT_EQ(p.R(), 0x1f);
+}

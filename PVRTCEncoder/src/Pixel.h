@@ -110,6 +110,7 @@ class Pixel {
   // that the architecture is little-endian, so the alpha channel will end
   // up in the most-significant byte.
   uint32 PackRGBA() const;
+  void UnpackRGBA(uint32 rgba);
 
   // Tests for equality by comparing the values and the bit depths.
   bool operator==(const Pixel &) const;

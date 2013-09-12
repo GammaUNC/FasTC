@@ -165,6 +165,13 @@ namespace PVRTCC {
     return r;
   }
 
+  void Pixel::UnpackRGBA(uint32 rgba) {
+    A() = ChangeBitDepth((rgba >> 24) & 0xFF, 8, m_BitDepth[0]);
+    R() = ChangeBitDepth(rgba & 0xFF, 8, m_BitDepth[1]);
+    G() = ChangeBitDepth((rgba >> 8) & 0xFF, 8, m_BitDepth[2]);
+    B() = ChangeBitDepth((rgba >> 16) & 0xFF, 8, m_BitDepth[3]);
+  }
+
   bool Pixel::operator==(const Pixel &other) const {
     uint8 depths[4];
     other.GetBitDepth(depths);
