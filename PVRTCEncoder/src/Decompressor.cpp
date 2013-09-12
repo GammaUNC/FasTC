@@ -168,8 +168,8 @@ namespace PVRTCC {
     }
 
     // Bilinearly upscale the images.
-    imgA.BilinearUpscale(2, wrapMode);
-    imgB.BilinearUpscale(2, wrapMode);
+    imgA.BilinearUpscale(2, 2, wrapMode);
+    imgB.BilinearUpscale(2, 2, wrapMode);
 
     // Change the bitdepth to full resolution
     imgA.ExpandTo8888();

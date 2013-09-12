@@ -127,12 +127,16 @@ static bool CompareBitDepths(const uint8 (&depth1)[4],
 }
 #endif
 
-void Image::BilinearUpscale(uint32 times, EWrapMode wrapMode) {
-  const uint32 newWidth = m_Width << times;
-  const uint32 newHeight = m_Height << times;
+void Image::BilinearUpscale(uint32 xtimes, uint32 ytimes,
+                            EWrapMode wrapMode) {
+  const uint32 newWidth = m_Width << xtimes;
+  const uint32 newHeight = m_Height << ytimes;
 
-  const uint32 scale = 1 << times;
-  const uint32 offset = scale >> 1;
+  const uint32 xscale = 1 << xtimes;
+  const uint32 xoffset = xscale >> 1;
+
+  const uint32 yscale = 1 << ytimes;
+  const uint32 yoffset = yscale >> 1;
 
   Pixel *upscaledPixels = new Pixel[newWidth * newHeight];
 
@@ -147,15 +151,15 @@ void Image::BilinearUpscale(uint32 times, EWrapMode wrapMode) {
       Pixel &p = upscaledPixels[pidx];
       Pixel &fp = m_FractionalPixels[pidx];
 
-      const int32 highXIdx = (i + offset) / scale;
+      const int32 highXIdx = (i + xoffset) / xscale;
       const int32 lowXIdx = highXIdx - 1;
-      const int32 highYIdx = (j + offset) / scale;
+      const int32 highYIdx = (j + yoffset) / yscale;
       const int32 lowYIdx = highYIdx - 1;
 
-      const uint32 highXWeight = (i + offset) % scale;
-      const uint32 lowXWeight = scale - highXWeight;
-      const uint32 highYWeight = (j + offset) % scale;
-      const uint32 lowYWeight = scale - highYWeight;
+      const uint32 highXWeight = (i + xoffset) % xscale;
+      const uint32 lowXWeight = xscale - highXWeight;
+      const uint32 highYWeight = (j + yoffset) % yscale;
+      const uint32 lowYWeight = yscale - highYWeight;
 
       const uint32 topLeftWeight = lowXWeight * lowYWeight;
       const uint32 topRightWeight = highXWeight * lowYWeight;
@@ -186,9 +190,9 @@ void Image::BilinearUpscale(uint32 times, EWrapMode wrapMode) {
 #endif  // NDEBUG
 
       // bilerp each channel....
-      const uint16 scaleMask = (scale * scale) - 1;
+      const uint16 scaleMask = (xscale * yscale) - 1;
       uint8 fpDepths[4];
-      for(uint32 c = 0; c < 4; c++) fpDepths[c] = times * times;
+      for(uint32 c = 0; c < 4; c++) fpDepths[c] = xtimes + ytimes;
       fp.ChangeBitDepth(fpDepths);
 
       for(uint32 c = 0; c < 4; c++) {
@@ -198,7 +202,7 @@ void Image::BilinearUpscale(uint32 times, EWrapMode wrapMode) {
         const uint32 br = bottomRight.Component(c) * bottomRightWeight;
         const uint32 sum = tl + tr + bl + br;
         fp.Component(c) = sum & scaleMask;
-        p.Component(c) = sum / (scale * scale);
+        p.Component(c) = sum / (xscale * yscale);
       }
     }
   }
