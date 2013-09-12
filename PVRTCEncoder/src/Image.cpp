@@ -308,7 +308,7 @@ void Image::DebugOutput(const char *filename) const {
     }
   }
 
-  ::Image img(m_Height, m_Width, outPixels);
+  ::Image img(m_Width, m_Height, outPixels);
 
   char debugFilename[256];
   snprintf(debugFilename, sizeof(debugFilename), "%s.png", filename);
