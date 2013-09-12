@@ -232,14 +232,12 @@ namespace PVRTCC {
             case Block::e2BPPSubMode_Horizontal:
               lerpVal += GET_LERP_VAL((i + w - 1) % w, j);
               lerpVal += GET_LERP_VAL((i + w + 1) % w, j);
-              // lerpVal = (lerpVal + 1) / 2;
               lerpVal /= 2;
             break;
 
             case Block::e2BPPSubMode_Vertical:
               lerpVal += GET_LERP_VAL(i, (j + h - 1) % h);
               lerpVal += GET_LERP_VAL(i, (j + h + 1) % h);
-              // lerpVal = (lerpVal + 1) / 2;
               lerpVal /= 2;
             break;
 
@@ -250,7 +248,6 @@ namespace PVRTCC {
               lerpVal += GET_LERP_VAL((i + w - 1) % w, j);
               lerpVal += GET_LERP_VAL((i + w + 1) % w, j);
               lerpVal = (lerpVal + 1) / 4;
-              // lerpVal /= 4;
             break;
           }
           GET_LERP_VAL(i, j) = lerpVal;
