@@ -70,12 +70,11 @@ struct CompressionJob {
     const unsigned char *_inBuf,
     unsigned char *_outBuf,
     const uint32 _width,
-    const uint32 _height
-  ) :
-  inBuf(_inBuf),
-  outBuf(_outBuf),
-  width(_width),
-  height(_height)
+    const uint32 _height)
+  : inBuf(_inBuf)
+  , outBuf(_outBuf)
+  , width(_width)
+  , height(_height)
   { }
 };
   
@@ -91,12 +90,11 @@ struct DecompressionJob {
     const unsigned char *_inBuf,
     unsigned char *_outBuf,
     const uint32 _width,
-    const uint32 _height
-  ) :
-  inBuf(_inBuf),
-  outBuf(_outBuf),
-  width(_width),
-  height(_height)
+    const uint32 _height)
+  : inBuf(_inBuf)
+  , outBuf(_outBuf)
+  , width(_width)
+  , height(_height)
   { }
 };
 
