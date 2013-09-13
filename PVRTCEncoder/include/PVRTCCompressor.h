@@ -70,7 +70,7 @@ namespace PVRTCC {
   // decompress the data.
   void Decompress(const DecompressionJob &,
                   bool bTwoBitMode = false,
-                  const EWrapMode wrapMode = eWrapMode_Clamp,
+                  const EWrapMode wrapMode = eWrapMode_Wrap,
                   bool bDebugImages = false);
 
 }  // namespace PVRTCC
