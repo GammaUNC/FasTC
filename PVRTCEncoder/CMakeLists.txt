@@ -64,6 +64,7 @@ SET( HEADERS
 )
 
 SET( SOURCES
+  src/Compressor.cpp
   src/Decompressor.cpp
   src/Pixel.cpp
   src/Block.cpp

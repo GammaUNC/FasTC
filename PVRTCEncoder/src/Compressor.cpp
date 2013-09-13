@@ -50,36 +50,27 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#ifndef PVRTCENCODER_INCLUDE_PVRTCCOMPRESSOR_H_
-#define PVRTCENCODER_INCLUDE_PVRTCCOMPRESSOR_H_
+#include "PVRTCCompressor.h"
 
-#include "Core/include/CompressionJob.h"
+#include "Pixel.h"
+#include "Image.h"
 
 namespace PVRTCC {
 
-  // PVRTC works by bilinearly interpolating between blocks in order to
-  // compress and decompress data. As such, the wrap mode defines how the
-  // texture behaves at the boundaries.
-  enum EWrapMode {
-    eWrapMode_Clamp,  // Block endpoints are clamped at boundaries
-    eWrapMode_Wrap,   // Block endpoints wrap around at boundaries
-  };
+  void Compress(const DecompressionJob &dcj,
+                bool bTwoBitMode,
+                const EWrapMode wrapMode) {
+    Image img(dcj.height, dcj.width);
+    for(uint32 j = 0; j < dcj.height; j++) {
+      for(uint32 i = 0; i < dcj.width; i++) {
+        const uint32 *pixels = reinterpret_cast<const uint32 *>(dcj.inBuf);
+        img(i, j).UnpackRGBA(pixels[j * dcj.width + i]);
+      }
+    }
 
-  // Takes a stream of compressed PVRTC data and decompresses it into R8G8B8A8
-  // format. The width and height must be specified in order to properly
-  // decompress the data.
-  void Decompress(const DecompressionJob &,
-                  bool bTwoBitMode = false,
-                  const EWrapMode wrapMode = eWrapMode_Wrap,
-                  bool bDebugImages = false);
-
-  // Takes a stream of uncompressed RGBA8 data and compresses it into PVRTC
-  // version one. The width and height must be specified in order to properly
-  // decompress the data.
-  void Compress(const DecompressionJob &,
-                bool bTwoBitMode = false,
-                const EWrapMode wrapMode = eWrapMode_Wrap);
+    // Downscale it using anisotropic diffusion based scheme in order to preserve
+    // image features, then reupscale and compute deltas. Use deltas to generate
+    // initial A & B images followed by modulation data.
+  }
 
 }  // namespace PVRTCC
-
-#endif  // PVRTCENCODER_INCLUDE_PVRTCCOMPRESSOR_H_
