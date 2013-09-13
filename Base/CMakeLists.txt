@@ -49,31 +49,24 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
-INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR})
+SET( SOURCES
+  "src/Image.cpp"
+  "src/CompressionJob.cpp"
+)
 
-INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/PVRTCEncoder/include)
-INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/PVRTCEncoder/include)
+SET( HEADERS
+  "include/TexCompTypes.h"
+  "include/Image.h"
+  "include/CompressionJob.h"
+)
 
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)
 
-SET( HEADERS
-  include/PVRTCCompressor.h
-  src/Pixel.h
-  src/Block.h
-  src/Image.h
+ADD_LIBRARY( FasTCBase
+	${HEADERS}
+	${SOURCES}
 )
 
-SET( SOURCES
-  src/Decompressor.cpp
-  src/Pixel.cpp
-  src/Block.cpp
-  src/Image.cpp
-)
-
-ADD_LIBRARY( PVRTCEncoder
-  ${HEADERS}
-  ${SOURCES}
-)
-
-TARGET_LINK_LIBRARIES( PVRTCEncoder FasTCCore )
-TARGET_LINK_LIBRARIES( PVRTCEncoder FasTCIO )
+IF( NOT WIN32 AND NOT APPLE )
+  	TARGET_LINK_LIBRARIES( FasTCBase rt )
+ENDIF()

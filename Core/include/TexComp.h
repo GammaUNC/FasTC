@@ -48,6 +48,7 @@
 #include "CompressionJob.h"
 
 // Forward declarations
+class Image;
 class ImageFile;
 class BlockStatManager;
 
@@ -91,6 +92,8 @@ struct SCompressionSettings {
   BlockStatManager *pStatManager;
 };
 
+extern CompressedImage *CompressImage(Image *img, const SCompressionSettings &settings);
+
 extern bool CompressImageData(
   const unsigned char *data,
   const unsigned int dataSz,
@@ -98,18 +101,6 @@ extern bool CompressImageData(
   const unsigned int cmpDataSz,
   const SCompressionSettings &settings
 );
-
-// A compression function format. It takes the raw data and image dimensions and 
-// returns the compressed image data into outData. It is assumed that there is
-// enough space allocated for outData to store the compressed data. Allocation
-// is dependent on the compression format.
-typedef void (* CompressionFunc)(const CompressionJob &);
-
-// A compression function format. It takes the raw data and image dimensions and 
-// returns the compressed image data into outData. It is assumed that there is
-// enough space allocated for outData to store the compressed data. Allocation
-// is dependent on the compression format.
-typedef void (* CompressionFuncWithStats)(const CompressionJob &, BlockStatManager &statManager);
 
 // This function computes the Peak Signal to Noise Ratio between a 
 // compressed image and a raw image.

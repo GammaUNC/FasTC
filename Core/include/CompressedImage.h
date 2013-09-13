@@ -52,16 +52,14 @@ enum ECompressionFormat {
   kNumCompressionFormats
 };
 
-class CompressedImage {
+#include "Image.h"
+
+class CompressedImage : public Image {
 
  private:
-  unsigned int m_Width;
-  unsigned int m_Height;
-
   ECompressionFormat m_Format;
-
-  unsigned char *m_Data;
-  unsigned int m_DataSz;
+  uint32 m_DataSz;
+  uint32 *m_RGBAData;
 
   void InitData(const unsigned char *withData);
  public:
@@ -77,11 +75,11 @@ class CompressedImage {
     const unsigned char *data
   );
 
-  unsigned int GetHeight() const { return m_Height; }
-  unsigned int GetWidth() const { return m_Width; }
-
   CompressedImage( const CompressedImage &other );
-  ~CompressedImage();
+  virtual ~CompressedImage();
+
+  virtual void ComputeRGBA();
+  virtual const uint32 *GetRGBA() const { return m_RGBAData; }
 
   // Decompress the compressed image data into outBuf. outBufSz is expected
   // to be the proper size determined by the width, height, and format.

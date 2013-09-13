@@ -53,7 +53,7 @@
 #ifndef PVRTCENCODER_SRC_BLOCK_H_
 #define PVRTCENCODER_SRC_BLOCK_H_
 
-#include "Core/include/TexCompTypes.h"
+#include "Base/include/TexCompTypes.h"
 
 #include "Pixel.h"
 

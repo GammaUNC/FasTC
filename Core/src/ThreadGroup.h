@@ -44,9 +44,10 @@
 #ifndef _THREAD_GROUP_H_
 #define _THREAD_GROUP_H_
 
-#include "TexComp.h"
+#include "CompressionFuncs.h"
 #include "Thread.h"
 #include "StopWatch.h"
+#include "BlockStats.h"
 
 struct CmpThread : public TCCallable {
   friend class ThreadGroup;  

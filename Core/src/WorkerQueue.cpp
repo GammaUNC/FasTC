@@ -43,10 +43,11 @@
 
 #include "WorkerQueue.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
 #include <algorithm>
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
+#include <iostream>
 
 #include "BC7Compressor.h"
 
@@ -104,7 +105,9 @@ void WorkerThread::operator()() {
         if(f)
           (*f)(cj);
         else
-          (*fStat)(cj, *statManager);
+          // !FIXME! Actually use stat manager...
+          // (*fStat)(cj, *statManager);
+          (*fStat)(cj, &std::cout);
 
         break;
       }

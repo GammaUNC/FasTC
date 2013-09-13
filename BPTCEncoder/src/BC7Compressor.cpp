@@ -76,13 +76,10 @@
 #include "BC7Compressor.h"
 #include "BC7CompressionMode.h"
 
-#include "TexComp.h"
 #include "TexCompTypes.h"
 #include "BCLookupTables.h"
 #include "RGBAEndpoints.h"
 #include "BitStream.h"
-
-#include "BlockStats.h"
 
 #ifdef HAS_MSVC_ATOMICS
 #   include "Windows.h"
@@ -100,6 +97,7 @@
 #include <cassert>
 #include <cfloat>
 #include <ctime>
+#include <iostream>
 
 // #define USE_PCA_FOR_SHAPE_ESTIMATION
 
@@ -1543,10 +1541,27 @@ namespace BC7C {
   const float *GetErrorMetric() { return kErrorMetrics[GetErrorMetricEnum()]; }
   ErrorMetric GetErrorMetricEnum() { return gErrorMetric; }
 
+  class BlockLogger {
+   public:
+    BlockLogger(uint32 blockIdx, std::ostream &os)
+      : m_BlockIdx(blockIdx), m_Stream(os) { }
+
+    template<typename T>
+    friend std::ostream &operator<<(const BlockLogger &bl, const T &v);
+
+    uint32 m_BlockIdx;
+    std::ostream &m_Stream;
+  };
+
+  template<typename T>
+  std::ostream &operator<<(const BlockLogger &bl, const T &v) {
+    return bl.m_Stream << bl.m_BlockIdx << ": " << v;
+  }
+
   // Function prototypes
   static void CompressBC7Block(const uint32 *block, uint8 *outBuf);
   static void CompressBC7Block(
-    const uint32 *block, uint8 *outBuf, BlockStatManager &statManager
+    const uint32 *block, uint8 *outBuf, const BlockLogger &logStream
   );
 
   static int gQualityLevel = 50;
@@ -1710,17 +1725,20 @@ namespace BC7C {
   }
 #endif  // HAS_ATOMICS
 
-  void CompressWithStats(
-    const CompressionJob &cj,
-    BlockStatManager &statManager
-  ) {
+  void CompressWithStats(const CompressionJob &cj, std::ostream *logStream) {
     const unsigned char *inBuf = cj.inBuf;
     unsigned char *outBuf = cj.outBuf;
 
     for(uint32 j = 0; j < cj.height; j += 4) {
       for(uint32 i = 0; i < cj.width; i += 4) {
 
-        CompressBC7Block((const uint32 *)inBuf, outBuf, statManager);
+        const uint32 *pixelBuf = reinterpret_cast<const uint32 *>(inBuf);
+        if(logStream) {
+          uint32 blockIdx = (j/4) * (cj.width/4) + (i/4);
+          CompressBC7Block(pixelBuf, outBuf, BlockLogger(blockIdx, *logStream));
+        } else {
+          CompressBC7Block(pixelBuf, outBuf);
+        }
 
 #ifndef NDEBUG
         uint8 *block = outBuf;
@@ -2203,23 +2221,27 @@ namespace BC7C {
     }
   }
 
+  template<typename T>
+  static void PrintStat(const BlockLogger &lgr, const char *stat, const T &v) {
+    lgr << stat << " -- " << v << std::endl;
+  }
+
   // Compress a single block but collect statistics as well...
   static void CompressBC7Block(
-    const uint32 *block, uint8 *outBuf, BlockStatManager &statManager
+    const uint32 *block, uint8 *outBuf, const BlockLogger &logStream
   ) {
 
     class RAIIStatSaver {
     private:
-      uint32 m_BlockIdx;
-      BlockStatManager &m_BSM;
+      const BlockLogger &m_Logger;
 
       int *m_ModePtr;
       double *m_Estimates;
       double *m_Errors;
 
     public:
-      RAIIStatSaver(uint32 blockIdx, BlockStatManager &m)
-        : m_BlockIdx(blockIdx), m_BSM(m)
+      RAIIStatSaver(const BlockLogger &logger)
+        : m_Logger(logger)
         , m_ModePtr(NULL), m_Estimates(NULL), m_Errors(NULL) { }
       void SetMode(int *modePtr) { m_ModePtr = modePtr; }
       void SetEstimates(double *estimates) { m_Estimates = estimates; }
@@ -2231,20 +2253,16 @@ namespace BC7C {
         assert(m_Estimates);
         assert(m_Errors);
 
-        BlockStat s (kBlockStatString[eBlockStat_Mode], *m_ModePtr);
-        m_BSM.AddStat(m_BlockIdx, s);
+        PrintStat(m_Logger, kBlockStatString[eBlockStat_Mode], *m_ModePtr);
 
         for(uint32 i = 0; i < BC7CompressionMode::kNumModes; i++) {
 
-          s = BlockStat(
-            kBlockStatString[eBlockStat_ModeZeroEstimate + i], m_Estimates[i]
-          );
-          m_BSM.AddStat(m_BlockIdx, s);
-
-          s = BlockStat(
-            kBlockStatString[eBlockStat_ModeZeroError + i], m_Errors[i]
-          );
-          m_BSM.AddStat(m_BlockIdx, s);
+          PrintStat(m_Logger,
+                    kBlockStatString[eBlockStat_ModeZeroEstimate + i],
+                    m_Estimates[i]);
+          PrintStat(m_Logger,
+                    kBlockStatString[eBlockStat_ModeZeroError + i],
+                    m_Errors[i]);
         }
       }
     };
@@ -2259,12 +2277,7 @@ namespace BC7C {
       modeError[i] = modeEstimate[i] = -1.0;
     }
 
-    uint32 blockIdx = statManager.BeginBlock();
-    for(int i = 0; i < kNumBlockStats; i++) {
-      statManager.AddStat(blockIdx, BlockStat(kBlockStatString[i], 0));
-    }
-
-    RAIIStatSaver __statsaver__(blockIdx, statManager);
+    RAIIStatSaver __statsaver__(logStream);
     __statsaver__.SetMode(&bestMode);
     __statsaver__.SetEstimates(modeEstimate);
     __statsaver__.SetErrors(modeError);
@@ -2275,9 +2288,7 @@ namespace BC7C {
       CompressOptimalColorBC7(*block, bStrm);
       bestMode = 5;
 
-      BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 0);
-      statManager.AddStat(blockIdx, s);
-
+      PrintStat(logStream, kBlockStatString[eBlockStat_Path], 0);
       return;
     }
 
@@ -2303,9 +2314,7 @@ namespace BC7C {
       WriteTransparentBlock(bStrm);
       bestMode = 6;
 
-      BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 1);
-      statManager.AddStat(blockIdx, s);
-
+      PrintStat(logStream, kBlockStatString[eBlockStat_Path], 1);
       return;
     }
 
@@ -2334,8 +2343,7 @@ namespace BC7C {
           error = 1.0;
         }
 
-        BlockStat s (kBlockStatString[eBlockStat_SingleShapeEstimate], error);
-        statManager.AddStat(blockIdx, s);
+        PrintStream(logStream, kBlockStatString[eBlockStat_SingleShapeEstimate], error);
 #endif
       }
     }
@@ -2380,10 +2388,9 @@ namespace BC7C {
       }
 
       if(err < bestError[0]) {
-        BlockStat s = BlockStat(
+        PrintStat(logStream, 
           kBlockStatString[eBlockStat_TwoShapeEstimate], err
         );
-        statManager.AddStat(blockIdx, s);
       }
 
       // If it's small, we'll take it!
@@ -2394,8 +2401,7 @@ namespace BC7C {
         );
         bestMode = modeChosen;
 
-        BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 2);
-        statManager.AddStat(blockIdx, s);
+        PrintStat(logStream, kBlockStatString[eBlockStat_Path], 2);
         return;
       }
 
@@ -2445,10 +2451,9 @@ namespace BC7C {
         }
 
         if(err < bestError[1]) {
-          BlockStat s = BlockStat(
+          PrintStat(logStream, 
             kBlockStatString[eBlockStat_ThreeShapeEstimate], err
           );
-          statManager.AddStat(blockIdx, s);
         }
 
         // If it's small, we'll take it!
@@ -2459,9 +2464,7 @@ namespace BC7C {
           );
           bestMode = modeChosen;
 
-          BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 2);
-          statManager.AddStat(blockIdx, s);
-
+          PrintStat(logStream, kBlockStatString[eBlockStat_Path], 2);
           return;
         }
 
@@ -2475,8 +2478,7 @@ namespace BC7C {
       }
     }
 
-    BlockStat s = BlockStat(kBlockStatString[eBlockStat_Path], 3);
-    statManager.AddStat(blockIdx, s);
+    PrintStat(logStream, kBlockStatString[eBlockStat_Path], 3);
 
     uint8 tempBuf1[16], tempBuf2[16];
 

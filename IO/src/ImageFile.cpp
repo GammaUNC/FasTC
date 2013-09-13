@@ -43,11 +43,11 @@
 
 #include "ImageFile.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <limits.h>
-#include <assert.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
+#include <climits>
+#include <cassert>
 #include <algorithm>
 
 #include "ImageWriter.h"
@@ -196,8 +196,22 @@ Image *ImageFile::LoadImage(const unsigned char *rawImageData) const {
     return NULL;
   }
 
-  Image *i = new Image(*loader);
+  uint8 *pixelData = NULL;
+  if(loader->GetImageData()) {
+    pixelData = new uint8[ loader->GetImageDataSz() ];
+    if(!pixelData) { fprintf(stderr, "%s\n", "Out of memory!"); exit(1); }
+    memcpy(pixelData, loader->GetImageData(), loader->GetImageDataSz());
+  }
+  else {
+    fprintf(stderr, "%s\n", "Failed to get data from image loader!");
+  }
+
+  uint32 *pixels = reinterpret_cast<uint32 *>(pixelData);
+  Image *i = new Image(loader->GetWidth(), loader->GetHeight(), pixels);
+
+  // Cleanup
   delete loader;
+  delete pixelData;
 
   return i;
 }

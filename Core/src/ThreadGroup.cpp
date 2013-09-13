@@ -44,9 +44,10 @@
 #include "ThreadGroup.h"
 #include "BC7Compressor.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
+#include <iostream>
 
 CmpThread::CmpThread() 
   : m_StartBarrier(NULL)
@@ -90,7 +91,9 @@ void CmpThread::operator()() {
     if(m_CmpFunc)
       (*m_CmpFunc)(cj);
     else
-      (*m_CmpFuncWithStats)(cj, *m_StatManager);
+      // !FIXME! Actually use the block stat manager...
+      // (*m_CmpFuncWithStats)(cj, *m_StatManager);
+      (*m_CmpFuncWithStats)(cj, &std::cout);
 
     {
       TCLock lock(*m_ParentCounterLock);

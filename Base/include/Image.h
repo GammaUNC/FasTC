@@ -45,27 +45,17 @@
 #define __TEXCOMP_IMAGE_H__
 
 #include "TexCompTypes.h"
-#include "TexComp.h"
-
-// Forward declarations
-class ImageLoader;
 
 // Class definition
 class Image {
 
  public:
-  Image(const CompressedImage &);
-  Image(const ImageLoader &);
   Image(uint32 width, uint32 height, const uint32 *pixels);
-  ~Image();
-  
   Image(const Image &);
   Image &operator=(const Image &);
+  virtual ~Image();
   
-  const uint8 *RawData() const { return m_PixelData; }
-
-  CompressedImage *Compress(const SCompressionSettings &settings) const;
-  double ComputePSNR(const CompressedImage &ci) const;
+  const uint8 *RawData() const { return m_Data; }
 
   uint32 GetWidth() const { return m_Width; }
   uint32 GetHeight() const { return m_Height; }
@@ -73,13 +63,21 @@ class Image {
   void SetBlockStreamOrder(bool flag) { m_bBlockStreamOrder = flag; }
   bool GetBlockStreamOrder() const { return m_bBlockStreamOrder; }
 
+  double ComputePSNR(Image *other);
+
+  virtual void ComputeRGBA() { }
+  virtual const uint32 *GetRGBA() const {
+    return reinterpret_cast<const uint32 *>(RawData());
+  }
+
  private:
   uint32 m_Width;
   uint32 m_Height;
 
   bool m_bBlockStreamOrder;
 
-  uint8 *m_PixelData;
+ protected:
+  uint8 *m_Data;
 };
 
 #endif // __TEXCOMP_IMAGE_H__

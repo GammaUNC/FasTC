@@ -46,12 +46,13 @@
 
 // Forward declare...
 class WorkerQueue;
+class BlockStatManager;
 
 // Necessary includes...
 #include "TexCompTypes.h"
-#include "TexComp.h"
 #include "Thread.h"
 #include "StopWatch.h"
+#include "CompressionFuncs.h"
 
 class WorkerThread : public TCCallable {
   friend class WorkerQueue;

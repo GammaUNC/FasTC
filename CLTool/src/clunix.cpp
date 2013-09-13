@@ -186,9 +186,9 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  const Image *img = file.GetImage();
+  Image img = Image(*file.GetImage());
 
-  int numBlocks = (img->GetWidth() * img->GetHeight())/16;
+  int numBlocks = (img.GetWidth() * img.GetHeight())/16;
   BlockStatManager *statManager = NULL;
   if(bSaveLog) {
     statManager = new BlockStatManager(numBlocks);
@@ -203,13 +203,13 @@ int main(int argc, char **argv) {
   settings.iJobSize = numJobs;
   settings.pStatManager = statManager;
 
-  CompressedImage *ci = img->Compress(settings);
+  CompressedImage *ci = CompressImage(&img, settings);
   if(NULL == ci) {
     fprintf(stderr, "Error compressing image!\n");
     return 1;
   }
 
-  double PSNR = img->ComputePSNR(*ci);
+  double PSNR = img.ComputePSNR(ci);
   if(PSNR > 0.0) {
     fprintf(stdout, "PSNR: %.3f\n", PSNR);
   }
@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
     statManager->ToFile(logname);
   }
 
-  Image cImg (*ci);
+  Image cImg(*ci);
   ImageFile cImgFile (strcat(basename, "-bc7.png"), eFileFormat_PNG, cImg);
   cImgFile.Write();
 

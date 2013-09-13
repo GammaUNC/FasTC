@@ -48,7 +48,9 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cassert>
+#include <iostream>
 
+#include "CompressionFuncs.h"
 #include "BC7Compressor.h"
 #include "Thread.h"
 #include "WorkerQueue.h"
@@ -56,7 +58,6 @@
 
 #include "ImageFile.h"
 #include "Image.h"
-
 
 template <typename T>
 static void clamp(T &x, const T &minX, const T &maxX) {
@@ -142,7 +143,9 @@ static double CompressImageInSerial(
     // !FIXME! We're assuming that we have 4x4 blocks here...
     CompressionJob cj (imgData, outBuf, imgDataSz / 16, 4);
     if(fStats && settings.pStatManager) {
-      (*fStats)(cj, *(settings.pStatManager));
+      // !FIXME! Actually use the stat manager...
+      //(*fStats)(cj, *(settings.pStatManager));
+      (*fStats)(cj, &std::cout);
     }
     else {
       (*f)(cj);
@@ -328,6 +331,41 @@ static double CompressImageWithWorkerQueue(
   }
 
   return cmpTimeTotal / double(settings.iNumCompressions);
+}
+
+CompressedImage *CompressImage(
+  Image *img, const SCompressionSettings &settings
+) {
+  if(!img) return NULL;
+
+  const uint32 w = img->GetWidth();
+  const uint32 h = img->GetHeight();
+
+  CompressedImage *outImg = NULL;
+  const unsigned int dataSz = w * h * 4;
+
+  assert(dataSz > 0);
+
+  // Allocate data based on the compression method
+  int cmpDataSz = 0;
+  switch(settings.format) {
+    default: assert(!"Not implemented!"); // Fall Through V
+    case eCompressionFormat_DXT1: cmpDataSz = dataSz / 8; break;
+    case eCompressionFormat_DXT5: cmpDataSz = dataSz / 4; break;
+    case eCompressionFormat_BPTC: cmpDataSz = dataSz / 4; break;
+  }
+
+  // Make sure that we have RGBA data...
+  img->ComputeRGBA();
+
+  unsigned char *cmpData = new unsigned char[cmpDataSz];
+  const uint8 *pixelData = reinterpret_cast<const uint8 *>(img->GetRGBA());
+  CompressImageData(pixelData, dataSz, cmpData, cmpDataSz, settings);
+
+  outImg = new CompressedImage(w, h, settings.format, cmpData);
+  
+  delete [] cmpData;
+  return outImg;
 }
 
 bool CompressImageData(

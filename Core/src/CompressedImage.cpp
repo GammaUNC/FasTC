@@ -51,19 +51,10 @@
 #include "TexCompTypes.h"
 #include "BC7Compressor.h"
 
-CompressedImage::CompressedImage()
-  : m_Width(0)
-  , m_Height(0)
-  , m_Format(ECompressionFormat(-1))
-  , m_Data(0)
-  , m_DataSz(0)
-{ }
-
 CompressedImage::CompressedImage( const CompressedImage &other )
-  : m_Width(other.m_Width)
-  , m_Height(other.m_Height)
+  : Image(other)
   , m_Format(other.m_Format)
-  , m_Data(0)
+  , m_RGBAData(0)
   , m_DataSz(0)
 {
   InitData(other.m_Data);
@@ -74,11 +65,10 @@ CompressedImage::CompressedImage(
   const unsigned int height,
   const ECompressionFormat format,
   const unsigned char *data
-) 
-  : m_Width(width)
-  , m_Height(height)
+)
+  : Image(width, height, NULL)
   , m_Format(format)
-  , m_Data(0)
+  , m_RGBAData(0)
   , m_DataSz(0)
 {
   InitData(data);
@@ -86,7 +76,7 @@ CompressedImage::CompressedImage(
 
 void CompressedImage::InitData(const unsigned char *withData) {
   m_DataSz = 0;
-  int uncompDataSz = m_Width * m_Height * 4;
+  int uncompDataSz = GetWidth() * GetHeight() * 4;
 
   switch(m_Format) {
     default: assert(!"Not implemented!"); // Fall through V
@@ -122,23 +112,37 @@ bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBuf
   if(dataSz > outBufSz) {
     fprintf(stderr, "Not enough space to store entire decompressed image! "
                     "Got %d bytes, but need %d!\n", outBufSz, dataSz);
+    assert(false);
     return false;
   }
 
+  DecompressionJob dj (m_Data, outBuf, GetWidth(), GetHeight());
   switch(m_Format) {
-  case eCompressionFormat_BPTC: 
+    case eCompressionFormat_BPTC: 
     { 
-      DecompressionJob dj (m_Data, outBuf, m_Width, m_Height);
       BC7C::Decompress(dj);
     }
     break;
 
-  default:
-    const char *errStr = "Have not implemented decompression method.";
-    fprintf(stderr, "%s\n", errStr);
-    assert(!errStr);
+    default:
+    {
+      const char *errStr = "Have not implemented decompression method.";
+      fprintf(stderr, "%s\n", errStr);
+      assert(!errStr);
+    }
     return false;
   }
 
   return true;
+}
+
+void CompressedImage::ComputeRGBA() {
+
+  if(m_RGBAData) {
+    delete m_RGBAData;
+  }
+  m_RGBAData = new uint32[GetWidth() * GetHeight()];
+
+  uint8 *pixelData = reinterpret_cast<uint8 *>(m_RGBAData);
+  DecompressImage(pixelData, GetWidth() * GetHeight() * 4);
 }

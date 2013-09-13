@@ -53,7 +53,7 @@
 #ifndef PVRTCENCODER_SRC_PIXEL_H_
 #define PVRTCENCODER_SRC_PIXEL_H_
 
-#include "Core/include/TexCompTypes.h"
+#include "Base/include/TexCompTypes.h"
 
 namespace PVRTCC {
 

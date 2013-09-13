@@ -42,13 +42,12 @@
  */
 
 #include "Image.h"
-#include "ImageLoader.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#include <math.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <cassert>
+#include <cmath>
 
 template <typename T>
 static inline T sad( const T &a, const T &b ) {
@@ -59,12 +58,11 @@ Image::Image(const Image &other)
   : m_Width(other.m_Width)
   , m_Height(other.m_Height)
   , m_bBlockStreamOrder(other.GetBlockStreamOrder())
-  , m_PixelData(new uint8[m_Width * m_Height * 4])
+  , m_Data(new uint8[m_Width * m_Height * 4])
 {
-  if(m_PixelData) {
-    memcpy(m_PixelData, other.m_PixelData, m_Width * m_Height * 4);
-  }
-  else {
+  if(m_Data) {
+    memcpy(m_Data, other.m_Data, m_Width * m_Height * 4);
+  } else {
     fprintf(stderr, "Out of memory!\n");
   }
 }
@@ -73,10 +71,13 @@ Image::Image(uint32 width, uint32 height, const uint32 *pixels)
   : m_Width(width)
   , m_Height(height)
   , m_bBlockStreamOrder(false)
-  , m_PixelData(new uint8[4 * m_Width * m_Height])
 {
-  if(m_PixelData && pixels)
-    memcpy(m_PixelData, pixels, m_Width * m_Height * sizeof(uint32));
+  if(pixels) {
+    m_Data = new uint8[4 * m_Width * m_Height];
+    memcpy(m_Data, pixels, m_Width * m_Height * sizeof(uint32));
+  } else {
+    m_Data = NULL;
+  }
 }
 
 
@@ -86,110 +87,68 @@ Image &Image::operator=(const Image &other) {
   m_Height = other.m_Height;
   m_bBlockStreamOrder = other.GetBlockStreamOrder();
   
-  if(m_PixelData) {
-    delete [] m_PixelData;
+  if(m_Data) {
+    delete [] m_Data;
   }
   
-  if(other.m_PixelData) {
-    m_PixelData = new uint8[m_Width * m_Height * 4];
-    if(m_PixelData)
-      memcpy(m_PixelData, other.m_PixelData, m_Width * m_Height * 4);
+  if(other.m_Data) {
+    m_Data = new uint8[m_Width * m_Height * 4];
+    if(m_Data)
+      memcpy(m_Data, other.m_Data, m_Width * m_Height * 4);
     else
       fprintf(stderr, "Out of memory!\n");
   }
   else {
-    m_PixelData = other.m_PixelData;
+    m_Data = other.m_Data;
   }
   
   return *this;
 }
 
-Image::Image(const CompressedImage &ci)
-  : m_Width(ci.GetWidth())
-  , m_Height(ci.GetHeight())
-  , m_bBlockStreamOrder(true)
-{
-  unsigned int bufSz = ci.GetWidth() * ci.GetHeight() * 4;
-  m_PixelData = new uint8[ bufSz ];
-  if(!m_PixelData) { fprintf(stderr, "%s\n", "Out of memory!"); return; }
-
-  if(!ci.DecompressImage(m_PixelData, bufSz)) {
-    fprintf(stderr, "Error decompressing image!\n");
-    return;
-  }
-}
-
-Image::Image(const ImageLoader &loader) 
-  : m_Width(loader.GetWidth())
-  , m_Height(loader.GetHeight())
-  , m_bBlockStreamOrder(true)
-  , m_PixelData(0)
-{
-  if(loader.GetImageData()) {
-    m_PixelData = new uint8[ loader.GetImageDataSz() ];
-    if(!m_PixelData) { fprintf(stderr, "%s\n", "Out of memory!"); return; }
-    memcpy(m_PixelData, loader.GetImageData(), loader.GetImageDataSz());
-  }
-  else {
-    fprintf(stderr, "%s\n", "Failed to get data from image loader!");
-  }
-}
-
 Image::~Image() {
-  if(m_PixelData) {
-    delete [] m_PixelData;
-    m_PixelData = 0;
+  if(m_Data) {
+    delete [] m_Data;
+    m_Data = 0;
   }
 }
 
-CompressedImage *Image::Compress(const SCompressionSettings &settings) const {
-  CompressedImage *outImg = NULL;
-  const unsigned int dataSz = GetWidth() * GetHeight() * 4;
+double Image::ComputePSNR(Image *other) {
+  if(!other)
+    return -1.0;
 
-  assert(dataSz > 0);
-
-  // Allocate data based on the compression method
-  int cmpDataSz = 0;
-  switch(settings.format) {
-    default: assert(!"Not implemented!"); // Fall Through V
-    case eCompressionFormat_DXT1: cmpDataSz = dataSz / 8; break;
-    case eCompressionFormat_DXT5: cmpDataSz = dataSz / 4; break;
-    case eCompressionFormat_BPTC: cmpDataSz = dataSz / 4; break;
+  if(other->GetWidth() != GetWidth() ||
+     other->GetHeight() != GetHeight()) {
+    return -1.0;
   }
 
-  unsigned char *cmpData = new unsigned char[cmpDataSz];
-  CompressImageData(m_PixelData, dataSz, cmpData, cmpDataSz, settings);
+  // Compute raw 8-bit RGBA data...
+  other->ComputeRGBA();
+  ComputeRGBA();
 
-  outImg = new CompressedImage(GetWidth(), GetHeight(), settings.format, cmpData);
-  
-  delete [] cmpData;
-  return outImg;
-}
-
-double Image::ComputePSNR(const CompressedImage &ci) const {
-  unsigned int imageSz = 4 * GetWidth() * GetHeight();
-  unsigned char *unCompData = new unsigned char[imageSz];
-  if(!(ci.DecompressImage(unCompData, imageSz))) {
-    fprintf(stderr, "%s\n", "Failed to decompress image.");
-    delete [] unCompData;
-    return -1.0f;
-  }
+  const uint8 *ourData =
+    reinterpret_cast<const uint8 *>(GetRGBA());
+  const uint8 *otherData =
+    reinterpret_cast<const uint8 *>(other->GetRGBA());
 
   const double wr = 1.0;
   const double wg = 1.0;
   const double wb = 1.0;
     
   double MSE = 0.0;
+  const uint32 imageSz = GetWidth() * GetHeight() * 4;
   for(uint32 i = 0; i < imageSz; i+=4) {
 
-    const unsigned char *pixelDataRaw = m_PixelData + i;
-    const unsigned char *pixelDataUncomp = unCompData + i;
+    const unsigned char *ourPixel = ourData + i;
+    const unsigned char *otherPixel = otherData + i;
 
-    double rawAlphaScale = double(pixelDataRaw[3]) / 255.0;
-    double uncompAlphaScale = double(pixelDataUncomp[3]) / 255.0;
-    double dr = double(sad(rawAlphaScale * pixelDataRaw[0], uncompAlphaScale * pixelDataUncomp[0])) * wr;
-    double dg = double(sad(rawAlphaScale * pixelDataRaw[1], uncompAlphaScale * pixelDataUncomp[1])) * wg;
-    double db = double(sad(rawAlphaScale * pixelDataRaw[2], uncompAlphaScale * pixelDataUncomp[2])) * wb;
+    double ourAlphaScale = double(ourPixel[3]) / 255.0;
+    double otherAlphaScale = double(otherPixel[3]) / 255.0;
+    double dr = double(sad(ourAlphaScale * ourPixel[0],
+                           otherAlphaScale * otherPixel[0])) * wr;
+    double dg = double(sad(ourAlphaScale * ourPixel[1],
+                           otherAlphaScale * otherPixel[1])) * wg;
+    double db = double(sad(ourAlphaScale * ourPixel[2],
+                           otherAlphaScale * otherPixel[2])) * wb;
     
     const double pixelMSE = 
       (double(dr) * double(dr)) + 
@@ -208,8 +167,5 @@ double Image::ComputePSNR(const CompressedImage &ci) const {
     (255.0 * wb) * (255.0 * wb);
 
   double PSNR = 10 * log10(MAXI/MSE);
-
-  // Cleanup
-  delete unCompData;
   return PSNR;
 }

@@ -50,29 +50,22 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#ifndef PVRTCENCODER_INCLUDE_PVRTCCOMPRESSOR_H_
-#define PVRTCENCODER_INCLUDE_PVRTCCOMPRESSOR_H_
+#ifndef CORE_SRC_COMPRESSIONFUNCS_H_
+#define CORE_SRC_COMPRESSIONFUNCS_H_
 
-#include "Base/include/CompressionJob.h"
+#include "CompressionJob.h"
+#include <iosfwd>
 
-namespace PVRTCC {
+// A compression function format. It takes the raw data and image dimensions and 
+// returns the compressed image data into outData. It is assumed that there is
+// enough space allocated for outData to store the compressed data. Allocation
+// is dependent on the compression format.
+typedef void (* CompressionFunc)(const CompressionJob &);
 
-  // PVRTC works by bilinearly interpolating between blocks in order to
-  // compress and decompress data. As such, the wrap mode defines how the
-  // texture behaves at the boundaries.
-  enum EWrapMode {
-    eWrapMode_Clamp,  // Block endpoints are clamped at boundaries
-    eWrapMode_Wrap,   // Block endpoints wrap around at boundaries
-  };
+// A compression function format. It takes the raw data and image dimensions and 
+// returns the compressed image data into outData. It is assumed that there is
+// enough space allocated for outData to store the compressed data. Allocation
+// is dependent on the compression format.
+typedef void (* CompressionFuncWithStats)(const CompressionJob &, std::ostream *logStream);
 
-  // Takes a stream of compressed PVRTC data and decompresses it into R8G8B8A8
-  // format. The width and height must be specified in order to properly
-  // decompress the data.
-  void Decompress(const DecompressionJob &,
-                  bool bTwoBitMode = false,
-                  const EWrapMode wrapMode = eWrapMode_Clamp,
-                  bool bDebugImages = false);
-
-}  // namespace PVRTCC
-
-#endif  // PVRTCENCODER_INCLUDE_PVRTCCOMPRESSOR_H_
+#endif  // CORE_SRC_COMPRESSIONFUNCS_H_

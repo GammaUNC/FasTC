@@ -79,7 +79,7 @@
 #include "BC7Config.h"
 #include "CompressionJob.h"
 
-class BlockStatManager;
+#include <iosfwd>
 
 namespace BC7C {
   // This is the error metric that is applied to our error measurement algorithm
@@ -120,7 +120,7 @@ namespace BC7C {
   // made into a list of statistics. We can use this to see whether or not
   // certain heuristics are working, such as whether or not certain modes are
   // being chosen more often than others, etc.
-  void CompressWithStats(const CompressionJob &, BlockStatManager &statManager);
+  void CompressWithStats(const CompressionJob &, std::ostream *logStream);
 
 #ifdef HAS_SSE_41
   // Compress the image given as RGBA data to BC7 format using an algorithm
