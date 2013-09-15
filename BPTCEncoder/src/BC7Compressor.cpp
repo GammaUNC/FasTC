@@ -473,7 +473,7 @@ double BC7CompressionMode::CompressSingleColor(
 
     const float *errorWeights = BC7C::GetErrorMetric();
     float error = 0.0;
-    for(int i = 0; i < kNumColorChannels; i++) {
+    for(uint32 i = 0; i < kNumColorChannels; i++) {
       float e = static_cast<float>(dist[i]) * errorWeights[i];
       error += e * e;
     }

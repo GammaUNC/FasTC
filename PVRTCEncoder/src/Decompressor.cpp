@@ -275,13 +275,11 @@ namespace PVRTCC {
 
     if(bDebugImages) {
       Image dbgMod(h, w);
-      uint8 modDepth[4] = { 8, 4, 4, 4 };
-
-      for(int i = 0; i < h*w; i++) {
+      for(uint32 i = 0; i < h*w; i++) {
         float fb = static_cast<float>(modValues[i]);
         uint8 val = static_cast<uint8>((fb / 8.0f) * 15.0f);
 
-        for(int k = 1; k < 4; k++) {
+        for(uint32 k = 1; k < 4; k++) {
           dbgMod(i%w, i/w).Component(k) = val;
         }
         dbgMod(i%w, i/w).A() = 0xFF;

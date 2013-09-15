@@ -187,12 +187,17 @@ TEST(Block, GetLerpValue) {
 }
 
 TEST(Block, Get2BPPLerpValue) {
-  uint8 noModData[8] = { 0xDA, 0x27, 0xE4, 0x1B, 0x0, 0x0, 0x0, 0x0 };
+  union {
+    uint8 noModDataBytes[8];
+    uint32 noModDataInts[2];
+  } noModDataVals;
+  const uint8 noModData[8] = { 0xDA, 0x27, 0xE4, 0x1B, 0x0, 0x0, 0x0, 0x0 };
+  memcpy(noModDataVals.noModDataBytes, noModData, sizeof(noModData));
   PVRTCC::Block b(noModData);
 
-  uint32 dataInt = *(reinterpret_cast<const uint32 *>(noModData));
+  uint32 noModInt = noModDataVals.noModDataInts[0];
   for(uint32 i = 0; i < 32; i++) {
-    EXPECT_EQ(b.Get2BPPLerpValue(i), (dataInt >> i) & 0x1);
+    EXPECT_EQ(b.Get2BPPLerpValue(i), (noModInt >> i) & 0x1);
   }
 
   uint8 modData[8];

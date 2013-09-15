@@ -58,8 +58,8 @@ class CompressedImage : public Image {
 
  private:
   ECompressionFormat m_Format;
-  uint32 m_DataSz;
   uint32 *m_RGBAData;
+  uint32 m_DataSz;
 
   void InitData(const unsigned char *withData);
  public:

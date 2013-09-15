@@ -72,8 +72,8 @@ TEST(Decompressor, DecompressWhite) {
   DecompressionJob dcj (pvrData, outData, kWidth, kHeight);
   PVRTCC::Decompress(dcj);
 
-  for(int i = 0; i < kWidth; i++) {
-    for(int j = 0; j < kHeight; j++) {
+  for(uint32 i = 0; i < kWidth; i++) {
+    for(uint32 j = 0; j < kHeight; j++) {
       const uint32 *pixelData = reinterpret_cast<const uint32 *>(outData);
       const uint32 p = pixelData[j*kWidth + i];
       EXPECT_EQ(PixelPrinter(p), PixelPrinter(0xFFFFFFFF));
@@ -87,7 +87,7 @@ TEST(Decompressor, DecompressGray) {
 
   uint8 pvrData[512];
 
-  for(int i = 0; i < 512; i += 8) {
+  for(uint32 i = 0; i < 512; i += 8) {
     uint8 grayBlock[8] = { 0xAA, 0xAA, 0xAA, 0xAA, 0xF0, 0xBD, 0x0F, 0xC2 };
     memcpy(pvrData + i, grayBlock, 8);
   }
@@ -97,8 +97,8 @@ TEST(Decompressor, DecompressGray) {
   DecompressionJob dcj (pvrData, outData, kWidth, kHeight);
   PVRTCC::Decompress(dcj);
 
-  for(int i = 0; i < kWidth; i++) {
-    for(int j = 0; j < kHeight; j++) {
+  for(uint32 i = 0; i < kWidth; i++) {
+    for(uint32 j = 0; j < kHeight; j++) {
       const uint32 *pixelData = reinterpret_cast<const uint32 *>(outData);
       const uint32 p = pixelData[j*kWidth + i];
       EXPECT_EQ(PixelPrinter(p), PixelPrinter(0xFF818080));

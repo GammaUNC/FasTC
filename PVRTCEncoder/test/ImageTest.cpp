@@ -61,8 +61,8 @@ TEST(Image, NonSpecificConstructor) {
   PVRTCC::Pixel p;
 
   PVRTCC::Image img (4, 4);
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
+  for(uint32 i = 0; i < 4; i++) {
+    for(uint32 j = 0; j < 4; j++) {
       EXPECT_TRUE(img(i, j) == p);
     }
   }
@@ -70,16 +70,16 @@ TEST(Image, NonSpecificConstructor) {
 
 TEST(Image, SpecificConstructor) {
   PVRTCC::Pixel pxs[16];
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
+  for(uint32 i = 0; i < 4; i++) {
+    for(uint32 j = 0; j < 4; j++) {
       pxs[j*4 + i].R() = i;
       pxs[j*4 + i].G() = j;
     }
   }
 
   PVRTCC::Image img(4, 4, pxs);
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
+  for(uint32 i = 0; i < 4; i++) {
+    for(uint32 j = 0; j < 4; j++) {
       EXPECT_TRUE(img(i, j) == pxs[j*4 + i]);
     }
   }
@@ -87,8 +87,8 @@ TEST(Image, SpecificConstructor) {
 
 TEST(Image, CopyConstructor) {
   PVRTCC::Pixel pxs[16];
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
+  for(uint32 i = 0; i < 4; i++) {
+    for(uint32 j = 0; j < 4; j++) {
       pxs[j*4 + i].R() = i;
       pxs[j*4 + i].G() = j;
     }
@@ -96,8 +96,8 @@ TEST(Image, CopyConstructor) {
 
   PVRTCC::Image img(4, 4, pxs);
   PVRTCC::Image img2(img);
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
+  for(uint32 i = 0; i < 4; i++) {
+    for(uint32 j = 0; j < 4; j++) {
       EXPECT_TRUE(img2(i, j) == pxs[j*4 + i]);
     }
   }
@@ -105,8 +105,8 @@ TEST(Image, CopyConstructor) {
 
 TEST(Image, AssignmentOperator) {
   PVRTCC::Pixel pxs[16];
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
+  for(uint32 i = 0; i < 4; i++) {
+    for(uint32 j = 0; j < 4; j++) {
       pxs[j*4 + i].R() = i;
       pxs[j*4 + i].G() = j;
     }
@@ -114,8 +114,8 @@ TEST(Image, AssignmentOperator) {
 
   PVRTCC::Image img(4, 4, pxs);
   PVRTCC::Image img2 = img;
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
+  for(uint32 i = 0; i < 4; i++) {
+    for(uint32 j = 0; j < 4; j++) {
       EXPECT_TRUE(img2(i, j) == pxs[j*4 + i]);
     }
   }
@@ -123,8 +123,8 @@ TEST(Image, AssignmentOperator) {
 
 TEST(Image, BilinearUpscale) {
   PVRTCC::Pixel pxs[16];
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
+  for(uint32 i = 0; i < 4; i++) {
+    for(uint32 j = 0; j < 4; j++) {
       pxs[j*4 + i].R() = i*2;
       pxs[j*4 + i].G() = j*2;
     }
@@ -161,8 +161,8 @@ TEST(Image, BilinearUpscaleMaintainsPixels) {
   const uint32 h = 4;
 
   PVRTCC::Pixel pxs[16];
-  for(int i = 0; i < w; i++) {
-    for(int j = 0; j < h; j++) {
+  for(uint32 i = 0; i < w; i++) {
+    for(uint32 j = 0; j < h; j++) {
       pxs[j*w + i].R() = rand() % 256;
       pxs[j*w + i].G() = rand() % 256;
       pxs[j*w + i].B() = rand() % 256;
@@ -191,8 +191,8 @@ TEST(Image, NonuniformBilinearUpscale) {
   const uint32 kHeight = 8;
 
   PVRTCC::Pixel pxs[kWidth * kHeight];
-  for(int i = 0; i < kWidth; i++) {
-    for(int j = 0; j < kHeight; j++) {
+  for(uint32 i = 0; i < kWidth; i++) {
+    for(uint32 j = 0; j < kHeight; j++) {
       pxs[j*kWidth + i].R() = i*4;
       pxs[j*kWidth + i].G() = j*2;
     }
@@ -226,13 +226,13 @@ TEST(Image, BilinearUpscaleWrapped) {
   PVRTCC::Pixel pxs[16];
 
   // Make sure that our bit depth is less than full...
-  for(int i = 0; i < 16; i++) {
+  for(uint32 i = 0; i < 16; i++) {
     const uint8 newBitDepth[4] = { 6, 5, 6, 5 };
     pxs[i].ChangeBitDepth(newBitDepth);
   }
 
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
+  for(uint32 i = 0; i < 4; i++) {
+    for(uint32 j = 0; j < 4; j++) {
       pxs[j*4 + i].R() = i*4;
       pxs[j*4 + i].G() = j*4;
     }
