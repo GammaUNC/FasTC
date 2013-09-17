@@ -49,8 +49,6 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
-INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR})
-
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/PVRTCEncoder/include)
 INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/PVRTCEncoder/include)
 

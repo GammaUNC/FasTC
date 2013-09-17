@@ -58,8 +58,8 @@
 
 #include "Pixel.h"
 
-#include "Base/include/Image.h"
-#include "IO/include/ImageFile.h"
+#include "../../Base/include/Image.h"
+#include "../../IO/include/ImageFile.h"
 
 namespace PVRTCC {
 
