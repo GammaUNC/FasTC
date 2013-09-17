@@ -46,7 +46,6 @@
 
 #include "TexCompTypes.h"
 
-// Class definition
 class Image {
 
  public:
