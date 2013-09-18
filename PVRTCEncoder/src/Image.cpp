@@ -83,27 +83,27 @@ Image::Image(uint32 height, uint32 width, const Pixel *pixels)
 }
 
 Image::Image(const Image &other)
-  : m_Width(other.m_Width)
-  , m_Height(other.m_Height)
-  , m_Pixels(new Pixel[other.m_Width * other.m_Height])
-  , m_FractionalPixels(new Pixel[other.m_Width * other.m_Height]) {
-  memcpy(m_Pixels, other.m_Pixels, m_Width * m_Height * sizeof(Pixel));
+  : m_Width(other.GetWidth())
+  , m_Height(other.GetHeight())
+  , m_Pixels(new Pixel[other.GetWidth() * other.GetHeight()])
+  , m_FractionalPixels(new Pixel[other.GetWidth() * other.GetHeight()]) {
+  memcpy(m_Pixels, other.m_Pixels, GetWidth() * GetHeight() * sizeof(Pixel));
 }
 
 Image &Image::operator=(const Image &other) {
-  m_Width = other.m_Width;
-  m_Height = other.m_Height;
+  m_Width = other.GetWidth();
+  m_Height = other.GetHeight();
 
   assert(m_Pixels);
   delete m_Pixels;
-  m_Pixels = new Pixel[other.m_Width * other.m_Height];
-  memcpy(m_Pixels, other.m_Pixels, m_Width * m_Height * sizeof(Pixel));
+  m_Pixels = new Pixel[other.GetWidth() * other.GetHeight()];
+  memcpy(m_Pixels, other.m_Pixels, GetWidth() * GetHeight() * sizeof(Pixel));
 
   assert(m_FractionalPixels);
   delete m_FractionalPixels;
-  m_FractionalPixels = new Pixel[other.m_Width * other.m_Height];
+  m_FractionalPixels = new Pixel[other.GetWidth() * other.GetHeight()];
   memcpy(m_FractionalPixels, other.m_FractionalPixels,
-         m_Width * m_Height * sizeof(Pixel));
+         GetWidth() * GetHeight() * sizeof(Pixel));
 
   return *this;
 }
@@ -129,8 +129,8 @@ static bool CompareBitDepths(const uint8 (&depth1)[4],
 
 void Image::BilinearUpscale(uint32 xtimes, uint32 ytimes,
                             EWrapMode wrapMode) {
-  const uint32 newWidth = m_Width << xtimes;
-  const uint32 newHeight = m_Height << ytimes;
+  const uint32 newWidth = GetWidth() << xtimes;
+  const uint32 newHeight = GetHeight() << ytimes;
 
   const uint32 xscale = 1 << xtimes;
   const uint32 xoffset = xscale >> 1;
@@ -214,9 +214,9 @@ void Image::BilinearUpscale(uint32 xtimes, uint32 ytimes,
 }
 
 void Image::ChangeBitDepth(const uint8 (&depths)[4]) {
-  for(uint32 j = 0; j < m_Height; j++) {
-    for(uint32 i = 0; i < m_Width; i++) {
-      uint32 pidx = j * m_Width + i;
+  for(uint32 j = 0; j < GetHeight(); j++) {
+    for(uint32 i = 0; i < GetWidth(); i++) {
+      uint32 pidx = j * GetWidth() + i;
       m_Pixels[pidx].ChangeBitDepth(depths);
     }
   }
@@ -229,10 +229,10 @@ void Image::ExpandTo8888() {
   uint8 fractionDepth[4];
   const uint8 fullDepth[4] = { 8, 8, 8, 8 };
 
-  for(uint32 j = 0; j < m_Height; j++) {
-    for(uint32 i = 0; i < m_Width; i++) {
+  for(uint32 j = 0; j < GetHeight(); j++) {
+    for(uint32 i = 0; i < GetWidth(); i++) {
 
-      uint32 pidx = j * m_Width + i;
+      uint32 pidx = j * GetWidth() + i;
       m_Pixels[pidx].ChangeBitDepth(fullDepth);
       m_FractionalPixels[pidx].GetBitDepth(fractionDepth);
 
@@ -257,15 +257,15 @@ const Pixel &Image::GetPixel(int32 i, int32 j, EWrapMode wrapMode) {
     if(wrapMode == eWrapMode_Clamp) {
       i = 0;
     } else {
-      i += m_Width;
+      i += GetWidth();
     }
   }
 
-  while(i >= static_cast<int32>(m_Width)) {
+  while(i >= static_cast<int32>(GetWidth())) {
     if(wrapMode == eWrapMode_Clamp) {
-      i = m_Width - 1;
+      i = GetWidth() - 1;
     } else {
-      i -= m_Width;
+      i -= GetWidth();
     }
   }
 
@@ -273,46 +273,49 @@ const Pixel &Image::GetPixel(int32 i, int32 j, EWrapMode wrapMode) {
     if(wrapMode == eWrapMode_Clamp) {
       j = 0;
     } else {
-      j += m_Height;
+      j += GetHeight();
     }
   }
 
-  while(j >= static_cast<int32>(m_Height)) {
+  while(j >= static_cast<int32>(GetHeight())) {
     if(wrapMode == eWrapMode_Clamp) {
-      j = m_Height - 1;
+      j = GetHeight() - 1;
     } else {
-      j -= m_Height;
+      j -= GetHeight();
     }
   }
 
-  return m_Pixels[j * m_Width + i];
+  int32 idx = j * GetWidth() + i;
+  assert(idx >= 0);
+  assert(idx < GetWidth() * GetHeight());
+  return idx;
 }
 
 Pixel & Image::operator()(uint32 i, uint32 j) {
-  assert(i < m_Width);
-  assert(j < m_Height);
-  return m_Pixels[j * m_Width + i];
+  assert(i < GetWidth());
+  assert(j < GetHeight());
+  return m_Pixels[j * GetWidth() + i];
 }
 
 const Pixel & Image::operator()(uint32 i, uint32 j) const {
-  assert(i < m_Width);
-  assert(j < m_Height);
-  return m_Pixels[j * m_Width + i];
+  assert(i < GetWidth());
+  assert(j < GetHeight());
+  return m_Pixels[j * GetWidth() + i];
 }
 
 void Image::DebugOutput(const char *filename) const {
-  uint32 *outPixels = new uint32[m_Width * m_Height];
+  uint32 *outPixels = new uint32[GetWidth() * GetHeight()];
   const uint8 fullDepth[4] = { 8, 8, 8, 8 };
-  for(int j = 0; j < m_Height; j++) {
-    for(int i = 0; i < m_Width; i++) {
-      uint32 idx = j * m_Width + i;
+  for(uint32 j = 0; j < GetHeight(); j++) {
+    for(uint32 i = 0; i < GetWidth(); i++) {
+      uint32 idx = j * GetWidth() + i;
       Pixel p = m_Pixels[idx];
       p.ChangeBitDepth(fullDepth);
       outPixels[idx] = p.PackRGBA();
     }
   }
 
-  ::Image img(m_Width, m_Height, outPixels);
+  ::Image img(GetWidth(), GetHeight(), outPixels);
 
   char debugFilename[256];
   snprintf(debugFilename, sizeof(debugFilename), "%s.png", filename);
