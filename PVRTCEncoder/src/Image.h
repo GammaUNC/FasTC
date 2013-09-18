@@ -69,7 +69,7 @@ class Image {
   ~Image();
 
   void BilinearUpscale(uint32 xtimes, uint32 ytimes,
-                       EWrapMode wrapMode = eWrapMode_Clamp);
+                       EWrapMode wrapMode = eWrapMode_Wrap);
   void ChangeBitDepth(const uint8 (&depths)[4]);
   void ExpandTo8888();
 

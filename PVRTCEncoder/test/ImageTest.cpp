@@ -131,7 +131,7 @@ TEST(Image, BilinearUpscale) {
   }
 
   PVRTCC::Image img(4, 4, pxs);
-  img.BilinearUpscale(1, 1);
+  img.BilinearUpscale(1, 1, PVRTCC::eWrapMode_Clamp);
   EXPECT_EQ(img.GetWidth(), static_cast<uint32>(8));
   EXPECT_EQ(img.GetHeight(), static_cast<uint32>(8));
 
@@ -171,7 +171,7 @@ TEST(Image, BilinearUpscaleMaintainsPixels) {
   }
 
   PVRTCC::Image img(w, h, pxs);
-  img.BilinearUpscale(2, 2);
+  img.BilinearUpscale(2, 2, PVRTCC::eWrapMode_Clamp);
   EXPECT_EQ(img.GetWidth(), w << 2);
   EXPECT_EQ(img.GetHeight(), h << 2);
 
@@ -199,7 +199,7 @@ TEST(Image, NonuniformBilinearUpscale) {
   }
 
   PVRTCC::Image img(kHeight, kWidth, pxs);
-  img.BilinearUpscale(2, 1);
+  img.BilinearUpscale(2, 1, PVRTCC::eWrapMode_Clamp);
   EXPECT_EQ(img.GetWidth(), static_cast<uint32>(kWidth << 2));
   EXPECT_EQ(img.GetHeight(), static_cast<uint32>(kHeight << 1));
 
