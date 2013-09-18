@@ -87,7 +87,8 @@ class Image {
   Pixel *m_Pixels;
   Pixel *m_FractionalPixels;
 
-  const Pixel &GetPixel(int32 i, int32 j, EWrapMode wrapMode = eWrapMode_Clamp);
+  const uint32 GetPixelIndex(int32 i, int32 j, EWrapMode wrapMode = eWrapMode_Clamp) const;
+  const Pixel &GetPixel(int32 i, int32 j, EWrapMode wrapMode = eWrapMode_Clamp) const;
 };
 
 }  // namespace PVRTCC

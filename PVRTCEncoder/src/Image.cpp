@@ -252,7 +252,11 @@ void Image::ExpandTo8888() {
   }
 }
 
-const Pixel &Image::GetPixel(int32 i, int32 j, EWrapMode wrapMode) {
+const Pixel &Image::GetPixel(int32 i, int32 j, EWrapMode wrapMode) const {
+  return m_Pixels[GetPixelIndex(i, j, wrapMode)];
+}
+
+const uint32 Image::GetPixelIndex(int32 i, int32 j, EWrapMode wrapMode) const {
   while(i < 0) {
     if(wrapMode == eWrapMode_Clamp) {
       i = 0;
