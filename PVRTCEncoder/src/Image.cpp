@@ -55,11 +55,17 @@
 #include <cassert>
 #include <cstring>
 #include <cstdio>
+#include <cmath>
 
 #include "Pixel.h"
 
 #include "Core/include/Image.h"
 #include "IO/include/ImageFile.h"
+
+static float ConvertChannelToFloat(uint8 channel, uint8 bitDepth) {
+  float denominator = static_cast<float>((1 << bitDepth) - 1);
+  return static_cast<float>(channel) / denominator;
+}
 
 namespace PVRTCC {
 
@@ -211,6 +217,159 @@ void Image::BilinearUpscale(uint32 xtimes, uint32 ytimes,
   m_Pixels = upscaledPixels;
   m_Width = newWidth;
   m_Height = newHeight;
+}
+
+void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
+                                  EWrapMode wrapMode, bool bOffsetNewPixels) {
+  const uint32 w = GetWidth();
+  const uint32 h = GetHeight();
+
+  const uint32 newWidth = w >> xtimes;
+  const uint32 newHeight = h >> ytimes;
+
+  Pixel *downscaledPixels = new Pixel[newWidth * newHeight];
+  const uint32 numDownscaledPixels = newWidth * newHeight;
+
+  uint8 bitDepth[4];
+  m_Pixels[0].GetBitDepth(bitDepth);
+
+  for(uint32 i = 0; i < numDownscaledPixels; i++) {
+    downscaledPixels[i].ChangeBitDepth(bitDepth);
+  }
+
+  // Allocate memory
+  float *imgData = new float[19 * w * h];
+  float *I = imgData;
+  float *Ix[5] = {
+    imgData + (w * h),
+    imgData + (2 * w * h),
+    imgData + (3 * w * h),
+    imgData + (4 * w * h),
+    imgData + (18 * w * h),
+  };
+  float *Iy = imgData + (5 * w * h);
+  float *Ixx[4] = {
+    imgData + (6 * w * h),
+    imgData + (7 * w * h),
+    imgData + (8 * w * h),
+    imgData + (9 * w * h)
+  };
+  float *Iyy[4] = {
+    imgData + (10 * w * h),
+    imgData + (11 * w * h),
+    imgData + (12 * w * h),
+    imgData + (13 * w * h)
+  };
+  float *Ixy[4] = {
+    imgData + (14 * w * h),
+    imgData + (15 * w * h),
+    imgData + (16 * w * h),
+    imgData + (17 * w * h)
+  };
+
+  // Then, compute the intensity of the image
+  for(uint32 i = 0; i < w * h; i++) {
+    // First convert the pixel values to floats using
+    // premultiplied alpha...
+    float a = ConvertChannelToFloat(m_Pixels[i].A(), bitDepth[0]);
+    float r = a * ConvertChannelToFloat(m_Pixels[i].R(), bitDepth[1]);
+    float g = a * ConvertChannelToFloat(m_Pixels[i].G(), bitDepth[2]);
+    float b = a * ConvertChannelToFloat(m_Pixels[i].B(), bitDepth[3]);
+
+    I[i] = r * 0.21 + g * 0.71 + b * 0.07;
+  }
+
+  // Use central differences to calculate Ix, Iy, Ixx, Iyy...
+  for(uint32 j = 0; j < h; j++) {
+    for(uint32 i = 0; i < w; i++) {
+      uint32 hm2xidx = GetPixelIndex(i-2, j);
+      uint32 hm1xidx = GetPixelIndex(i-1, j);
+      uint32 hp1xidx = GetPixelIndex(i+1, j);
+      uint32 hp2xidx = GetPixelIndex(i+2, j);
+
+      uint32 hm2yidx = GetPixelIndex(i, j-2);
+      uint32 hm1yidx = GetPixelIndex(i, j-1);
+      uint32 hp1yidx = GetPixelIndex(i, j+1);
+      uint32 hp2yidx = GetPixelIndex(i, j+2);
+
+      uint32 idx = GetPixelIndex(i, j);
+      Ix[4][idx] = (I[hm2xidx] - 8*I[hm1xidx] + 8*I[hp1xidx] - I[hp2xidx]) / 12.0f;
+      Iy[idx] = (I[hm2yidx] - 8*I[hm1yidx] + 8*I[hp1yidx] - I[hp2yidx]) / 12.0f;
+
+      for(uint32 c = 0; c <= 3; c++) {
+        #define CPNT(dx) ConvertChannelToFloat(m_Pixels[dx].Component(c), bitDepth[c])
+        Ix[c][idx] = (CPNT(hm2xidx) - 8*CPNT(hm1xidx) + 8*CPNT(hp1xidx) - CPNT(hp2xidx)) / 12.0f;
+        Ixx[c][idx] = (-CPNT(hm2xidx) + 16*CPNT(hm1xidx) - 30*CPNT(idx) + 16*CPNT(hp1xidx) - CPNT(hp2xidx)) / 12.0f;
+        Iyy[c][idx] = (-CPNT(hm2yidx) + 16*CPNT(hm1yidx) - 30*CPNT(idx) + 16*CPNT(hp1yidx) - CPNT(hp2yidx)) / 12.0f;
+        #undef CPNT
+      }
+    }
+  }
+
+  // Finally, compute Ixy
+  for(uint32 j = 0; j < h; j++) {
+    for(uint32 i = 0; i < w; i++) {
+      uint32 hm2y = GetPixelIndex(i, j-2);
+      uint32 hm1y = GetPixelIndex(i, j-1);
+      uint32 hp1y = GetPixelIndex(i, j+1);
+      uint32 hp2y = GetPixelIndex(i, j+2);
+
+      uint32 idx = GetPixelIndex(i, j);
+      for(uint32 c = 0; c <= 3; c++) {
+        Ixy[c][idx] = (Ix[c][hm2y] - 8*Ix[c][hm1y] + 8*Ix[c][hp1y] - Ix[c][hp2y]) / 12.0f;
+      }
+    }
+  }
+
+  // Now, for each pixel that we take into consideration, use
+  // a smoothing step that is taken from the anisotropic diffusion
+  // equation:
+  // I_t = (I_x^2I_yy - 2I_xyI_xI_y + I_y^2I_xx)(I_x^2 + I_y^2)
+  for(uint32 j = 0; j < newHeight; j++) {
+    for(uint32 i = 0; i < newWidth; i++) {
+
+      // Map this new pixel back into the original space...
+      uint32 scalex = 1 << xtimes;
+      uint32 scaley = 1 << ytimes;
+
+      uint32 x = scalex * i;
+      uint32 y = scaley * j;
+
+      if(bOffsetNewPixels) {
+        x += scalex >> 1;
+        y += scaley >> 1;
+      }
+
+      uint32 idx = GetPixelIndex(x, y);
+      Pixel current = m_Pixels[idx];
+
+      Pixel result;
+      result.ChangeBitDepth(bitDepth);
+
+      float Ixsq = Ix[4][idx] * Ix[4][idx];
+      float Iysq = Iy[idx] * Iy[idx];
+      float denom = Ixsq + Iysq;
+
+      for(uint32 c = 0; c < 4; c++) {
+        float I0 = ConvertChannelToFloat(current.Component(c), bitDepth[c]);
+        float It = Ixx[c][idx] + Iyy[c][idx];
+        if(fabs(denom) > 1e-6) {
+          It -= (Ixsq*Ixx[c][idx] + 2*Ix[4][idx]*Iy[idx]*Ixy[c][idx] + Iysq*Iyy[c][idx]);
+        }
+        float pxScale = static_cast<float>((1 << bitDepth[c]) - 1);
+        result.Component(c) = static_cast<uint8>(((I0 + 0.25*It) + 0.5) * pxScale);
+      }
+
+      downscaledPixels[j * newHeight + i] = result;
+    }
+  }
+
+  delete m_Pixels;
+  m_Pixels = downscaledPixels;
+  m_Width = newWidth;
+  m_Height = newHeight;
+
+  delete [] imgData;
 }
 
 void Image::ChangeBitDepth(const uint8 (&depths)[4]) {

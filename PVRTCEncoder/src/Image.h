@@ -70,6 +70,16 @@ class Image {
 
   void BilinearUpscale(uint32 xtimes, uint32 ytimes,
                        EWrapMode wrapMode = eWrapMode_Wrap);
+
+  // Downscales the image by taking an anisotropic diffusion approach
+  // with respect to the gradient of the intensity. In this way, we can
+  // preserve the most important image structures by not blurring across
+  // edge boundaries, which when upscaled will retain the structural
+  // image quality...
+  void ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
+                             EWrapMode wrapMode = eWrapMode_Wrap,
+                             bool bOffsetNewPixels = false);
+
   void ChangeBitDepth(const uint8 (&depths)[4]);
   void ExpandTo8888();
 
