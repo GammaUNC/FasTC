@@ -161,8 +161,8 @@ TEST(Image, BilinearUpscaleMaintainsPixels) {
   const uint32 h = 4;
 
   PVRTCC::Pixel pxs[16];
-  for(int i = 0; i < w; i++) {
-    for(int j = 0; j < h; j++) {
+  for(uint32 i = 0; i < w; i++) {
+    for(uint32 j = 0; j < h; j++) {
       pxs[j*w + i].R() = rand() % 256;
       pxs[j*w + i].G() = rand() % 256;
       pxs[j*w + i].B() = rand() % 256;
@@ -191,8 +191,8 @@ TEST(Image, NonuniformBilinearUpscale) {
   const uint32 kHeight = 8;
 
   PVRTCC::Pixel pxs[kWidth * kHeight];
-  for(int i = 0; i < kWidth; i++) {
-    for(int j = 0; j < kHeight; j++) {
+  for(uint32 i = 0; i < kWidth; i++) {
+    for(uint32 j = 0; j < kHeight; j++) {
       pxs[j*kWidth + i].R() = i*4;
       pxs[j*kWidth + i].G() = j*2;
     }
@@ -274,6 +274,33 @@ TEST(Image, BilinearUpscaleWrapped) {
         EXPECT_EQ(p.G(), 9);
       } else {
         EXPECT_EQ(p.G(), j-2);
+      }
+    }
+  }
+}
+
+TEST(Image, ContentAwareDownscale) {
+  PVRTCC::Image img(8, 8);
+  for(uint32 j = 0; j < img.GetHeight(); j++) {
+    for(uint32 i = 0; i < img.GetWidth(); i++) {
+      if(j < 4) {
+        img(i, j) = PVRTCC::Pixel( 0xFF000000 );
+      } else {
+        img(i, j) = PVRTCC::Pixel( 0xFF0000FF );
+      }
+    }
+  }
+
+  img.ContentAwareDownscale(1, 1);
+  EXPECT_EQ(img.GetWidth(), static_cast<uint32>(4));
+  EXPECT_EQ(img.GetHeight(), static_cast<uint32>(4));
+
+  for(uint32 j = 0; j < img.GetHeight(); j++) {
+    for(uint32 i = 0; i < img.GetWidth(); i++) {
+      if(j < 2) {
+        EXPECT_EQ(img(i, j).R(), 0);
+      } else {
+        EXPECT_EQ(img(i, j).R(), 255);
       }
     }
   }

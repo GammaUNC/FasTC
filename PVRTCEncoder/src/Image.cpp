@@ -282,41 +282,28 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
   // Use central differences to calculate Ix, Iy, Ixx, Iyy...
   for(uint32 j = 0; j < h; j++) {
     for(uint32 i = 0; i < w; i++) {
-      uint32 hm2xidx = GetPixelIndex(i-2, j);
-      uint32 hm1xidx = GetPixelIndex(i-1, j);
-      uint32 hp1xidx = GetPixelIndex(i+1, j);
-      uint32 hp2xidx = GetPixelIndex(i+2, j);
+      uint32 xmhidx = GetPixelIndex(i-1, j);
+      uint32 xphidx = GetPixelIndex(i+1, j);
 
-      uint32 hm2yidx = GetPixelIndex(i, j-2);
-      uint32 hm1yidx = GetPixelIndex(i, j-1);
-      uint32 hp1yidx = GetPixelIndex(i, j+1);
-      uint32 hp2yidx = GetPixelIndex(i, j+2);
+      uint32 ymhidx = GetPixelIndex(i, j-1);
+      uint32 yphidx = GetPixelIndex(i, j+1);
 
       uint32 idx = GetPixelIndex(i, j);
-      Ix[4][idx] = (I[hm2xidx] - 8*I[hm1xidx] + 8*I[hp1xidx] - I[hp2xidx]) / 12.0f;
-      Iy[idx] = (I[hm2yidx] - 8*I[hm1yidx] + 8*I[hp1yidx] - I[hp2yidx]) / 12.0f;
+
+      uint32 upidx = GetPixelIndex(i + 1, j + 1);
+      uint32 downidx = GetPixelIndex(i - 1, j - 1);
+
+      Ix[4][idx] = (I[xphidx] - I[xmhidx]) / 2.0f;
+      Iy[idx] = (I[yphidx] - I[ymhidx]) / 2.0f;
 
       for(uint32 c = 0; c <= 3; c++) {
         #define CPNT(dx) ConvertChannelToFloat(m_Pixels[dx].Component(c), bitDepth[c])
-        Ix[c][idx] = (CPNT(hm2xidx) - 8*CPNT(hm1xidx) + 8*CPNT(hp1xidx) - CPNT(hp2xidx)) / 12.0f;
-        Ixx[c][idx] = (-CPNT(hm2xidx) + 16*CPNT(hm1xidx) - 30*CPNT(idx) + 16*CPNT(hp1xidx) - CPNT(hp2xidx)) / 12.0f;
-        Iyy[c][idx] = (-CPNT(hm2yidx) + 16*CPNT(hm1yidx) - 30*CPNT(idx) + 16*CPNT(hp1yidx) - CPNT(hp2yidx)) / 12.0f;
+        Ix[c][idx] = (CPNT(xphidx) - CPNT(xmhidx)) / 2.0f;
+        Ixx[c][idx] = (CPNT(xphidx) - 2.0f*CPNT(idx) + CPNT(xmhidx)) / 2.0f;
+        Iyy[c][idx] = (CPNT(yphidx) - 2.0f*CPNT(idx) + CPNT(ymhidx)) / 2.0f;
+        Ixy[c][idx] = (CPNT(upidx) - CPNT(xphidx) - CPNT(yphidx) + 2.0f*CPNT(idx) -
+                       CPNT(xmhidx) - CPNT(ymhidx) + CPNT(downidx)) / 2.0f;
         #undef CPNT
-      }
-    }
-  }
-
-  // Finally, compute Ixy
-  for(uint32 j = 0; j < h; j++) {
-    for(uint32 i = 0; i < w; i++) {
-      uint32 hm2y = GetPixelIndex(i, j-2);
-      uint32 hm1y = GetPixelIndex(i, j-1);
-      uint32 hp1y = GetPixelIndex(i, j+1);
-      uint32 hp2y = GetPixelIndex(i, j+2);
-
-      uint32 idx = GetPixelIndex(i, j);
-      for(uint32 c = 0; c <= 3; c++) {
-        Ixy[c][idx] = (Ix[c][hm2y] - 8*Ix[c][hm1y] + 8*Ix[c][hp1y] - Ix[c][hp2y]) / 12.0f;
       }
     }
   }
@@ -354,10 +341,12 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
         float I0 = ConvertChannelToFloat(current.Component(c), bitDepth[c]);
         float It = Ixx[c][idx] + Iyy[c][idx];
         if(fabs(denom) > 1e-6) {
-          It -= (Ixsq*Ixx[c][idx] + 2*Ix[4][idx]*Iy[idx]*Ixy[c][idx] + Iysq*Iyy[c][idx]);
+          It -= (Ixsq * Ixx[c][idx] +
+                 2 * Ix[4][idx] * Iy[idx] * Ixy[c][idx] +
+                 Iysq * Iyy[c][idx]) / denom;
         }
-        float pxScale = static_cast<float>((1 << bitDepth[c]) - 1);
-        result.Component(c) = static_cast<uint8>(((I0 + 0.25*It) + 0.5) * pxScale);
+        float scale = static_cast<float>((1 << bitDepth[c]) - 1);
+        result.Component(c) = static_cast<uint8>((I0 + 0.25*It) * scale + 0.5);
       }
 
       downscaledPixels[j * newHeight + i] = result;
@@ -448,7 +437,7 @@ const uint32 Image::GetPixelIndex(int32 i, int32 j, EWrapMode wrapMode) const {
     }
   }
 
-  int32 idx = j * GetWidth() + i;
+  uint32 idx = j * GetWidth() + i;
   assert(idx >= 0);
   assert(idx < GetWidth() * GetHeight());
   return idx;
