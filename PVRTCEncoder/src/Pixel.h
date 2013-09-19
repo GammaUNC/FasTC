@@ -63,9 +63,14 @@ class Pixel {
     for(int i = 0; i < 4; i++) m_BitDepth[i] = 8;
   }
 
-  explicit Pixel(const uint8 *bits,
-                 const uint8 channelDepth[4] = static_cast<uint8 *>(0),
-                 uint8 bitOffset = 0) {
+  explicit Pixel(uint32 rgba) {
+    for(int i = 0; i < 4; i++) m_BitDepth[i] = 8;
+    UnpackRGBA(rgba);
+  }
+
+  Pixel(const uint8 *bits,
+        const uint8 channelDepth[4] = static_cast<uint8 *>(0),
+        uint8 bitOffset = 0) {
     FromBits(bits, channelDepth, bitOffset);
   }
 

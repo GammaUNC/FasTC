@@ -206,6 +206,12 @@ TEST(Pixel, UnpackRGBA) {
   EXPECT_EQ(p.G(), 0xB3);
   EXPECT_EQ(p.R(), 0xFE);
 
+  p = PVRTCC::Pixel(rgba);
+  EXPECT_EQ(p.A(), 0x46);
+  EXPECT_EQ(p.B(), 0x19);
+  EXPECT_EQ(p.G(), 0xB3);
+  EXPECT_EQ(p.R(), 0xFE);
+
   uint8 newBitDepth[4] = { 3, 5, 2, 1 };  // A R G B
   p.ChangeBitDepth(newBitDepth);
 
