@@ -76,7 +76,7 @@ namespace PVRTCC {
   // Takes a stream of uncompressed RGBA8 data and compresses it into PVRTC
   // version one. The width and height must be specified in order to properly
   // decompress the data.
-  void Compress(const DecompressionJob &,
+  void Compress(const CompressionJob &,
                 bool bTwoBitMode = false,
                 const EWrapMode wrapMode = eWrapMode_Wrap);
 

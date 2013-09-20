@@ -50,6 +50,7 @@
 
 #include "TexCompTypes.h"
 #include "BC7Compressor.h"
+#include "PVRTCCompressor.h"
 
 CompressedImage::CompressedImage()
   : m_Width(0)
@@ -85,16 +86,7 @@ CompressedImage::CompressedImage(
 }
 
 void CompressedImage::InitData(const unsigned char *withData) {
-  m_DataSz = 0;
-  int uncompDataSz = m_Width * m_Height * 4;
-
-  switch(m_Format) {
-    default: assert(!"Not implemented!"); // Fall through V
-    case eCompressionFormat_DXT1: m_DataSz = uncompDataSz / 8; break;
-    case eCompressionFormat_DXT5: m_DataSz = uncompDataSz / 4; break;
-    case eCompressionFormat_BPTC: m_DataSz = uncompDataSz / 4; break;
-  }
-
+  m_DataSz = GetCompressedSize(m_Width * m_Height * 4, m_Format);
   if(m_DataSz > 0) {
     m_Data = new unsigned char[m_DataSz];
     memcpy(m_Data, withData, m_DataSz);
@@ -111,14 +103,7 @@ CompressedImage::~CompressedImage() {
 bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBufSz) const {
 
   // First make sure that we have enough data
-  uint32 dataSz = 0;
-  switch(m_Format) {
-    default: assert(!"Not implemented!"); // Fall through V
-    case eCompressionFormat_DXT1: dataSz = m_DataSz * 8; break;
-    case eCompressionFormat_DXT5: dataSz = m_DataSz * 4; break;
-    case eCompressionFormat_BPTC: dataSz = m_DataSz * 4; break;
-  }
-
+  uint32 dataSz = GetUncompressedSize(m_DataSz, m_Format);
   if(dataSz > outBufSz) {
     fprintf(stderr, "Not enough space to store entire decompressed image! "
                     "Got %d bytes, but need %d!\n", outBufSz, dataSz);
@@ -126,6 +111,13 @@ bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBuf
   }
 
   switch(m_Format) {
+  case eCompressionFormat_PVRTC:
+    {
+      DecompressionJob dj (m_Data, outBuf, m_Width, m_Height);
+      PVRTCC::Decompress(dj);
+    }
+    break;
+
   case eCompressionFormat_BPTC: 
     { 
       DecompressionJob dj (m_Data, outBuf, m_Width, m_Height);
@@ -142,3 +134,26 @@ bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBuf
 
   return true;
 }
+
+uint32 CompressedImage::GetCompressedSize(uint32 uncompressedSize, ECompressionFormat format) {
+  assert(uncompressedSize % 8 == 0);
+
+  uint32 cmpDataSzNeeded = 0;
+  switch(format) {
+  default:
+    assert(!"Not implemented!");
+    // Fall through V
+  case eCompressionFormat_DXT1:
+  case eCompressionFormat_PVRTC:
+    cmpDataSzNeeded = uncompressedSize / 8;
+    break;
+
+  case eCompressionFormat_DXT5:
+  case eCompressionFormat_BPTC:
+    cmpDataSzNeeded = uncompressedSize / 4;
+    break;
+  }
+
+  return cmpDataSzNeeded;
+}
+

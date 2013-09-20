@@ -53,6 +53,7 @@
 void PrintUsage() {
   fprintf(stderr, "Usage: tc [OPTIONS] imagefile\n");
   fprintf(stderr, "\n");
+  fprintf(stderr, "\t-f\t\tFormat to use. Either \"BPTC\" or \"PVRTC\". Default: BPTC\n");
   fprintf(stderr, "\t-l\t\tSave an output log.\n");
   fprintf(stderr, "\t-q <quality>\tSet compression quality level. Default: 50\n");
   fprintf(stderr, "\t-n <num>\tCompress the image num times and give the average time and PSNR. Default: 1\n");
@@ -92,7 +93,8 @@ int main(int argc, char **argv) {
   bool bUseSIMD = false;
   bool bSaveLog = false;
   bool bUseAtomics = false;
-  
+  ECompressionFormat format = eCompressionFormat_BPTC;
+
   bool knowArg = false;
   do {
     knowArg = false;
@@ -103,6 +105,23 @@ int main(int argc, char **argv) {
       if(fileArg == argc || (numCompressions = atoi(argv[fileArg])) < 0) {
         PrintUsage();
         exit(1);
+      }
+
+      fileArg++;
+      knowArg = true;
+      continue;
+    }
+
+    if(strcmp(argv[fileArg], "-f") == 0) {
+      fileArg++;
+
+      if(fileArg == argc) {
+        PrintUsage();
+        exit(1);
+      } else {
+        if(!strcmp(argv[fileArg], "PVRTC")) {
+          format = eCompressionFormat_PVRTC;
+        }
       }
 
       fileArg++;
@@ -195,6 +214,7 @@ int main(int argc, char **argv) {
   }
   
   SCompressionSettings settings;
+  settings.format = format;
   settings.bUseSIMD = bUseSIMD;
   settings.bUseAtomics = bUseAtomics;
   settings.iNumThreads = numThreads;

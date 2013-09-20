@@ -57,20 +57,52 @@
 
 namespace PVRTCC {
 
-  void Compress(const DecompressionJob &dcj,
+  void Compress(const CompressionJob &dcj,
                 bool bTwoBitMode,
                 const EWrapMode wrapMode) {
     Image img(dcj.height, dcj.width);
-    for(uint32 j = 0; j < dcj.height; j++) {
-      for(uint32 i = 0; i < dcj.width; i++) {
-        const uint32 *pixels = reinterpret_cast<const uint32 *>(dcj.inBuf);
-        img(i, j).UnpackRGBA(pixels[j * dcj.width + i]);
-      }
+    uint32 nPixels = dcj.height * dcj.width;
+    for(uint32 i = 0; i < nPixels; i++) {
+      // Assume block stream order (whyyyy)
+      uint32 blockIdx = i / 16;
+      uint32 blockWidth = dcj.width / 4;
+      uint32 blockX = blockIdx % blockWidth;
+      uint32 blockY = blockIdx / blockWidth;
+
+      uint32 x = blockX * 4 + (i % 4);
+      uint32 y = blockY * 4 + (i % 16) / 4;
+
+      const uint32 *pixels = reinterpret_cast<const uint32 *>(dcj.inBuf);
+      img(x, y).UnpackRGBA(pixels[i]);      
     }
+
+    Image original = img;
+    img.DebugOutput("Original");
 
     // Downscale it using anisotropic diffusion based scheme in order to preserve
     // image features, then reupscale and compute deltas. Use deltas to generate
     // initial A & B images followed by modulation data.
+    img.ContentAwareDownscale(1, 1, eWrapMode_Wrap, true);
+    img.DebugOutput("DownscaledOnce");
+    img.ContentAwareDownscale(1, 1, eWrapMode_Wrap, false);
+    img.DebugOutput("DownscaledTwice");
+
+    Image downscaled = img;
+
+    // Upscale it again
+    img.BilinearUpscale(2, 2, eWrapMode_Wrap);
+
+    img.DebugOutput("Reconstruction");
+
+    // Compute difference...
+    Image difference = img;
+    for(uint32 j = 0; j < dcj.height; j++) {
+      for(uint32 i = 0; i < dcj.width; i++) {
+        for(uint32 c = 0; c < 4; c++) {
+          difference(i, j).Component(c) -= img(i, j).Component(c);
+        }
+      }
+    }
   }
 
 }  // namespace PVRTCC
