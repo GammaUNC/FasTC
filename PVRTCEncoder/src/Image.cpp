@@ -52,6 +52,7 @@
 
 #include "Image.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <cstdio>
@@ -61,6 +62,11 @@
 
 #include "Core/include/Image.h"
 #include "IO/include/ImageFile.h"
+
+template <typename T>
+inline T Clamp(const T &v, const T &a, const T &b) {
+  return ::std::min(::std::max(a, v), b);
+}
 
 static float ConvertChannelToFloat(uint8 channel, uint8 bitDepth) {
   float denominator = static_cast<float>((1 << bitDepth) - 1);
@@ -346,7 +352,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
                  Iysq * Iyy[c][idx]) / denom;
         }
         float scale = static_cast<float>((1 << bitDepth[c]) - 1);
-        result.Component(c) = static_cast<uint8>((I0 + 0.25*It) * scale + 0.5);
+        result.Component(c) = static_cast<uint8>(Clamp(I0 + 0.25f*It, 0.0f, 1.0f) * scale + 0.5);
       }
 
       downscaledPixels[j * newHeight + i] = result;
