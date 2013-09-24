@@ -134,7 +134,10 @@ namespace PVRTCC {
         return 0xFF;
       } else {
         uint8 bitsWasted = oldDepth - newDepth;
-        return val >> bitsWasted;
+        uint16 v = static_cast<uint16>(val);
+        v = (v + (1 << (bitsWasted - 1))) >> bitsWasted;
+        v = ::std::min<uint16>(::std::max<uint16>(0, v), (1 << newDepth) - 1);
+        return v;
       }
     }
 
