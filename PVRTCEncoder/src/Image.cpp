@@ -352,7 +352,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
                  Iysq * Iyy[c][idx]) / denom;
         }
         float scale = static_cast<float>((1 << bitDepth[c]) - 1);
-        result.Component(c) = static_cast<uint8>(Clamp(I0 + 0.25f*It, 0.0f, 1.0f) * scale + 0.5);
+        result.Component(c) = static_cast<uint8>(Clamp(I0 + 0.25f*It, 0.0f, 1.0f) * scale + 0.5f);
       }
 
       downscaledPixels[j * newHeight + i] = result;
@@ -469,6 +469,8 @@ void Image::DebugOutput(const char *filename) const {
       uint32 idx = j * GetWidth() + i;
       Pixel p = m_Pixels[idx];
       p.ChangeBitDepth(fullDepth);
+      p.A() = 255;
+
       outPixels[idx] = p.PackRGBA();
     }
   }
