@@ -73,7 +73,7 @@ class ImageTester {
     pvrtexture::CPVRTexture pvrTex(filename);
 
     const uint8 *data = static_cast<const uint8 *>(pvrTex.getDataPtr());
-    ASSERT_TRUE(data);
+    assert(data);
 
     const pvrtexture::CPVRTextureHeader &hdr = pvrTex.getHeader();
     const uint32 w = hdr.getWidth();
