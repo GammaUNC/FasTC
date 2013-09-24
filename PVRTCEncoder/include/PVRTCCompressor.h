@@ -80,6 +80,8 @@ namespace PVRTCC {
                 bool bTwoBitMode = false,
                 const EWrapMode wrapMode = eWrapMode_Wrap);
 
+  static const uint32 kBlockSize = sizeof(uint64);
+
 }  // namespace PVRTCC
 
 #endif  // PVRTCENCODER_INCLUDE_PVRTCCOMPRESSOR_H_
