@@ -133,6 +133,32 @@ TEST(Pixel, FromBitsAndAssociatedConstructor) {
   }
 }
 
+TEST(Pixel, ToBits) {
+  PVRTCC::Pixel p;
+
+  uint8 bitDepth[4] = { 2, 8, 1, 7 };
+  p.ChangeBitDepth(bitDepth);
+
+  p.A() = 0x2;
+  p.R() = 0x56;
+  p.G() = 0;
+  p.B() = 0x4F;
+
+  uint8 bits[3];
+  memset(bits, 0, sizeof(bits));
+  p.ToBits(bits, sizeof(bits));
+
+  EXPECT_EQ(bits[0], 0x4F);
+  EXPECT_EQ(bits[1], 0x56);
+  EXPECT_EQ(bits[2], 0x2);
+
+  memset(bits, 0, sizeof(bits));
+  p.ToBits(bits, 3, 2);
+  EXPECT_EQ(bits[0], 0x3C);
+  EXPECT_EQ(bits[1], 0x59);
+  EXPECT_EQ(bits[2], 0x09);
+}
+
 TEST(Pixel, ChangeChannelBitDepth) {
   uint8 val = 0x43;
   uint8 depth = 7;
