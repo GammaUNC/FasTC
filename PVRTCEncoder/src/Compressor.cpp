@@ -92,7 +92,7 @@ namespace PVRTCC {
   }
 
   template <typename T>
-  static T Lookup(const T *vals,
+  static T Lookup(const ::std::vector<T> &vals,
                   uint32 x, uint32 y,
                   uint32 width, uint32 height,
                   const EWrapMode wrapMode) {
@@ -167,7 +167,8 @@ namespace PVRTCC {
     img.DebugOutput("Reconstruction");
 
     // Compute difference...
-    int16 difference[dcj.height * dcj.width * 4];
+    ::std::vector<int16> difference;
+    difference.reserve(dcj.height * dcj.width * 4);
     for(uint32 j = 0; j < dcj.height; j++) {
       for(uint32 i = 0; i < dcj.width; i++) {
         for(uint32 c = 0; c < 4; c++) {
@@ -181,8 +182,13 @@ namespace PVRTCC {
     // Go over the 7x7 texel blocks and extract bounding box diagonals for each
     // block. We should be able to choose which diagonal we want...
     const uint32 kKernelSz = 7;
-    int16 maxDiff[dcj.height * dcj.width / 4];
-    int16 minDiff[dcj.height * dcj.width / 4];
+    ::std::vector<int16> maxDiff;
+    ::std::vector<int16> minDiff;
+
+    const uint32 kNumBlockChannels = dcj.height * dcj.width / 4;
+    maxDiff.reserve(kNumBlockChannels);
+    minDiff.reserve(kNumBlockChannels);
+
     for(uint32 j = 2; j < dcj.height; j += 4) {
       for(uint32 i = 2; i < dcj.width; i += 4) {
         const uint32 startX = i - (kKernelSz / 2);
@@ -192,7 +198,8 @@ namespace PVRTCC {
           int32 neg = 0;
           for(uint32 y = startY; y < startY + kKernelSz; y++) {
             for(uint32 x = startX; x < startX + kKernelSz; x++) {
-              int16 val = Lookup(difference, x*4 + c, y, dcj.width*4, dcj.height, wrapMode);
+              int16 val = Lookup(difference, x*4 + c, y,
+                                 dcj.width*4, dcj.height, wrapMode);
               if(val > 0) {
                 pos += val;
               } else {
@@ -202,7 +209,7 @@ namespace PVRTCC {
           }
 
           uint32 blockIdx = ((j-2)/4) * dcj.width + (i-2) + c;
-          assert(blockIdx < (dcj.width * dcj.height) / 4);
+          assert(blockIdx < kNumBlockChannels);
           if(pos > -neg) {
             maxDiff[blockIdx] = pos;
             minDiff[blockIdx] = 0;
@@ -222,11 +229,12 @@ namespace PVRTCC {
     for(uint32 j = 0; j < dcj.height / 4; j++) {
       for(uint32 i = 0; i < dcj.width / 4; i++) {
         for(uint32 c = 0; c < 4; c++) {
+          const uint32 cIdx = j*dcj.width/4 + i*4 + c;
           uint8 &a = imgA(i, j).Component(c);
-          a = Clamp<int16>(a + maxDiff[j*dcj.width/4 + i*4 + c], 0, 255);
+          a = static_cast<uint8>(Clamp<int16>(a + maxDiff[cIdx], 0, 255));
 
           uint8 &b = imgB(i, j).Component(c);
-          b = Clamp<int16>(b + minDiff[j*dcj.width/4 + i*4 + c], 0, 255);
+          b = static_cast<uint8>(Clamp<int16>(b + minDiff[cIdx], 0, 255));
         }
       }
     }
