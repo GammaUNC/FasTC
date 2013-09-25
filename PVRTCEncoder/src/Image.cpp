@@ -56,6 +56,11 @@
 #include <cstring>
 #include <cstdio>
 
+#if _MSC_VER
+#  define _CRT_SECURE_NO_WARNINGS
+#  define snprintf _snprintf
+#endif
+
 #include "Pixel.h"
 
 #include "Core/include/Image.h"
@@ -303,8 +308,8 @@ const Pixel & Image::operator()(uint32 i, uint32 j) const {
 void Image::DebugOutput(const char *filename) const {
   uint32 *outPixels = new uint32[m_Width * m_Height];
   const uint8 fullDepth[4] = { 8, 8, 8, 8 };
-  for(int j = 0; j < m_Height; j++) {
-    for(int i = 0; i < m_Width; i++) {
+  for(uint32 j = 0; j < m_Height; j++) {
+    for(uint32 i = 0; i < m_Width; i++) {
       uint32 idx = j * m_Width + i;
       Pixel p = m_Pixels[idx];
       p.ChangeBitDepth(fullDepth);
