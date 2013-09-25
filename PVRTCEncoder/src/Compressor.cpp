@@ -168,7 +168,7 @@ namespace PVRTCC {
 
     // Compute difference...
     ::std::vector<int16> difference;
-    difference.reserve(dcj.height * dcj.width * 4);
+    difference.resize(dcj.height * dcj.width * 4);
     for(uint32 j = 0; j < dcj.height; j++) {
       for(uint32 i = 0; i < dcj.width; i++) {
         for(uint32 c = 0; c < 4; c++) {
@@ -186,8 +186,8 @@ namespace PVRTCC {
     ::std::vector<int16> minDiff;
 
     const uint32 kNumBlockChannels = dcj.height * dcj.width / 4;
-    maxDiff.reserve(kNumBlockChannels);
-    minDiff.reserve(kNumBlockChannels);
+    maxDiff.resize(kNumBlockChannels);
+    minDiff.resize(kNumBlockChannels);
 
     for(uint32 j = 2; j < dcj.height; j += 4) {
       for(uint32 i = 2; i < dcj.width; i += 4) {
@@ -256,8 +256,8 @@ namespace PVRTCC {
     upB.DebugOutput("UpscaledB");
 
     // Choose the most appropriate modulation values for the two images...
-    std::vector<uint8> modValues;
-    modValues.reserve(dcj.width * dcj.height);
+    ::std::vector<uint8> modValues;
+    modValues.resize(dcj.width * dcj.height);
     for(uint32 j = 0; j < dcj.height; j++) {
       for(uint32 i = 0; i < dcj.width; i++) {
         uint8 &mv = modValues[j * dcj.width + i];
