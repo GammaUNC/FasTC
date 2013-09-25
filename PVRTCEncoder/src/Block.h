@@ -61,13 +61,27 @@ namespace PVRTCC {
 
 class Block {
  public:
+  Block(): m_LongData(0) { }
   explicit Block(const uint8 *data);
 
+  // Accessors for the A and B colors of the block.
   Pixel GetColorA();
+  void SetColorA(const Pixel &, bool transparent=false);
+
   Pixel GetColorB();
+  void SetColorB(const Pixel &, bool transparent=false);
 
   bool GetModeBit() const {
     return static_cast<bool>((m_LongData >> 32) & 0x1);
+  }
+
+  void SetModeBit(bool flag) {
+    const uint64 bit = 0x100000000L;
+    if(flag) {
+      m_LongData |= bit;
+    } else {
+      m_LongData &= ~bit;
+    }
   }
 
   // For 2BPP PVRTC, if the mode bit is set, then we use the modulation data
@@ -101,6 +115,11 @@ class Block {
   // 12 13 14 15
   uint8 GetLerpValue(uint32 texelIdx) const;
 
+  // Sets the values in the data for this block according to the texel and
+  // modulation value passed. This happens immediately (i.e. a call to Pack()
+  // will reflect these changes).
+  void SetLerpValue(uint32 texelIdx, uint8 lerpVal);
+
   // This returns the modulation value for the texel in the block interpreted as
   // 2BPP. If the modulation bit is not set, then it expects a number from 0-31
   // and does the same operation as GetLerpValue. If the modulation bit is set,
@@ -109,6 +128,12 @@ class Block {
   // averaging described for E2BPPSubMode because this averaging relies on
   // global information.
   uint8 Get2BPPLerpValue(uint32 texelIdx) const;
+
+  // Returns the 64-bit word that represents this block. This function packs the
+  // A and B colors based on their bit depths and preserves the corresponding mode
+  // bits. The color modes are determined by whether or not the alpha channel of
+  // each block is fully opaque or not.
+  uint64 Pack();
 
  private:
   union {
@@ -121,6 +146,11 @@ class Block {
 
   bool m_ColorBCached;
   Pixel m_ColorB;
+
+  // tbd -- transparent bit depth
+  // obd -- opaque bit depth
+  static Pixel SetColor(const Pixel &c, bool transparent,
+                        const uint8 (&tbd)[4], const uint8 (&obd)[4]);
 };
 
 }  // namespace PVRTCC
