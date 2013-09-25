@@ -296,7 +296,9 @@ namespace PVRTCC {
     // Pack everything into a PVRTC blocks.
     const uint32 blocksW = dcj.width / 4;
     const uint32 blocksH = dcj.height / 4;
+
     std::vector<uint64> blocks;
+    blocks.reserve(blocksW * blocksH);
     for(uint32 j = 0; j < blocksH; j++) {
       for(uint32 i = 0; i < blocksW; i++) {
         Block b;
