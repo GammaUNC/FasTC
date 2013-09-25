@@ -244,7 +244,13 @@ int main(int argc, char **argv) {
   }
 
   Image cImg (*ci);
-  ImageFile cImgFile (strcat(basename, "-bc7.png"), eFileFormat_PNG, cImg);
+  if(format == eCompressionFormat_BPTC) {
+    strcat(basename, "-bc7.png");
+  } else if(format == eCompressionFormat_PVRTC) {
+    strcat(basename, "-pvrtc.png");
+  }
+
+  ImageFile cImgFile (basename, eFileFormat_PNG, cImg);
   cImgFile.Write();
 
   // Cleanup 

@@ -54,6 +54,7 @@
 void PrintUsage() {
   fprintf(stderr, "Usage: tc [OPTIONS] imagefile\n");
   fprintf(stderr, "\n");
+  fprintf(stderr, "\t-f\t\tFormat to use. Either \"BPTC\" or \"PVRTC\". Default: BPTC\n");
   fprintf(stderr, "\t-l\t\tSave an output log.\n");
   fprintf(stderr, "\t-q <quality>\tSet compression quality level. Default: 50\n");
   fprintf(stderr, "\t-n <num>\tCompress the image num times and give the average time and PSNR. Default: 1\n");
@@ -93,10 +94,28 @@ int _tmain(int argc, _TCHAR* argv[])
   bool bUseSIMD = false;
   bool bSaveLog = false;
   bool bUseAtomics = false;
+  ECompressionFormat format = eCompressionFormat_BPTC;
   
   bool knowArg = false;
   do {
     knowArg = false;
+
+    if(strcmp(argv[fileArg], "-f") == 0) {
+      fileArg++;
+
+      if(fileArg == argc) {
+        PrintUsage();
+        exit(1);
+      } else {
+        if(!strcmp(argv[fileArg], "PVRTC")) {
+          format = eCompressionFormat_PVRTC;
+        }
+      }
+
+      fileArg++;
+      knowArg = true;
+      continue;
+    }
 
     if(strcmp(argv[fileArg], "-n") == 0) {
       fileArg++;
@@ -201,6 +220,7 @@ int _tmain(int argc, _TCHAR* argv[])
   }
   
   SCompressionSettings settings;
+  settings.format = format;
   settings.bUseSIMD = bUseSIMD;
   settings.bUseAtomics = bUseAtomics;
   settings.iNumThreads = numThreads;
@@ -226,10 +246,16 @@ int _tmain(int argc, _TCHAR* argv[])
   if(bSaveLog) {
     strcat_s(basename, ".log");
     statManager->ToFile(basename);
-  basename[strlen(basename) - 4] = '\0';
+    basename[strlen(basename) - 4] = '\0';
   }
-  strcat_s(basename, "-bc7.png");
+
   Image cImg (*ci);
+  if(format == eCompressionFormat_BPTC) {
+    strcat_s(basename, "-bc7.png");
+  } else if(format == eCompressionFormat_PVRTC) {
+    strcat_s(basename, "-pvrtc.png");
+  }
+
   ImageFile cImgFile (basename, eFileFormat_PNG, cImg);
   cImgFile.Write();
 
