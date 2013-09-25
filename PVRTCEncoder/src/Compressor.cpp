@@ -285,7 +285,7 @@ namespace PVRTCC {
 
           if(error < bestError) {
             bestError = error;
-            bestMod = modSteps[s];
+            bestMod = s;
           }
         }
 
