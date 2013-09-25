@@ -96,7 +96,7 @@ class ImageTester {
 
     uint32 *libPixels = static_cast<uint32 *>(pvrTex.getDataPtr());
 
-    for(int i = 0; i < w*h; i++) {
+    for(uint32 i = 0; i < w*h; i++) {
       EXPECT_EQ(PixelPrinter(libPixels[i]), PixelPrinter(outPixels[i]));
     }
 

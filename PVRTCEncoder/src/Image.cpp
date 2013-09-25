@@ -58,6 +58,11 @@
 #include <cstdio>
 #include <cmath>
 
+#if _MSC_VER
+#  define _CRT_SECURE_NO_WARNINGS
+#  define snprintf _snprintf
+#endif
+
 #include "Pixel.h"
 
 #include "Core/include/Image.h"
