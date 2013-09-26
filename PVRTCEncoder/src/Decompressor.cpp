@@ -304,10 +304,10 @@ namespace PVRTCC {
 
     // First, extract all of the block information...
     std::vector<Block> blocks;
-    blocks.reserve(w * h);
 
     const uint32 blocksW = bTwoBitMode? (w / 8) : (w / 4);
     const uint32 blocksH = h / 4;
+    blocks.reserve(blocksW * blocksH);
 
     for(uint32 j = 0; j < blocksH; j++) {
       for(uint32 i = 0; i < blocksW; i++) {
