@@ -253,6 +253,7 @@ int _tmain(int argc, _TCHAR* argv[])
   if(format == eCompressionFormat_BPTC) {
     strcat_s(basename, "-bc7.png");
   } else if(format == eCompressionFormat_PVRTC) {
+    cImg.SetBlockStreamOrder(false);
     strcat_s(basename, "-pvrtc.png");
   }
 
