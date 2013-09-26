@@ -267,7 +267,7 @@ namespace PVRTCC {
         const Pixel po = original(i, j);
         
         // !FIXME! there are two modulation modes... we're only using one.
-        uint8 modSteps[4] = { 0, 3, 5, 8 };
+        uint8 modSteps[4] = { 8, 5, 3, 0 };
         uint8 bestMod = 0;
         uint32 bestError = 0xFFFFFFFF;
         for(uint32 s = 0; s < 4; s++) {
@@ -297,16 +297,19 @@ namespace PVRTCC {
     const uint32 blocksW = dcj.width / 4;
     const uint32 blocksH = dcj.height / 4;
 
+    assert(imgA.GetHeight() == blocksH);
+    assert(imgA.GetWidth() == blocksW);
+
     std::vector<uint64> blocks;
     blocks.reserve(blocksW * blocksH);
     for(uint32 j = 0; j < blocksH; j++) {
       for(uint32 i = 0; i < blocksW; i++) {
         Block b;
-        b.SetColorA(imgA(i, j));
-        b.SetColorB(imgB(i, j));
+        b.SetColorA(imgA(i, j), true);
+        b.SetColorB(imgB(i, j), true);
         for(uint32 t = 0; t < 16; t++) {
-          uint32 x = i + (t%4);
-          uint32 y = j + (t/4);
+          uint32 x = i*4 + (t%4);
+          uint32 y = j*4 + (t/4);
           b.SetLerpValue(t, modValues[y*dcj.width + x]);
         }
         blocks.push_back(b.Pack());
@@ -321,9 +324,8 @@ namespace PVRTCC {
         // linearize them...
         uint32 idx = Interleave(j, i);
 
-        uint32 offset = idx * PVRTCC::kBlockSize;
-        uint64 *outPtr = reinterpret_cast<uint64 *>(dcj.outBuf + offset);
-        *outPtr = blocks[j * blocksW + i];
+        uint64 *outPtr = reinterpret_cast<uint64 *>(dcj.outBuf);
+        outPtr[idx] = blocks[j*blocksW + i];
       }
     }
   }
