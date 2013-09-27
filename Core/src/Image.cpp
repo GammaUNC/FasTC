@@ -174,43 +174,41 @@ double Image::ComputePSNR(const CompressedImage &ci) const {
     return -1.0f;
   }
 
-  const double wr = 1.0;
-  const double wg = 1.0;
-  const double wb = 1.0;
+  //  const double w[3] = { 0.2126, 0.7152, 0.0722 };
+  const double w[3] = { 1.0, 1.0, 1.0 };
     
-  double MSE = 0.0;
+  double mse = 0.0;
   for(uint32 i = 0; i < imageSz; i+=4) {
 
     const unsigned char *pixelDataRaw = m_PixelData + i;
     const unsigned char *pixelDataUncomp = unCompData + i;
 
-    double rawAlphaScale = double(pixelDataRaw[3]) / 255.0;
-    double uncompAlphaScale = double(pixelDataUncomp[3]) / 255.0;
-    double dr = double(sad(rawAlphaScale * pixelDataRaw[0], uncompAlphaScale * pixelDataUncomp[0])) * wr;
-    double dg = double(sad(rawAlphaScale * pixelDataRaw[1], uncompAlphaScale * pixelDataUncomp[1])) * wg;
-    double db = double(sad(rawAlphaScale * pixelDataRaw[2], uncompAlphaScale * pixelDataUncomp[2])) * wb;
-    
-    const double pixelMSE = 
-      (double(dr) * double(dr)) + 
-      (double(dg) * double(dg)) + 
-      (double(db) * double(db));
-    
-    //fprintf(stderr, "Pixel MSE: %f\n", pixelMSE);
-    MSE += pixelMSE;
+    float r[4], u[4];
+    for(uint32 c = 0; c < 4; c++) {
+      if(c == 3) {
+        r[c] = pixelDataRaw[c] / 255.0;
+        u[c] = pixelDataUncomp[c] / 255.0;
+      } else {
+        r[c] = static_cast<double>(pixelDataRaw[c]) * w[c];
+        u[c] = static_cast<double>(pixelDataUncomp[c]) * w[c];
+      }
+    }
+
+    for(uint32 c = 0; c < 3; c++) {
+      double diff = (r[3] * r[c] - u[3] * u[c]);
+      mse += diff * diff;
+    }
   }
 
-  MSE /= (double(GetWidth()) * double(GetHeight()));
+  mse /= GetWidth() * GetHeight();
 
-  double MAXI = 
-    (255.0 * wr) * (255.0 * wr) + 
-    (255.0 * wg) * (255.0 * wg) + 
-    (255.0 * wb) * (255.0 * wb);
-
-  double PSNR = 10 * log10(MAXI/MSE);
+  const double C = 255.0 * 255.0;
+  double maxi = (w[0] + w[1] + w[2]) * C;
+  double psnr = 10 * log10(maxi/mse);
 
   // Cleanup
   delete unCompData;
-  return PSNR;
+  return psnr;
 }
 
 void Image::ConvertToBlockStreamOrder() {
