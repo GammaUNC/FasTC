@@ -56,30 +56,51 @@
 #  PVRTEXLIB_LIBRARIES - The libraries needed to use PVRTexLib
 
 IF (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  SET( PVRTEXLIB_ROOT "/Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library" )
   find_path(
     PVRTEXLIB_INCLUDE_DIR PVRTexture.h
-    PATHS "/Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library/Include"
+    PATHS ${PVRTEXLIB_ROOT}/Include
   )
 
   find_library(PVRTEXLIB_LIB PVRTexLib
-    PATHS "/Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library/OSX_x86/Static"
-          "/Applications/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library/OSX_x86/Dynamic"
+    PATHS ${PVRTEXLIB_ROOT}/OSX_x86/Static
+          ${PVRTEXLIB_ROOT}/OSX_x86/Dynamic
   )
-ELSEIF(MSVC)
+ELSEIF (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+  SET( PVRTEXLIB_ROOT "/opt/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library" )
   find_path(
     PVRTEXLIB_INCLUDE_DIR PVRTexture.h
-    PATHS "C:/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library/Include"
+    PATHS ${PVRTEXLIB_ROOT}/Include
+  )
+
+  IF(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+    find_library(PVRTEXLIB_LIB PVRTexLib
+      PATHS ${PVRTEXLIB_ROOT}/Linux_x86_64/Static
+            ${PVRTEXLIB_ROOT}/Linux_x86_64/Dynamic
+    )
+  ELSE()
+    find_library(PVRTEXLIB_LIB PVRTexLib
+      PATHS ${PVRTEXLIB_ROOT}/Linux_x86_32/Static
+            ${PVRTEXLIB_ROOT}/Linux_x86_32/Dynamic
+    )
+  ENDIF()
+
+ELSEIF(MSVC)
+  SET( PVRTEXLIB_ROOT "C:/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library" )
+  find_path(
+    PVRTEXLIB_INCLUDE_DIR PVRTexture.h
+    PATHS ${PVRTEXLIB_ROOT}/Include
   )
 
   IF(${CMAKE_GENERATOR} MATCHES Win64)
     find_library(PVRTEXLIB_LIB PVRTexLib
-      PATHS "C:/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library/Windows_x86_64/Static"
-            "C:/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library/Windows_x86_64/Dynamic"
+      PATHS ${PVRTEXLIB_ROOT}/Windows_x86_64/Static
+            ${PVRTEXLIB_ROOT}/Windows_x86_64/Dynamic
     )
   ELSE()
     find_library(PVRTEXLIB_LIB PVRTexLib
-      PATHS "C:/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library/Windows_x86_32/Static"
-            "C:/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library/Windows_x86_32/Dynamic"
+      PATHS ${PVRTEXLIB_ROOT}/Windows_x86_32/Static
+            ${PVRTEXLIB_ROOT}/Windows_x86_32/Dynamic
     )
   ENDIF()
 ENDIF()
@@ -93,4 +114,4 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(PVRTexLib  DEFAULT_MSG
                                   PVRTEXLIB_LIB PVRTEXLIB_INCLUDE_DIR)
 
-mark_as_advanced(PVRTEXLIB_INCLUDE_DIR PVRTEXLIB_LIB )
+mark_as_advanced( PVRTEXLIB_ROOT PVRTEXLIB_INCLUDE_DIR PVRTEXLIB_LIB )

@@ -84,11 +84,13 @@ public:
 
 };
 
-ImageWriterPNG::ImageWriterPNG(const Image &im)
+ImageWriterPNG::ImageWriterPNG(Image &im)
   : ImageWriter(im.GetWidth(), im.GetHeight(), im.RawData())
   , m_bBlockStreamOrder(im.GetBlockStreamOrder())
   , m_StreamPosition(0)
 {
+  im.ComputeRGBA();
+  m_PixelData = reinterpret_cast<const uint8 *>(im.GetRGBA());
 }
 
 bool ImageWriterPNG::WriteImage() {
@@ -111,7 +113,6 @@ bool ImageWriterPNG::WriteImage() {
   }
     
   /* Set image attributes. */
-
   png_set_IHDR (png_ptr,
                 info_ptr,
                 m_Width,
@@ -123,7 +124,6 @@ bool ImageWriterPNG::WriteImage() {
                 PNG_FILTER_TYPE_DEFAULT);
     
   /* Initialize rows of PNG. */
-
   row_pointers = (png_byte **)png_malloc (png_ptr, m_Height * sizeof (png_byte *));
   for (uint32 y = 0; y < m_Height; ++y) {
     png_byte *row = (png_byte *)png_malloc (png_ptr, sizeof (uint8) * m_Width * pixel_size);
@@ -136,8 +136,8 @@ bool ImageWriterPNG::WriteImage() {
           *row++ = GetChannelForPixel(x, y, ch);
         }
       } else {
-        *(reinterpret_cast<uint32 *>(row) + x) =
-          (reinterpret_cast<const uint32 *>(m_PixelData))[y * m_Width + x];
+        reinterpret_cast<uint32 *>(row)[x] =
+          reinterpret_cast<const uint32 *>(m_PixelData)[y * m_Width + x];
       }
     }
   }

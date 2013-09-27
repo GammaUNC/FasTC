@@ -83,6 +83,42 @@ namespace PVRTCC {
     return m_ColorA;
   }
 
+  Pixel Block::SetColor(const Pixel &c, bool transparent,
+                        const uint8 (&tbd)[4], const uint8 (&obd)[4]) {
+    uint8 cDepth[4];
+    c.GetBitDepth(cDepth);
+
+    Pixel final = c;
+    if(transparent) {
+      final.ChangeBitDepth(tbd);
+
+      // If we went effectively transparent, then just switch over to opaque...
+      if(final.A() == 0x7) {
+        return SetColor(c, false, tbd, obd);
+      }
+
+    } else {
+      final.A() = 255;
+      final.ChangeBitDepth(obd);
+    }
+
+    return final;
+  }
+
+  void Block::SetColorA(const Pixel &c, bool transparent) {
+    const uint8 transparentBitDepth[4] = { 3, 4, 4, 4 };
+    const uint8 opaqueBitDepth[4] = { 0, 5, 5, 5 };
+    m_ColorA = SetColor(c, transparent, transparentBitDepth, opaqueBitDepth);
+    m_ColorACached = true;
+  }
+
+  void Block::SetColorB(const Pixel &c, bool transparent) {
+    const uint8 transparentBitDepth[4] = { 3, 4, 4, 3 };
+    const uint8 opaqueBitDepth[4] = { 0, 5, 5, 4 };
+    m_ColorB = SetColor(c, transparent, transparentBitDepth, opaqueBitDepth);
+    m_ColorBCached = true;
+  }
+
   Pixel Block::GetColorB() {
     if(m_ColorBCached) {
       return m_ColorB;
@@ -107,6 +143,17 @@ namespace PVRTCC {
     assert(texelIdx <= 15);
 
     return (m_LongData >> (texelIdx * 2)) & 0x3;
+  }
+
+  void Block::SetLerpValue(uint32 texelIdx, uint8 lerpVal) {
+    assert(texelIdx >= 0);
+    assert(texelIdx <= 15);
+
+    assert(lerpVal >= 0);
+    assert(lerpVal < 4);
+
+    m_LongData &= ~(static_cast<uint64>(0x3) << (texelIdx * 2));
+    m_LongData |= static_cast<uint64>(lerpVal & 0x3) << (texelIdx * 2);
   }
 
   Block::E2BPPSubMode Block::Get2BPPSubMode() const {
@@ -145,4 +192,65 @@ namespace PVRTCC {
 
     return ret;
   }
+
+  uint64 Block::Pack() {
+    assert(m_ColorACached);
+    assert(m_ColorBCached);
+
+#ifndef NDEBUG
+    uint8 bitDepthA[4];
+    m_ColorA.GetBitDepth(bitDepthA);
+
+    uint32 sumA = 0;
+    for(int i = 0; i < 4; i++) {
+      sumA += bitDepthA[i];
+    }
+    assert(sumA == 15);
+#endif
+
+#ifndef NDEBUG
+    uint8 bitDepthB[4];
+    m_ColorB.GetBitDepth(bitDepthB);
+
+    uint32 sumB = 0;
+    for(int i = 0; i < 4; i++) {
+      sumB += bitDepthB[i];
+    }
+    assert(sumB == 14);
+#endif
+
+    uint8 aBits[2], bBits[2];
+    memset(aBits, 0, sizeof(aBits));
+    memset(bBits, 0, sizeof(bBits));
+
+    m_ColorA.ToBits(aBits, 2);
+    m_ColorB.ToBits(bBits, 2, 1);
+
+    if(m_ColorA.A() == 0xFF) {
+      m_ByteData[7] |= 0x80;
+    } else {
+      m_ByteData[7] &= 0x7f;
+    }
+    m_ByteData[7] = aBits[1];
+    m_ByteData[6] = aBits[0];
+
+    bool modeBit = GetModeBit();
+    m_ByteData[5] = bBits[1];
+    m_ByteData[4] = bBits[0];
+    if(m_ColorB.A() == 0xFF) {
+      m_ByteData[5] |= 0x80;
+    } else {
+      m_ByteData[5] &= 0x7f;
+    }
+
+    if(modeBit) {
+      m_ByteData[4] |= 0x1;
+    } else {
+      m_ByteData[4] &= 0xFE;
+    }
+
+    // Modulation data should have already been set...
+    return m_LongData;
+  }
+
 }  // namespace PVRTCC

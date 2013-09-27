@@ -108,6 +108,44 @@ namespace PVRTCC {
     }
   }
 
+  void Pixel::ToBits(uint8 *bits, uint32 numBytes, uint32 bitOffset) const {
+#ifndef NDEBUG
+    uint32 bitDepthSum = bitOffset;
+    for(int i = 0; i < 4; i++) {
+      bitDepthSum += m_BitDepth[i];
+    }
+    assert((bitDepthSum / 8) < numBytes);
+#endif
+
+    uint8 byteIdx = 0;
+    while(bitOffset > 8) {
+      byteIdx++;
+      bitOffset -= 8;
+    }
+
+    uint8 bitIdx = bitOffset;
+    for(int i = 3; i >= 0; i--) {
+      uint8 val = Component(i);
+      uint8 depth = m_BitDepth[i];
+
+      if(depth + bitIdx > 8) {
+        uint8 nextBitIdx = depth - (8 - bitIdx);
+        uint16 v = static_cast<uint16>(val);
+        bits[byteIdx++] |= (v << bitIdx) & 0xFF;
+        bitIdx = nextBitIdx;
+        bits[byteIdx] = (v >> (depth - bitIdx)) & 0xFF;
+      } else {
+        bits[byteIdx] |= (val << bitIdx) & 0xFF;
+        bitIdx += depth;
+      }
+
+      if(bitIdx == 8) {
+        bitIdx = 0;
+        byteIdx++;
+      }
+    }
+  }
+
   uint8 Pixel::ChangeBitDepth(uint8 val, uint8 oldDepth, uint8 newDepth) {
     assert(newDepth <= 8);
     assert(oldDepth <= 8);
@@ -134,7 +172,10 @@ namespace PVRTCC {
         return 0xFF;
       } else {
         uint8 bitsWasted = oldDepth - newDepth;
-        return val >> bitsWasted;
+        uint16 v = static_cast<uint16>(val);
+        v = (v + (1 << (bitsWasted - 1))) >> bitsWasted;
+        v = ::std::min<uint16>(::std::max<uint16>(0, v), (1 << newDepth) - 1);
+        return v;
       }
     }
 

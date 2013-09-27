@@ -44,10 +44,13 @@
 #ifndef _COMPRESSED_IMAGE_H_
 #define _COMPRESSED_IMAGE_H_
 
+#include "TexCompTypes.h"
+
 enum ECompressionFormat {
   eCompressionFormat_DXT1,
   eCompressionFormat_DXT5,
   eCompressionFormat_BPTC,
+  eCompressionFormat_PVRTC,
 
   kNumCompressionFormats
 };
@@ -55,37 +58,47 @@ enum ECompressionFormat {
 #include "Image.h"
 
 class CompressedImage : public Image {
-
  private:
   ECompressionFormat m_Format;
   uint32 *m_RGBAData;
   uint32 m_DataSz;
 
-  void InitData(const unsigned char *withData);
  public:
-  CompressedImage();
+  CompressedImage(const CompressedImage &);
+  CompressedImage &operator=(const CompressedImage &);
 
   // Create a compressed image from the given data according to
   // the passed format. The size of the data is expected to conform
   // to the width, height, and format specified.
   CompressedImage(
-    const unsigned int width, 
-    const unsigned int height, 
+    const uint32 width, 
+    const uint32 height, 
     const ECompressionFormat format, 
-    const unsigned char *data
+    const uint8 *data
   );
 
-  CompressedImage( const CompressedImage &other );
   virtual ~CompressedImage();
+
+  virtual Image *Clone() const {
+    return new CompressedImage(*this);
+  }
 
   virtual void ComputeRGBA();
   virtual const uint32 *GetRGBA() const { return m_RGBAData; }
+
+  static uint32 GetCompressedSize(uint32 uncompressedSize, ECompressionFormat format);
+  static uint32 GetUncompressedSize(uint32 compressedSize, ECompressionFormat format) {
+    uint32 cmp = GetCompressedSize(compressedSize, format);
+    return compressedSize * (compressedSize / cmp);
+  }
 
   // Decompress the compressed image data into outBuf. outBufSz is expected
   // to be the proper size determined by the width, height, and format.
   // !FIXME! We should have a function to explicitly return the in/out buf
   // size for a given compressed image.
-  bool DecompressImage(unsigned char *outBuf, unsigned int outBufSz) const;
+  bool DecompressImage(uint8 *outBuf, uint32 outBufSz) const;
+
+  ECompressionFormat GetFormat() const { return m_Format; }
 };
 
 #endif // _COMPRESSED_IMAGE_H_

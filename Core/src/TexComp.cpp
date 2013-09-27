@@ -50,14 +50,14 @@
 #include <cassert>
 #include <iostream>
 
-#include "CompressionFuncs.h"
 #include "BC7Compressor.h"
-#include "Thread.h"
-#include "WorkerQueue.h"
-#include "ThreadGroup.h"
-
-#include "ImageFile.h"
+#include "CompressionFuncs.h"
 #include "Image.h"
+#include "ImageFile.h"
+#include "PVRTCCompressor.h"
+#include "Thread.h"
+#include "ThreadGroup.h"
+#include "WorkerQueue.h"
 
 template <typename T>
 static void clamp(T &x, const T &minX, const T &maxX) {
@@ -67,6 +67,10 @@ static void clamp(T &x, const T &minX, const T &maxX) {
 template <typename T>
 static inline T sad(const T &a, const T &b) {
   return (a > b)? a - b : b - a;
+}
+
+static void CompressPVRTC(const CompressionJob &cj) {
+  PVRTCC::Compress(cj);
 }
 
 SCompressionSettings:: SCompressionSettings()
@@ -86,6 +90,12 @@ static  CompressionFuncWithStats ChooseFuncFromSettingsWithStats(const SCompress
        return BC7C::CompressWithStats;
     }
     break;
+
+    case eCompressionFormat_PVRTC:
+    {
+      // !FIXME! actually implement one of these methods...
+      return NULL;
+    }
 
     default:
     {
@@ -110,6 +120,11 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
     }
     break;
 
+    case eCompressionFormat_PVRTC:
+    {
+      return CompressPVRTC;
+    }
+
     default:
     {
       assert(!"Not implemented!");
@@ -124,8 +139,9 @@ static void ReportError(const char *msg) {
 }
 
 static double CompressImageInSerial(
-  const unsigned char *imgData,
-  const unsigned int imgDataSz,
+  const uint8 *imgData,
+  const uint32 imgWidth,
+  const uint32 imgHeight,
   const SCompressionSettings &settings,
   unsigned char *outBuf
 ) {
@@ -134,14 +150,14 @@ static double CompressImageInSerial(
 
   double cmpTimeTotal = 0.0;
 
+  StopWatch stopWatch = StopWatch();
   for(int i = 0; i < settings.iNumCompressions; i++) {
 
-    StopWatch stopWatch = StopWatch();
     stopWatch.Reset();
     stopWatch.Start();
 
     // !FIXME! We're assuming that we have 4x4 blocks here...
-    CompressionJob cj (imgData, outBuf, imgDataSz / 16, 4);
+    CompressionJob cj (imgData, outBuf, imgWidth, imgHeight);
     if(fStats && settings.pStatManager) {
       // !FIXME! Actually use the stat manager...
       //(*fStats)(cj, *(settings.pStatManager));
@@ -347,20 +363,14 @@ CompressedImage *CompressImage(
   assert(dataSz > 0);
 
   // Allocate data based on the compression method
-  int cmpDataSz = 0;
-  switch(settings.format) {
-    default: assert(!"Not implemented!"); // Fall Through V
-    case eCompressionFormat_DXT1: cmpDataSz = dataSz / 8; break;
-    case eCompressionFormat_DXT5: cmpDataSz = dataSz / 4; break;
-    case eCompressionFormat_BPTC: cmpDataSz = dataSz / 4; break;
-  }
+  uint32 cmpDataSz = CompressedImage::GetCompressedSize(dataSz, settings.format);
 
   // Make sure that we have RGBA data...
   img->ComputeRGBA();
 
   unsigned char *cmpData = new unsigned char[cmpDataSz];
   const uint8 *pixelData = reinterpret_cast<const uint8 *>(img->GetRGBA());
-  CompressImageData(pixelData, dataSz, cmpData, cmpDataSz, settings);
+  CompressImageData(pixelData, w, h, cmpData, cmpDataSz, settings);
 
   outImg = new CompressedImage(w, h, settings.format, cmpData);
   
@@ -370,11 +380,14 @@ CompressedImage *CompressImage(
 
 bool CompressImageData(
   const unsigned char *data, 
-  const unsigned int dataSz,
+  const unsigned int width,
+  const unsigned int height,
   unsigned char *cmpData,
   const unsigned int cmpDataSz,
   const SCompressionSettings &settings
 ) { 
+
+  uint32 dataSz = width * height * 4;
 
   // Make sure that platform supports SSE if they chose this
   // option...
@@ -390,14 +403,22 @@ bool CompressImageData(
     return false;
   }
 
-  // Allocate data based on the compression method
-  uint32 cmpDataSzNeeded = 0;
-  switch(settings.format) {
-    default: assert(!"Not implemented!"); // Fall through V
-    case eCompressionFormat_DXT1: cmpDataSzNeeded = dataSz / 8; break;
-    case eCompressionFormat_DXT5: cmpDataSzNeeded = dataSz / 4; break;
-    case eCompressionFormat_BPTC: cmpDataSzNeeded = dataSz / 4; break;
+  uint32 numThreads = settings.iNumThreads;
+  if(settings.format == eCompressionFormat_PVRTC &&
+     (settings.iNumThreads > 1 || settings.pStatManager)) {
+    if(settings.iNumThreads > 1) {
+      ReportError("WARNING - PVRTC compressor does not support multithreading.");
+      numThreads = 1;
+    }
+
+    if(settings.pStatManager) {
+      ReportError("WARNING - PVRTC compressor does not support stat collection.");
+    }
   }
+
+  // Allocate data based on the compression method
+  uint32 cmpDataSzNeeded =
+    CompressedImage::GetCompressedSize(dataSz, settings.format);
 
   if(cmpDataSzNeeded == 0) {
     ReportError("Unknown compression format");
@@ -413,21 +434,17 @@ bool CompressImageData(
 
     double cmpMSTime = 0.0;
 
-    if(settings.iNumThreads > 1) {
+    if(numThreads > 1) {
       if(settings.bUseAtomics) {
-        //!KLUDGE!
-        unsigned int height = 4;
-        unsigned int width = dataSz / 16;
-
         cmpMSTime = CompressImageWithAtomics(data, width, height, settings, cmpData);
-      }
-      else if(settings.iJobSize > 0)
+      } else if(settings.iJobSize > 0) {
         cmpMSTime = CompressImageWithWorkerQueue(data, dataSz, settings, cmpData);
-      else
+      } else {
         cmpMSTime = CompressImageWithThreads(data, dataSz, settings, cmpData);
+      }
     }
     else {
-      cmpMSTime = CompressImageInSerial(data, dataSz, settings, cmpData);
+      cmpMSTime = CompressImageInSerial(data, width, height, settings, cmpData);
     }
 
     // Report compression time

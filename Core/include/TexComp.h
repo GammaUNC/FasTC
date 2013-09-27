@@ -96,7 +96,8 @@ extern CompressedImage *CompressImage(Image *img, const SCompressionSettings &se
 
 extern bool CompressImageData(
   const unsigned char *data,
-  const unsigned int dataSz,
+  const unsigned int width,
+  const unsigned int height,
   unsigned char *cmpData,
   const unsigned int cmpDataSz,
   const SCompressionSettings &settings

@@ -67,10 +67,10 @@ Image::Image(const Image &other)
   }
 }
 
-Image::Image(uint32 width, uint32 height, const uint32 *pixels) 
+Image::Image(uint32 width, uint32 height, const uint32 *pixels, bool bBlockStreamOrder)
   : m_Width(width)
   , m_Height(height)
-  , m_bBlockStreamOrder(false)
+  , m_bBlockStreamOrder(bBlockStreamOrder)
 {
   if(pixels) {
     m_Data = new uint8[4 * m_Width * m_Height];
@@ -80,6 +80,12 @@ Image::Image(uint32 width, uint32 height, const uint32 *pixels)
   }
 }
 
+Image::~Image() {
+  if(m_Data) {
+    delete [] m_Data;
+    m_Data = 0;
+  }
+}
 
 Image &Image::operator=(const Image &other) {
   
@@ -105,13 +111,6 @@ Image &Image::operator=(const Image &other) {
   return *this;
 }
 
-Image::~Image() {
-  if(m_Data) {
-    delete [] m_Data;
-    m_Data = 0;
-  }
-}
-
 double Image::ComputePSNR(Image *other) {
   if(!other)
     return -1.0;
@@ -130,42 +129,88 @@ double Image::ComputePSNR(Image *other) {
   const uint8 *otherData =
     reinterpret_cast<const uint8 *>(other->GetRGBA());
 
-  const double wr = 1.0;
-  const double wg = 1.0;
-  const double wb = 1.0;
+  //  const double w[3] = { 0.2126, 0.7152, 0.0722 };
+  const double w[3] = { 1.0, 1.0, 1.0 };
     
-  double MSE = 0.0;
+  double mse = 0.0;
   const uint32 imageSz = GetWidth() * GetHeight() * 4;
   for(uint32 i = 0; i < imageSz; i+=4) {
 
-    const unsigned char *ourPixel = ourData + i;
-    const unsigned char *otherPixel = otherData + i;
+    const unsigned char *pixelDataRaw = ourData + i;
+    const unsigned char *pixelDataUncomp = otherData + i;
 
-    double ourAlphaScale = double(ourPixel[3]) / 255.0;
-    double otherAlphaScale = double(otherPixel[3]) / 255.0;
-    double dr = double(sad(ourAlphaScale * ourPixel[0],
-                           otherAlphaScale * otherPixel[0])) * wr;
-    double dg = double(sad(ourAlphaScale * ourPixel[1],
-                           otherAlphaScale * otherPixel[1])) * wg;
-    double db = double(sad(ourAlphaScale * ourPixel[2],
-                           otherAlphaScale * otherPixel[2])) * wb;
-    
-    const double pixelMSE = 
-      (double(dr) * double(dr)) + 
-      (double(dg) * double(dg)) + 
-      (double(db) * double(db));
-    
-    //fprintf(stderr, "Pixel MSE: %f\n", pixelMSE);
-    MSE += pixelMSE;
+    float r[4], u[4];
+    for(uint32 c = 0; c < 4; c++) {
+      if(c == 3) {
+        r[c] = pixelDataRaw[c] / 255.0;
+        u[c] = pixelDataUncomp[c] / 255.0;
+      } else {
+        r[c] = static_cast<double>(pixelDataRaw[c]) * w[c];
+        u[c] = static_cast<double>(pixelDataUncomp[c]) * w[c];
+      }
+    }
+
+    for(uint32 c = 0; c < 3; c++) {
+      double diff = (r[3] * r[c] - u[3] * u[c]);
+      mse += diff * diff;
+    }
   }
 
-  MSE /= (double(GetWidth()) * double(GetHeight()));
+  mse /= GetWidth() * GetHeight();
 
-  double MAXI = 
-    (255.0 * wr) * (255.0 * wr) + 
-    (255.0 * wg) * (255.0 * wg) + 
-    (255.0 * wb) * (255.0 * wb);
+  const double C = 255.0 * 255.0;
+  double maxi = (w[0]*w[0] + w[1]*w[1] + w[2]*w[2]) * C;
+  return 10 * log10(maxi/mse);
+}
 
-  double PSNR = 10 * log10(MAXI/MSE);
-  return PSNR;
+void Image::ConvertToBlockStreamOrder() {
+  if(m_bBlockStreamOrder || !m_Data)
+    return;
+
+  uint32 *newPixelData = new uint32[GetWidth() * GetHeight() * 4];
+  for(uint32 j = 0; j < GetHeight(); j+=4) {
+    for(uint32 i = 0; i < GetWidth(); i+=4) {
+      uint32 blockX = i / 4;
+      uint32 blockY = j / 4;
+      uint32 blockIdx = blockY * (GetWidth() / 4) + blockX;
+
+      uint32 offset = blockIdx * 4 * 4;
+      for(uint32 t = 0; t < 16; t++) {
+        uint32 x = i + t % 4;
+        uint32 y = j + t / 4;
+        newPixelData[offset + t] =
+          reinterpret_cast<uint32 *>(m_Data)[y*GetWidth() + x];
+      }
+    }
+  }
+
+  delete m_Data;
+  m_Data = reinterpret_cast<uint8 *>(newPixelData);
+  m_bBlockStreamOrder = true;
+}
+
+void Image::ConvertFromBlockStreamOrder() {
+  if(!m_bBlockStreamOrder || !m_Data)
+    return;
+
+  uint32 *newPixelData = new uint32[GetWidth() * GetHeight() * 4];
+  for(uint32 j = 0; j < GetHeight(); j+=4) {
+    for(uint32 i = 0; i < GetWidth(); i+=4) {
+      uint32 blockX = i / 4;
+      uint32 blockY = j / 4;
+      uint32 blockIdx = blockY * (GetWidth() / 4) + blockX;
+
+      uint32 offset = blockIdx * 4 * 4;
+      for(uint32 t = 0; t < 16; t++) {
+        uint32 x = i + t % 4;
+        uint32 y = j + t / 4;
+        newPixelData[y*GetWidth() + x] =
+          reinterpret_cast<uint32 *>(m_Data)[offset + t];
+      }
+    }
+  }
+
+  delete m_Data;
+  m_Data = reinterpret_cast<uint8 *>(newPixelData);
+  m_bBlockStreamOrder = false;
 }

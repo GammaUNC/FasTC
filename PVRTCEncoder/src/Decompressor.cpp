@@ -304,11 +304,10 @@ namespace PVRTCC {
 
     // First, extract all of the block information...
     std::vector<Block> blocks;
-    blocks.reserve(w * h);
 
     const uint32 blocksW = bTwoBitMode? (w / 8) : (w / 4);
     const uint32 blocksH = h / 4;
-    const uint32 blockSz = 8;
+    blocks.reserve(blocksW * blocksH);
 
     for(uint32 j = 0; j < blocksH; j++) {
       for(uint32 i = 0; i < blocksW; i++) {
@@ -317,7 +316,7 @@ namespace PVRTCC {
         // linearize them...
         uint32 idx = Interleave(j, i);
 
-        uint32 offset = idx * blockSz;
+        uint32 offset = idx * kBlockSize;
         blocks.push_back( Block(dcj.inBuf + offset) );
       }
     }

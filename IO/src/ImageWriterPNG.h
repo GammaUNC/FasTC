@@ -50,7 +50,7 @@
 class Image;
 class ImageWriterPNG : public ImageWriter {
  public:
-  ImageWriterPNG(const Image &);
+  ImageWriterPNG(Image &);
   virtual ~ImageWriterPNG() { }
 
   virtual bool WriteImage();

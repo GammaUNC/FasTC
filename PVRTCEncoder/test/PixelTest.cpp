@@ -133,13 +133,39 @@ TEST(Pixel, FromBitsAndAssociatedConstructor) {
   }
 }
 
+TEST(Pixel, ToBits) {
+  PVRTCC::Pixel p;
+
+  uint8 bitDepth[4] = { 2, 8, 1, 7 };
+  p.ChangeBitDepth(bitDepth);
+
+  p.A() = 0x2;
+  p.R() = 0x56;
+  p.G() = 0;
+  p.B() = 0x4F;
+
+  uint8 bits[3];
+  memset(bits, 0, sizeof(bits));
+  p.ToBits(bits, sizeof(bits));
+
+  EXPECT_EQ(bits[0], 0x4F);
+  EXPECT_EQ(bits[1], 0x56);
+  EXPECT_EQ(bits[2], 0x2);
+
+  memset(bits, 0, sizeof(bits));
+  p.ToBits(bits, 3, 2);
+  EXPECT_EQ(bits[0], 0x3C);
+  EXPECT_EQ(bits[1], 0x59);
+  EXPECT_EQ(bits[2], 0x09);
+}
+
 TEST(Pixel, ChangeChannelBitDepth) {
   uint8 val = 0x43;
   uint8 depth = 7;
 
   EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 8), 0x87);
   EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 7), 0x43);
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 6), 0x21);
+  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 6), 0x22);
   EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 2), 0x2);
   EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 0), 0xFF);
 
@@ -149,7 +175,7 @@ TEST(Pixel, ChangeChannelBitDepth) {
   EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 8), 0x6D);
   EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 6), 0x1B);
   EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 3), 0x03);
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 2), 0x01);
+  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 2), 0x02);
   EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 0), 0xFF);
 }
 
@@ -206,11 +232,19 @@ TEST(Pixel, UnpackRGBA) {
   EXPECT_EQ(p.G(), 0xB3);
   EXPECT_EQ(p.R(), 0xFE);
 
+  p = PVRTCC::Pixel(rgba);
+  EXPECT_EQ(p.A(), 0x46);
+  EXPECT_EQ(p.B(), 0x19);
+  EXPECT_EQ(p.G(), 0xB3);
+  EXPECT_EQ(p.R(), 0xFE);
+
+  p = PVRTCC::Pixel();
   uint8 newBitDepth[4] = { 3, 5, 2, 1 };  // A R G B
   p.ChangeBitDepth(newBitDepth);
+  p.UnpackRGBA(rgba);
 
   EXPECT_EQ(p.A(), 0x2);
   EXPECT_EQ(p.B(), 0x0);
-  EXPECT_EQ(p.G(), 0x2);
+  EXPECT_EQ(p.G(), 0x3);
   EXPECT_EQ(p.R(), 0x1f);
 }

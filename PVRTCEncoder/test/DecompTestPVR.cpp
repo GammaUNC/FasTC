@@ -73,7 +73,7 @@ class ImageTester {
     pvrtexture::CPVRTexture pvrTex(filename);
 
     const uint8 *data = static_cast<const uint8 *>(pvrTex.getDataPtr());
-    ASSERT_TRUE(data);
+    assert(data);
 
     const pvrtexture::CPVRTextureHeader &hdr = pvrTex.getHeader();
     const uint32 w = hdr.getWidth();
@@ -96,7 +96,7 @@ class ImageTester {
 
     uint32 *libPixels = static_cast<uint32 *>(pvrTex.getDataPtr());
 
-    for(int i = 0; i < w*h; i++) {
+    for(uint32 i = 0; i < w*h; i++) {
       EXPECT_EQ(PixelPrinter(libPixels[i]), PixelPrinter(outPixels[i]));
     }
 

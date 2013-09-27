@@ -107,7 +107,7 @@ ImageFile::ImageFile(const CHAR *filename, EImageFileFormat format)
 
 ImageFile::ImageFile(const char *filename, EImageFileFormat format, const Image &image)
   : m_FileFormat(format)
-  , m_Image(new Image(image))
+  , m_Image(image.Clone())
 {
   strncpy(m_Filename, filename, kMaxFilenameSz);
 }
@@ -207,7 +207,7 @@ Image *ImageFile::LoadImage(const unsigned char *rawImageData) const {
   }
 
   uint32 *pixels = reinterpret_cast<uint32 *>(pixelData);
-  Image *i = new Image(loader->GetWidth(), loader->GetHeight(), pixels);
+  Image *i = new Image(loader->GetWidth(), loader->GetHeight(), pixels, true);
 
   // Cleanup
   delete loader;

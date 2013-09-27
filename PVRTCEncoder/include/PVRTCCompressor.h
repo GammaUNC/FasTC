@@ -70,8 +70,17 @@ namespace PVRTCC {
   // decompress the data.
   void Decompress(const DecompressionJob &,
                   bool bTwoBitMode = false,
-                  const EWrapMode wrapMode = eWrapMode_Clamp,
+                  const EWrapMode wrapMode = eWrapMode_Wrap,
                   bool bDebugImages = false);
+
+  // Takes a stream of uncompressed RGBA8 data and compresses it into PVRTC
+  // version one. The width and height must be specified in order to properly
+  // decompress the data.
+  void Compress(const CompressionJob &,
+                bool bTwoBitMode = false,
+                const EWrapMode wrapMode = eWrapMode_Wrap);
+
+  static const uint32 kBlockSize = sizeof(uint64);
 
 }  // namespace PVRTCC
 

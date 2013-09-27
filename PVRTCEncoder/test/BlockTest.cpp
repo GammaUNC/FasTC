@@ -241,3 +241,94 @@ TEST(Block, Get2BPPSubMode) {
   b = PVRTCC::Block(data);
   EXPECT_EQ(b.Get2BPPSubMode(), PVRTCC::Block::e2BPPSubMode_Vertical);
 }
+
+TEST(Block, SetColorAandB) {
+  PVRTCC::Block b;
+  PVRTCC::Pixel color;
+  color.A() = 212;
+  color.R() = 200;
+  color.G() = 100;
+  color.B() = -120;
+  b.SetColorA(color);
+  PVRTCC::Pixel cA = b.GetColorA();
+
+  uint8 bitDepth[4] = { 0, 5, 5, 5 };
+  color.ChangeBitDepth(bitDepth);
+
+  EXPECT_FALSE(memcmp(&color, &cA, sizeof(color)));
+  
+  memset(bitDepth, 8, sizeof(bitDepth));
+  color.ChangeBitDepth(bitDepth);
+
+  color.A() = 212;
+  color.R() = 200;
+  color.G() = 100;
+  color.B() = -120;
+  b.SetColorB(color, true);
+  PVRTCC::Pixel cB = b.GetColorB();
+  
+  uint8 tBitDepth[4] = { 0, 5, 5, 4 };
+  color.ChangeBitDepth(tBitDepth);
+
+  EXPECT_FALSE(memcmp(&color, &cB, sizeof(color)));
+
+  memset(bitDepth, 8, sizeof(bitDepth));
+  color.ChangeBitDepth(bitDepth);
+
+  color.A() = 100;
+  color.R() = 200;
+  color.G() = 100;
+  color.B() = -120;
+  b.SetColorB(color, true);
+  PVRTCC::Pixel cC = b.GetColorB();
+  
+  uint8 uBitDepth[4] = { 3, 4, 4, 3 };
+  color.ChangeBitDepth(uBitDepth);
+
+  EXPECT_FALSE(memcmp(&color, &cC, sizeof(color)));
+}
+
+TEST(Block, SetLerpValue) {
+  PVRTCC::Block b;
+
+  for(int i = 0; i < 16; i++) {
+    b.SetLerpValue(i, i%4);
+  }
+
+  for(int i = 0; i < 16; i++) {
+    EXPECT_EQ(b.GetLerpValue(i), i % 4);
+  }
+}
+
+TEST(Block, PackBlock) {
+  PVRTCC::Block b;
+
+  PVRTCC::Pixel cA, cB;
+
+  cA.A() = 0xFF;
+  cA.R() = 0xFF;
+  cA.G() = 0x80;
+  cA.B() = 0x00;
+
+  cB.A() = 0x80;
+  cB.R() = 0x7F;
+  cB.G() = 0x00;
+  cB.B() = 0xFF;
+
+  b.SetColorA(cA);
+  b.SetColorB(cB, true);
+
+  for(int i = 0; i < 16; i++) {
+    b.SetLerpValue(i, i%4);
+  }
+
+  b.SetModeBit(false);
+  EXPECT_EQ(b.Pack(), 0xFE00480EE4E4E4E4UL);
+
+  b.SetModeBit(true);
+  EXPECT_EQ(b.Pack(), 0xFE00480FE4E4E4E4UL);
+
+  b.SetColorB(cB);
+  b.SetModeBit(false);
+  EXPECT_EQ(b.Pack(), 0xFE00C01EE4E4E4E4UL);
+}

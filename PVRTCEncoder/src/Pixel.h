@@ -63,9 +63,14 @@ class Pixel {
     for(int i = 0; i < 4; i++) m_BitDepth[i] = 8;
   }
 
-  explicit Pixel(const uint8 *bits,
-                 const uint8 channelDepth[4] = static_cast<uint8 *>(0),
-                 uint8 bitOffset = 0) {
+  explicit Pixel(uint32 rgba) {
+    for(int i = 0; i < 4; i++) m_BitDepth[i] = 8;
+    UnpackRGBA(rgba);
+  }
+
+  Pixel(const uint8 *bits,
+        const uint8 channelDepth[4] = static_cast<uint8 *>(0),
+        uint8 bitOffset = 0) {
     FromBits(bits, channelDepth, bitOffset);
   }
 
@@ -76,6 +81,13 @@ class Pixel {
   void FromBits(const uint8 *bits,
                 const uint8 channelDepth[4] = static_cast<uint8 *>(0),
                 uint8 bitOffset = 0);
+
+  // This function is the converse of FromBits. It will pack a pixel
+  // into a specified buffer based on the bit depth of the pixel. The
+  // bitOffset determines at which bit to start from. The bits are written
+  // starting from the LSB of bits[0]. numBytes is a sanity check and isn't
+  // used in release mode.
+  void ToBits(uint8 *bits, uint32 numBytes, uint32 bitOffset = 0) const;
 
   // Changes the depth of each pixel. This scales the values to
   // the appropriate bit depth by either truncating the least

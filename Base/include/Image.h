@@ -49,17 +49,29 @@
 class Image {
 
  public:
-  Image(uint32 width, uint32 height, const uint32 *pixels);
+  Image(uint32 width, uint32 height,
+        const uint32 *pixels,
+        bool bBlockStreamOrder = false);
   Image(const Image &);
   Image &operator=(const Image &);
   virtual ~Image();
-  
+
+  virtual Image *Clone() const {
+    return new Image(*this);
+  };
+
   const uint8 *RawData() const { return m_Data; }
 
   uint32 GetWidth() const { return m_Width; }
   uint32 GetHeight() const { return m_Height; }
 
-  void SetBlockStreamOrder(bool flag) { m_bBlockStreamOrder = flag; }
+  void SetBlockStreamOrder(bool flag) {
+    if(flag) {
+      ConvertToBlockStreamOrder();
+    } else {
+      ConvertFromBlockStreamOrder();
+    }
+  }
   bool GetBlockStreamOrder() const { return m_bBlockStreamOrder; }
 
   double ComputePSNR(Image *other);
@@ -77,6 +89,9 @@ class Image {
 
  protected:
   uint8 *m_Data;
+
+  void ConvertToBlockStreamOrder();
+  void ConvertFromBlockStreamOrder();
 };
 
 #endif // __TEXCOMP_IMAGE_H__
