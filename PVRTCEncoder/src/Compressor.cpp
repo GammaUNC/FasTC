@@ -91,11 +91,10 @@ namespace PVRTCC {
     return ::std::min(::std::max(low, v), high);
   }
 
-  template <typename T>
-  static T Lookup(const ::std::vector<T> &vals,
-                  uint32 x, uint32 y,
-                  uint32 width, uint32 height,
-                  const EWrapMode wrapMode) {
+  static const Pixel &Lookup(const Image &img,
+                             int32 x, int32 y,
+                             uint32 width, uint32 height,
+                             const EWrapMode wrapMode) {
     while(x >= width) {
       if(wrapMode == eWrapMode_Wrap) {
         x -= width;
@@ -128,7 +127,7 @@ namespace PVRTCC {
       }
     }
 
-    return vals[y * width + x];
+    return img(x, y);
   }
 
   void Compress(const CompressionJob &dcj,
@@ -173,62 +172,29 @@ namespace PVRTCC {
       }
     }
 
+    const uint32 blocksW = dcj.width / 4;
+    const uint32 blocksH = dcj.height / 4;
+
     // Go over the 7x7 texel blocks and extract bounding box diagonals for each
     // block. We should be able to choose which diagonal we want...
     const uint32 kKernelSz = 7;
-    ::std::vector<int16> maxDiff;
-    ::std::vector<int16> minDiff;
 
-    const uint32 kNumBlockChannels = dcj.height * dcj.width / 4;
-    maxDiff.resize(kNumBlockChannels);
-    minDiff.resize(kNumBlockChannels);
-
-    for(uint32 j = 2; j < dcj.height; j += 4) {
-      for(uint32 i = 2; i < dcj.width; i += 4) {
-        const uint32 startX = i - (kKernelSz / 2);
-        const uint32 startY = j - (kKernelSz / 2);
-        for(uint32 c = 0; c < 4; c++) {
-          int32 pos = 0;
-          int32 neg = 0;
-          for(uint32 y = startY; y < startY + kKernelSz; y++) {
-            for(uint32 x = startX; x < startX + kKernelSz; x++) {
-              int16 val = Lookup(difference, x*4 + c, y,
-                                 dcj.width*4, dcj.height, wrapMode);
-              if(val > 0) {
-                pos += val;
-              } else {
-                neg += val;
-              }
-            }
-          }
-
-          uint32 blockIdx = ((j-2)/4) * dcj.width + (i-2) + c;
-          assert(blockIdx < kNumBlockChannels);
-          if(pos > -neg) {
-            maxDiff[blockIdx] = pos;
-            minDiff[blockIdx] = 0;
-          } else {
-            maxDiff[blockIdx] = 0;
-            minDiff[blockIdx] = neg;       
-          }
-        }
-      }
-    }
-
-    // Add maxDiff to image to get high signal, and lowdiff to image to
-    // get low signal...
     Image imgA = downscaled;
     Image imgB = downscaled;
-
-    for(uint32 j = 0; j < dcj.height / 4; j++) {
-      for(uint32 i = 0; i < dcj.width / 4; i++) {
-        for(uint32 c = 0; c < 4; c++) {
-          const uint32 cIdx = j*dcj.width/4 + i*4 + c;
-          uint8 &a = imgA(i, j).Component(c);
-          a = static_cast<uint8>(Clamp<int16>(a + maxDiff[cIdx], 0, 255));
-
-          uint8 &b = imgB(i, j).Component(c);
-          b = static_cast<uint8>(Clamp<int16>(b + minDiff[cIdx], 0, 255));
+    for(uint32 j = 0; j < blocksH; j++) {
+      for(uint32 i = 0; i < blocksW; i++) {
+        int32 startX = i*4 + 2 - (kKernelSz / 2);
+        int32 startY = j*4 + 2 - (kKernelSz / 2);
+        for(int32 y = startY; y < startY + kKernelSz; y++) {
+          for(int32 x = startX; x < startX + kKernelSz; x++) {
+            const Pixel &po = Lookup(original, x, y, dcj.width, dcj.height, wrapMode);
+            Pixel &pa = imgA(i, j);
+            Pixel &pb = imgB(i, j);
+            for(uint32 c = 0; c < 4; c++) {
+              pa.Component(c) = ::std::max(po.Component(c), pa.Component(c));
+              pb.Component(c) = ::std::min(po.Component(c), pb.Component(c));
+            }
+          }
         }
       }
     }
@@ -288,9 +254,6 @@ namespace PVRTCC {
     }
 
     // Pack everything into a PVRTC blocks.
-    const uint32 blocksW = dcj.width / 4;
-    const uint32 blocksH = dcj.height / 4;
-
     assert(imgA.GetHeight() == blocksH);
     assert(imgA.GetWidth() == blocksW);
 
