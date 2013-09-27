@@ -90,6 +90,7 @@ CompressedImage &CompressedImage::operator=(const CompressedImage &other) {
     m_RGBAData = new uint32[GetWidth() * GetHeight()];
     memcpy(m_RGBAData, other.m_RGBAData, sizeof(uint32) * GetWidth() * GetHeight());
   }
+  return *this;
 }
 
 CompressedImage::~CompressedImage() {

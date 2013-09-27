@@ -95,36 +95,26 @@ namespace PVRTCC {
                              int32 x, int32 y,
                              uint32 width, uint32 height,
                              const EWrapMode wrapMode) {
-    while(x >= width) {
-      if(wrapMode == eWrapMode_Wrap) {
-        x -= width;
-      } else {
-        x = width - 1;
-      }
+    int32 w = static_cast<int32>(width);
+    int32 h = static_cast<int32>(height);
+
+    assert(w >= 0);
+    assert(h >= 0);
+
+    while(x >= w) {
+      x = (wrapMode == eWrapMode_Wrap)? x - w : w - 1;
     }
 
     while(x < 0) {
-      if(wrapMode == eWrapMode_Wrap) {
-        x += width;
-      } else {
-        x = 0;
-      }
+      x = (wrapMode == eWrapMode_Wrap)? x + w : 0;
     }
 
-    while(y >= height) {
-      if(wrapMode == eWrapMode_Wrap) {
-        y -= height;
-      } else {
-        y = height - 1;
-      }
+    while(y >= h) {
+      y = (wrapMode == eWrapMode_Wrap)? y - h : h - 1;
     }
 
     while(y < 0) {
-      if(wrapMode == eWrapMode_Wrap) {
-        y += height;
-      } else {
-        y = 0;
-      }
+      y = (wrapMode == eWrapMode_Wrap)? y + h : 0;
     }
 
     return img(x, y);
@@ -177,7 +167,7 @@ namespace PVRTCC {
 
     // Go over the 7x7 texel blocks and extract bounding box diagonals for each
     // block. We should be able to choose which diagonal we want...
-    const uint32 kKernelSz = 7;
+    const int32 kKernelSz = 7;
 
     Image imgA = downscaled;
     Image imgB = downscaled;
