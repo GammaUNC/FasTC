@@ -117,6 +117,11 @@ Image::Image(const CompressedImage &ci)
     fprintf(stderr, "Error decompressing image!\n");
     return;
   }
+
+  // !HACK!
+  if(ci.GetFormat() == eCompressionFormat_PVRTC) {
+    m_bBlockStreamOrder = false;
+  }
 }
 
 Image::Image(const ImageLoader &loader) 
@@ -206,4 +211,56 @@ double Image::ComputePSNR(const CompressedImage &ci) const {
   // Cleanup
   delete unCompData;
   return PSNR;
+}
+
+void Image::ConvertToBlockStreamOrder() {
+  if(m_bBlockStreamOrder || !m_PixelData)
+    return;
+
+  uint32 *newPixelData = new uint32[GetWidth() * GetHeight() * 4];
+  for(uint32 j = 0; j < GetHeight(); j+=4) {
+    for(uint32 i = 0; i < GetWidth(); i+=4) {
+      uint32 blockX = i / 4;
+      uint32 blockY = j / 4;
+      uint32 blockIdx = blockY * (GetWidth() / 4) + blockX;
+
+      uint32 offset = blockIdx * 4 * 4;
+      for(uint32 t = 0; t < 16; t++) {
+        uint32 x = i + t % 4;
+        uint32 y = j + t / 4;
+        newPixelData[offset + t] =
+          reinterpret_cast<uint32 *>(m_PixelData)[y*GetWidth() + x];
+      }
+    }
+  }
+
+  delete m_PixelData;
+  m_PixelData = reinterpret_cast<uint8 *>(newPixelData);
+  m_bBlockStreamOrder = true;
+}
+
+void Image::ConvertFromBlockStreamOrder() {
+  if(!m_bBlockStreamOrder || !m_PixelData)
+    return;
+
+  uint32 *newPixelData = new uint32[GetWidth() * GetHeight() * 4];
+  for(uint32 j = 0; j < GetHeight(); j+=4) {
+    for(uint32 i = 0; i < GetWidth(); i+=4) {
+      uint32 blockX = i / 4;
+      uint32 blockY = j / 4;
+      uint32 blockIdx = blockY * (GetWidth() / 4) + blockX;
+
+      uint32 offset = blockIdx * 4 * 4;
+      for(uint32 t = 0; t < 16; t++) {
+        uint32 x = i + t % 4;
+        uint32 y = j + t / 4;
+        newPixelData[y*GetWidth() + x] =
+          reinterpret_cast<uint32 *>(m_PixelData)[offset + t];
+      }
+    }
+  }
+
+  delete m_PixelData;
+  m_PixelData = reinterpret_cast<uint8 *>(newPixelData);
+  m_bBlockStreamOrder = false;
 }

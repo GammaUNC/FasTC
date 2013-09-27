@@ -206,6 +206,9 @@ int main(int argc, char **argv) {
   }
 
   const Image *img = file.GetImage();
+  if(format == eCompressionFormat_PVRTC) {
+    const_cast<Image *>(img)->SetBlockStreamOrder(false);
+  }
 
   int numBlocks = (img->GetWidth() * img->GetHeight())/16;
   BlockStatManager *statManager = NULL;
@@ -247,7 +250,6 @@ int main(int argc, char **argv) {
   if(format == eCompressionFormat_BPTC) {
     strcat(basename, "-bc7.png");
   } else if(format == eCompressionFormat_PVRTC) {
-    cImg.SetBlockStreamOrder(false);
     strcat(basename, "-pvrtc.png");
   }
 

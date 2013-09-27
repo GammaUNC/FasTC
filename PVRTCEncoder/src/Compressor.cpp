@@ -137,14 +137,8 @@ namespace PVRTCC {
     Image img(dcj.height, dcj.width);
     uint32 nPixels = dcj.height * dcj.width;
     for(uint32 i = 0; i < nPixels; i++) {
-      // Assume block stream order (whyyyy)
-      uint32 blockIdx = i / 16;
-      uint32 blockWidth = dcj.width / 4;
-      uint32 blockX = blockIdx % blockWidth;
-      uint32 blockY = blockIdx / blockWidth;
-
-      uint32 x = blockX * 4 + (i % 4);
-      uint32 y = blockY * 4 + (i % 16) / 4;
+      uint32 x = i % dcj.width;
+      uint32 y = i / dcj.width;
 
       const uint32 *pixels = reinterpret_cast<const uint32 *>(dcj.inBuf);
       img(x, y).UnpackRGBA(pixels[i]);      

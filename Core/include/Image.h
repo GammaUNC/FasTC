@@ -70,7 +70,13 @@ class Image {
   uint32 GetWidth() const { return m_Width; }
   uint32 GetHeight() const { return m_Height; }
 
-  void SetBlockStreamOrder(bool flag) { m_bBlockStreamOrder = flag; }
+  void SetBlockStreamOrder(bool flag) {
+    if(flag) {
+      ConvertToBlockStreamOrder();
+    } else {
+      ConvertFromBlockStreamOrder();
+    }
+  }
   bool GetBlockStreamOrder() const { return m_bBlockStreamOrder; }
 
  private:
@@ -80,6 +86,9 @@ class Image {
   bool m_bBlockStreamOrder;
 
   uint8 *m_PixelData;
+
+  void ConvertToBlockStreamOrder();
+  void ConvertFromBlockStreamOrder();
 };
 
 #endif // __TEXCOMP_IMAGE_H__

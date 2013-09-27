@@ -97,6 +97,8 @@ class CompressedImage {
   // !FIXME! We should have a function to explicitly return the in/out buf
   // size for a given compressed image.
   bool DecompressImage(uint8 *outBuf, uint32 outBufSz) const;
+
+  ECompressionFormat GetFormat() const { return m_Format; }
 };
 
 #endif // _COMPRESSED_IMAGE_H_
