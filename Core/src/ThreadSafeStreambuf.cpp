@@ -68,4 +68,11 @@ ThreadSafeStreambuf::~ThreadSafeStreambuf() {
   }
 }
 
+::std::streamsize ThreadSafeStreambuf::xsputn(const char_type *s,
+                                              ::std::streamsize count) {
+  // Lock it.
+  TCLock lock(*m_Mutex);
+  // then just do what you would have done...
+  return ::std::streambuf::xsputn(s, count);
+}
 

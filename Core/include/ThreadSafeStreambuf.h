@@ -63,6 +63,8 @@ class ThreadSafeStreambuf : public ::std::streambuf {
   ThreadSafeStreambuf();
   virtual ~ThreadSafeStreambuf();
 
+  virtual std::streamsize xsputn(const char_type *s, std::streamsize count);
+
  private:
   // Not implemented -- not allowed...
   ThreadSafeStreambuf(const ThreadSafeStreambuf &);
