@@ -69,7 +69,7 @@ CompressedImage::CompressedImage(
   const ECompressionFormat format,
   const unsigned char *data
 )
-  : Image(width, height, NULL)
+  : Image(width, height, NULL, format != eCompressionFormat_PVRTC)
   , m_Format(format)
   , m_RGBAData(0)
 {
