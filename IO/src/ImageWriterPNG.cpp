@@ -77,7 +77,7 @@ public:
     unsigned char *stream = &(writer.m_RawFileData[writer.m_StreamPosition]);
     memcpy(stream, outBytes, byteCountToWrite);
 
-    writer.m_StreamPosition += byteCountToWrite;
+    writer.m_StreamPosition += static_cast<uint32>(byteCountToWrite);
   }
 
   static void FlushStream(png_structp png_ptr) { /* Do nothing... */ }

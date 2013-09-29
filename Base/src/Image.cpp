@@ -139,7 +139,7 @@ double Image::ComputePSNR(Image *other) {
     const unsigned char *pixelDataRaw = ourData + i;
     const unsigned char *pixelDataUncomp = otherData + i;
 
-    float r[4], u[4];
+    double r[4], u[4];
     for(uint32 c = 0; c < 4; c++) {
       if(c == 3) {
         r[c] = pixelDataRaw[c] / 255.0;

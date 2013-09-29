@@ -1402,7 +1402,7 @@ double BC7CompressionMode::Compress(
       }
     }
 
-    const bool rotated = bestAlphaIndices[anchorIdx] >> (nAlphaIndexBits - 1);
+    const bool rotated = (bestAlphaIndices[anchorIdx] >> (nAlphaIndexBits - 1)) > 0;
     if(m_Attributes->hasRotation && rotated) {
       uint8 * bp1 = reinterpret_cast<uint8 *>(&pixel1[sidx]);
       uint8 * bp2 = reinterpret_cast<uint8 *>(&pixel2[sidx]);
@@ -1660,8 +1660,8 @@ namespace BC7C {
           double gdiff = sad(unCompData[k+1], inBuf[k+1]);
           double bdiff = sad(unCompData[k+2], inBuf[k+2]);
           double adiff = sad(unCompData[k+3], inBuf[k+3]);
-          const float asrc = static_cast<double>(inBuf[k+3]);
-          const float adst = static_cast<double>(unCompData[k+3]);
+          const double asrc = static_cast<double>(inBuf[k+3]);
+          const double adst = static_cast<double>(unCompData[k+3]);
           double avga = ((asrc + adst)*0.5)/255.0;
           diffSum += (rdiff + gdiff + bdiff + adiff) * avga;
         }
@@ -2581,7 +2581,7 @@ namespace BC7C {
 
     assert(idxMode < 2);
     assert(rotMode < 4);
-    assert(shapeIdx < ((mode == 0)? 16 : 64));
+    assert(shapeIdx < ((mode == 0)? 16U : 64U));
 
     uint32 cp = attrs->colorChannelPrecision;
     const uint32 shift = 8 - cp;

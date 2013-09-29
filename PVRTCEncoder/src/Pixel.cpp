@@ -175,7 +175,7 @@ namespace PVRTCC {
         uint16 v = static_cast<uint16>(val);
         v = (v + (1 << (bitsWasted - 1))) >> bitsWasted;
         v = ::std::min<uint16>(::std::max<uint16>(0, v), (1 << newDepth) - 1);
-        return v;
+        return static_cast<uint8>(v);
       }
     }
 

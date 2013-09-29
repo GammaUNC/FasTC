@@ -134,7 +134,7 @@ bool ImageLoaderPNG::ReadData() {
   }
 
   const int numPixels = m_Width * m_Height;
-  png_uint_32 bpr = png_get_rowbytes(png_ptr, info_ptr);
+  png_size_t bpr = png_get_rowbytes(png_ptr, info_ptr);
   png_bytep rowData = new png_byte[bpr];
 
   switch(colorType) {

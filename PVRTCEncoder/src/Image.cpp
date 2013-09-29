@@ -50,6 +50,11 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
+#if _MSC_VER
+#  define _CRT_SECURE_NO_WARNINGS
+#  define snprintf _snprintf
+#endif
+
 #include "Image.h"
 
 #include <algorithm>
@@ -57,11 +62,6 @@
 #include <cstring>
 #include <cstdio>
 #include <cmath>
-
-#if _MSC_VER
-#  define _CRT_SECURE_NO_WARNINGS
-#  define snprintf _snprintf
-#endif
 
 #include "Pixel.h"
 
@@ -287,7 +287,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
     float g = a * ConvertChannelToFloat(m_Pixels[i].G(), bitDepth[2]);
     float b = a * ConvertChannelToFloat(m_Pixels[i].B(), bitDepth[3]);
 
-    I[i] = r * 0.21 + g * 0.71 + b * 0.07;
+    I[i] = r * 0.21f + g * 0.71f + b * 0.07f;
   }
 
   // Use central differences to calculate Ix, Iy, Ixx, Iyy...

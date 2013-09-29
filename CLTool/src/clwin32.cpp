@@ -40,13 +40,18 @@
  * 
  * <http://gamma.cs.unc.edu/FasTC/>
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+
+#define _CRT_SECURE_NO_WARNINGS
+
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <fstream>
+#include <iostream>
 #include <SDKDDKVer.h>
 #include <Windows.h>
 
-#include "BlockStats.h"
+#include "ThreadSafeStreambuf.h"
 #include "TexComp.h"
 #include "ImageFile.h"
 #include "Image.h"
@@ -211,15 +216,18 @@ int _tmain(int argc, _TCHAR* argv[])
     return 1;
   }
 
-  Image img (*file.GetImage())
+  Image img (*file.GetImage());
   if(format == eCompressionFormat_PVRTC) {
     img.SetBlockStreamOrder(false);
   }
 
-  int numBlocks = (img.GetWidth() * img.GetHeight())/16;
-  BlockStatManager *statManager = NULL;
+  std::ofstream logFile;
+  ThreadSafeStreambuf streamBuf(std::cout);
+  std::ostream logStream(&streamBuf);
   if(bSaveLog) {
-    statManager = new BlockStatManager(numBlocks);
+    char logname[256];
+    sprintf(logname, "%s.log", basename);
+    logFile.open(logname);
   }
   
   SCompressionSettings settings;
@@ -230,26 +238,20 @@ int _tmain(int argc, _TCHAR* argv[])
   settings.iQuality = quality;
   settings.iNumCompressions = numCompressions;
   settings.iJobSize = numJobs;
-  settings.pStatManager = statManager;
+  settings.logStream = &logStream;
 
-  CompressedImage *ci = img->Compress(settings);
+  CompressedImage *ci = CompressImage(&img, settings);
   if(NULL == ci) {
     fprintf(stderr, "Error compressing image!\n");
     return 1;
   }
 
-  double PSNR = img->ComputePSNR(*ci);
+  double PSNR = img.ComputePSNR(ci);
   if(PSNR > 0.0) {
     fprintf(stdout, "PSNR: %.3f\n", PSNR);
   }
   else {
     fprintf(stderr, "Error computing PSNR\n");
-  }
-
-  if(bSaveLog) {
-    strcat_s(basename, ".log");
-    statManager->ToFile(basename);
-    basename[strlen(basename) - 4] = '\0';
   }
 
   if(format == eCompressionFormat_BPTC) {
@@ -263,8 +265,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
   // Cleanup 
   delete ci;
-  if(statManager)
-    delete statManager;
+  if(bSaveLog)
+    logFile.close();
 
   return 0;
 }
