@@ -61,7 +61,6 @@ class CompressedImage : public Image {
  private:
   ECompressionFormat m_Format;
   uint32 *m_RGBAData;
-  uint32 m_DataSz;
 
  public:
   CompressedImage(const CompressedImage &);

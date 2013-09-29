@@ -56,7 +56,6 @@ CompressedImage::CompressedImage( const CompressedImage &other )
   : Image(other)
   , m_Format(other.m_Format)
   , m_RGBAData(0)
-  , m_DataSz(other.m_DataSz)
 {
   if(other.m_RGBAData) {
     m_RGBAData = new uint32[GetWidth() * GetHeight()];
@@ -73,8 +72,8 @@ CompressedImage::CompressedImage(
   : Image(width, height, NULL)
   , m_Format(format)
   , m_RGBAData(0)
-  , m_DataSz(GetCompressedSize(GetWidth() * GetHeight() * 4, m_Format))
 {
+  m_DataSz = GetCompressedSize(GetWidth() * GetHeight() * 4, m_Format);
   if(m_DataSz > 0) {
     assert(!m_Data);
     m_Data = new unsigned char[m_DataSz];
@@ -85,7 +84,6 @@ CompressedImage::CompressedImage(
 CompressedImage &CompressedImage::operator=(const CompressedImage &other) {
   Image::operator=(other);
   m_Format = other.m_Format;
-  m_DataSz = other.m_DataSz;
   if(other.m_RGBAData) {
     m_RGBAData = new uint32[GetWidth() * GetHeight()];
     memcpy(m_RGBAData, other.m_RGBAData, sizeof(uint32) * GetWidth() * GetHeight());

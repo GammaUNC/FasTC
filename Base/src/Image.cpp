@@ -58,10 +58,11 @@ Image::Image(const Image &other)
   : m_Width(other.m_Width)
   , m_Height(other.m_Height)
   , m_bBlockStreamOrder(other.GetBlockStreamOrder())
-  , m_Data(new uint8[m_Width * m_Height * 4])
+  , m_DataSz(other.m_DataSz)
+  , m_Data(new uint8[m_DataSz])
 {
   if(m_Data) {
-    memcpy(m_Data, other.m_Data, m_Width * m_Height * 4);
+    memcpy(m_Data, other.m_Data, m_DataSz);
   } else {
     fprintf(stderr, "Out of memory!\n");
   }
@@ -71,10 +72,11 @@ Image::Image(uint32 width, uint32 height, const uint32 *pixels, bool bBlockStrea
   : m_Width(width)
   , m_Height(height)
   , m_bBlockStreamOrder(bBlockStreamOrder)
+  , m_DataSz(m_Width * m_Height * sizeof(uint32))
 {
   if(pixels) {
-    m_Data = new uint8[4 * m_Width * m_Height];
-    memcpy(m_Data, pixels, m_Width * m_Height * sizeof(uint32));
+    m_Data = new uint8[m_DataSz];
+    memcpy(m_Data, pixels, m_DataSz);
   } else {
     m_Data = NULL;
   }
@@ -92,15 +94,16 @@ Image &Image::operator=(const Image &other) {
   m_Width = other.m_Width;
   m_Height = other.m_Height;
   m_bBlockStreamOrder = other.GetBlockStreamOrder();
+  m_DataSz = other.m_DataSz;
   
   if(m_Data) {
     delete [] m_Data;
   }
   
   if(other.m_Data) {
-    m_Data = new uint8[m_Width * m_Height * 4];
+    m_Data = new uint8[m_DataSz];
     if(m_Data)
-      memcpy(m_Data, other.m_Data, m_Width * m_Height * 4);
+      memcpy(m_Data, other.m_Data, m_DataSz);
     else
       fprintf(stderr, "Out of memory!\n");
   }
@@ -163,6 +166,7 @@ double Image::ComputePSNR(Image *other) {
   return 10 * log10(maxi/mse);
 }
 
+// !FIXME! These won't work for non-RGBA8 data.
 void Image::ConvertToBlockStreamOrder() {
   if(m_bBlockStreamOrder || !m_Data)
     return;

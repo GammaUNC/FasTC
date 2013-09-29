@@ -88,6 +88,7 @@ class Image {
   bool m_bBlockStreamOrder;
 
  protected:
+  uint32 m_DataSz;
   uint8 *m_Data;
 
   void ConvertToBlockStreamOrder();
