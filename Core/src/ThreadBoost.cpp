@@ -103,6 +103,15 @@ void TCThread::Yield() {
   boost::thread::yield();
 }
 
+uint64 TCThread::ThreadID() {
+  boost::thread::id thisID = boost::this_thread::get_id();
+  std::stringstream ss;
+  ss << thisID;
+  uint64 retID;
+  ss >> retID;
+  return retID;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Mutex Implementation

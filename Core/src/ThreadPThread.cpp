@@ -134,6 +134,10 @@ void TCThread::Yield() {
   }
 }
 
+uint64 TCThread::ThreadID() {
+  return static_cast<uint64>(pthread_self());
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Mutex Implementation

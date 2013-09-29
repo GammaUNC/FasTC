@@ -118,6 +118,7 @@ class TCThread : public TCThreadBase {
   TCThread(TCCallable &);
   
   static void Yield();
+  static uint64 ThreadID();
   void Join();
 };
 
