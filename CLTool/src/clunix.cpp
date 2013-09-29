@@ -214,7 +214,7 @@ int main(int argc, char **argv) {
   }
 
   std::ofstream logFile;
-  ThreadSafeStreambuf streamBuf(std::cout);
+  ThreadSafeStreambuf streamBuf(logFile);
   std::ostream logStream(&streamBuf);
   if(bSaveLog) {
     char logname[256];

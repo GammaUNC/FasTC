@@ -196,12 +196,6 @@ int _tmain(int argc, _TCHAR* argv[])
     }
   } while(knowArg && fileArg < argc);
 
-  if(numThreads > 1 && bSaveLog) {
-    bSaveLog = false;
-    fprintf(stderr, "WARNING: Will not save log because implementation is not thread safe.\n"
-      "If you'd like, send a complaint to pavel@cs.unc.edu to get this done faster.\n");
-  }
-
   if(fileArg == argc) {
     PrintUsage();
     exit(1);
@@ -222,7 +216,7 @@ int _tmain(int argc, _TCHAR* argv[])
   }
 
   std::ofstream logFile;
-  ThreadSafeStreambuf streamBuf(std::cout);
+  ThreadSafeStreambuf streamBuf(logFile);
   std::ostream logStream(&streamBuf);
   if(bSaveLog) {
     char logname[256];
