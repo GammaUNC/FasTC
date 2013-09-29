@@ -1545,13 +1545,13 @@ namespace BC7C {
 
   class BlockLogger {
    public:
-    BlockLogger(uint32 blockIdx, std::ostream &os)
+    BlockLogger(uint64 blockIdx, std::ostream &os)
       : m_BlockIdx(blockIdx), m_Stream(os) { }
 
     template<typename T>
     friend std::ostream &operator<<(const BlockLogger &bl, const T &v);
 
-    uint32 m_BlockIdx;
+    uint64 m_BlockIdx;
     std::ostream &m_Stream;
   };
 
@@ -1738,7 +1738,7 @@ namespace BC7C {
 
         const uint32 *pixelBuf = reinterpret_cast<const uint32 *>(inBuf);
         if(logStream) {
-          uint32 blockIdx = (j/4) * (cj.width/4) + (i/4);
+          uint64 blockIdx = reinterpret_cast<uint64>(pixelBuf);
           CompressBC7Block(pixelBuf, outBuf, BlockLogger(blockIdx, *logStream));
         } else {
           CompressBC7Block(pixelBuf, outBuf);
