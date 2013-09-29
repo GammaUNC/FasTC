@@ -98,6 +98,8 @@
 #include <cfloat>
 #include <ctime>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 // #define USE_PCA_FOR_SHAPE_ESTIMATION
 
@@ -1555,7 +1557,9 @@ namespace BC7C {
 
   template<typename T>
   std::ostream &operator<<(const BlockLogger &bl, const T &v) {
-    return bl.m_Stream << bl.m_BlockIdx << ": " << v;
+    std::stringstream ss;
+    ss << bl.m_BlockIdx << ": " << v;
+    return bl.m_Stream << ss.str();
   }
 
   // Function prototypes
@@ -2223,7 +2227,9 @@ namespace BC7C {
 
   template<typename T>
   static void PrintStat(const BlockLogger &lgr, const char *stat, const T &v) {
-    lgr << stat << " -- " << v << std::endl;
+    std::stringstream ss;
+    ss << stat << " -- " << v << std::endl;
+    lgr << ss.str();
   }
 
   // Compress a single block but collect statistics as well...
