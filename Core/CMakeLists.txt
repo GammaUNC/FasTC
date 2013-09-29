@@ -52,13 +52,11 @@
 SET( SOURCES
 	"src/TexComp.cpp"
 	"src/CompressedImage.cpp"
-	"src/BlockStats.cpp"
 )
 
 SET( HEADERS
 	"include/TexComp.h"
 	"include/CompressedImage.h"
-	"include/BlockStats.h"
     "src/CompressionFuncs.h"
 )
 

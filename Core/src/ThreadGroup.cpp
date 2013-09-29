@@ -58,7 +58,7 @@ CmpThread::CmpThread()
   , m_Height(0)
   , m_CmpFunc(NULL)
   , m_CmpFuncWithStats(NULL)
-  , m_StatManager(NULL)
+  , m_LogStream(NULL)
   , m_OutBuf(NULL)
   , m_InBuf(NULL)
   , m_ParentExitFlag(NULL)
@@ -74,7 +74,7 @@ void CmpThread::operator()() {
     return;
   }
 
-  if(!(m_CmpFunc || (m_CmpFuncWithStats && m_StatManager))) {
+  if(!(m_CmpFunc || (m_CmpFuncWithStats && m_LogStream))) {
     fprintf(stderr, "Incorrect thread function pointer.\n");
     return;
   }
@@ -91,9 +91,7 @@ void CmpThread::operator()() {
     if(m_CmpFunc)
       (*m_CmpFunc)(cj);
     else
-      // !FIXME! Actually use the block stat manager...
-      // (*m_CmpFuncWithStats)(cj, *m_StatManager);
-      (*m_CmpFuncWithStats)(cj, &std::cout);
+      (*m_CmpFuncWithStats)(cj, m_LogStream);
 
     {
       TCLock lock(*m_ParentCounterLock);
@@ -152,7 +150,7 @@ ThreadGroup::ThreadGroup(
   const unsigned char *inBuf, 
   unsigned int inBufSz, 
   CompressionFuncWithStats func, 
-  BlockStatManager &statManager,
+  std::ostream *logStream,
   unsigned char *outBuf 
 )
   : m_StartBarrier(new TCBarrier(numThreads + 1))
@@ -186,7 +184,7 @@ ThreadGroup::ThreadGroup(
     m_Threads[i].m_StartBarrier = m_StartBarrier;
     m_Threads[i].m_ParentExitFlag = &m_ExitFlag;
     m_Threads[i].m_CmpFuncWithStats = func;
-    m_Threads[i].m_StatManager = &statManager;
+    m_Threads[i].m_LogStream = logStream;
   }
 }
 

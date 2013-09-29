@@ -46,13 +46,14 @@
 
 // Forward declare...
 class WorkerQueue;
-class BlockStatManager;
 
 // Necessary includes...
 #include "TexCompTypes.h"
 #include "Thread.h"
 #include "StopWatch.h"
 #include "CompressionFuncs.h"
+
+#include <iosfwd>
 
 class WorkerThread : public TCCallable {
   friend class WorkerQueue;
@@ -95,7 +96,7 @@ class WorkerQueue {
     const uint8 *inBuf, 
     uint32 inBufSz, 
     CompressionFuncWithStats func, 
-    BlockStatManager &blockStatManager,
+    std::ostream *logStream,
     uint8 *outBuf
   );
 
@@ -138,8 +139,8 @@ class WorkerQueue {
   const CompressionFuncWithStats m_CompressionFuncWithStats;
   CompressionFuncWithStats GetCompressionFuncWithStats() const { return m_CompressionFuncWithStats; }
 
-  BlockStatManager *m_BlockStatManager;
-  BlockStatManager *GetBlockStatManager() const { return m_BlockStatManager; }
+  std::ostream *m_LogStream;
+  std::ostream *GetLogStream() const { return m_LogStream; }
 
   StopWatch m_StopWatch;
 

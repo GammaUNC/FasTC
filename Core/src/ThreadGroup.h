@@ -47,7 +47,8 @@
 #include "CompressionFuncs.h"
 #include "Thread.h"
 #include "StopWatch.h"
-#include "BlockStats.h"
+
+#include <iosfwd>
 
 struct CmpThread : public TCCallable {
   friend class ThreadGroup;  
@@ -66,7 +67,7 @@ private:
   CompressionFunc m_CmpFunc;
 
   CompressionFuncWithStats m_CmpFuncWithStats;
-  BlockStatManager *m_StatManager;
+  std::ostream *m_LogStream;
 
   unsigned char *m_OutBuf;
   const unsigned char *m_InBuf;
@@ -95,7 +96,7 @@ class ThreadGroup {
     const unsigned char *inBuf, 
     unsigned int inBufSz, 
     CompressionFuncWithStats func, 
-    BlockStatManager &statManager,
+    std::ostream *logStream,
     unsigned char *outBuf
   );
 
@@ -138,6 +139,8 @@ class ThreadGroup {
 
   EThreadState m_ThreadState;
   bool m_ExitFlag;
+
+  std::ostream *m_LogStream;
 
   const unsigned int m_CompressedBlockSize;
   const unsigned int m_UncompressedBlockSize;

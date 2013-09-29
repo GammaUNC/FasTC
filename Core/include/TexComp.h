@@ -47,10 +47,11 @@
 #include "CompressedImage.h"
 #include "CompressionJob.h"
 
+#include <iosfwd>
+
 // Forward declarations
 class Image;
 class ImageFile;
-class BlockStatManager;
 
 struct SCompressionSettings {
   SCompressionSettings(); // defaults
@@ -85,11 +86,9 @@ struct SCompressionSettings {
   // in the platform and compiler will provide synchronization.
   bool bUseAtomics;
 
-  // This is an optinal pointer to a stat manager class. If
-  // instantiated and the proper function pointer is defined
-  // then the compression routine that collects the stats will
-  // be called.
-  BlockStatManager *pStatManager;
+  // This is the output stream with which we should output the logs for the
+  // compression functions.
+  std::ostream *logStream;
 };
 
 extern CompressedImage *CompressImage(Image *img, const SCompressionSettings &settings);

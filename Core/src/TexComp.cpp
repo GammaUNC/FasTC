@@ -158,10 +158,10 @@ static double CompressImageInSerial(
 
     // !FIXME! We're assuming that we have 4x4 blocks here...
     CompressionJob cj (imgData, outBuf, imgWidth, imgHeight);
-    if(fStats && settings.pStatManager) {
+    if(fStats && settings.logStream) {
       // !FIXME! Actually use the stat manager...
       //(*fStats)(cj, *(settings.pStatManager));
-      (*fStats)(cj, &std::cout);
+      (*fStats)(cj, settings.logStream);
     }
     else {
       (*f)(cj);
@@ -293,8 +293,8 @@ static double CompressImageWithThreads(
   CompressionFuncWithStats fStats = ChooseFuncFromSettingsWithStats(settings);
 
   double cmpTimeTotal = 0.0;
-  if(fStats && settings.pStatManager) {
-    ThreadGroup tgrp (settings.iNumThreads, imgData, imgDataSz, fStats, *(settings.pStatManager), outBuf);
+  if(fStats && settings.logStream) {
+    ThreadGroup tgrp (settings.iNumThreads, imgData, imgDataSz, fStats, settings.logStream, outBuf);
     cmpTimeTotal = CompressThreadGroup(tgrp, settings);
   }
   else {
@@ -316,7 +316,7 @@ static double CompressImageWithWorkerQueue(
   CompressionFuncWithStats fStats = ChooseFuncFromSettingsWithStats(settings);
 
   double cmpTimeTotal = 0.0;
-  if(fStats && settings.pStatManager) {
+  if(fStats && settings.logStream) {
     WorkerQueue wq (
       settings.iNumCompressions,
       settings.iNumThreads,
@@ -324,7 +324,7 @@ static double CompressImageWithWorkerQueue(
       imgData,
       imgDataSz,
       fStats,
-      *(settings.pStatManager),
+      settings.logStream,
       outBuf
     );
 
@@ -405,13 +405,13 @@ bool CompressImageData(
 
   uint32 numThreads = settings.iNumThreads;
   if(settings.format == eCompressionFormat_PVRTC &&
-     (settings.iNumThreads > 1 || settings.pStatManager)) {
+     (settings.iNumThreads > 1 || settings.logStream)) {
     if(settings.iNumThreads > 1) {
       ReportError("WARNING - PVRTC compressor does not support multithreading.");
       numThreads = 1;
     }
 
-    if(settings.pStatManager) {
+    if(settings.logStream) {
       ReportError("WARNING - PVRTC compressor does not support stat collection.");
     }
   }

@@ -72,9 +72,9 @@ void WorkerThread::operator()() {
 
   CompressionFunc f = m_Parent->GetCompressionFunc();
   CompressionFuncWithStats fStat = m_Parent->GetCompressionFuncWithStats();
-  BlockStatManager *statManager = m_Parent->GetBlockStatManager();
+  std::ostream *logStream = m_Parent->GetLogStream();
 
-  if(!(f || (fStat && statManager))) {
+  if(!(f || (fStat && logStream))) {
     fprintf(stderr, "%s\n", "Illegal worker queue initialization -- compression func is NULL.");
     return;
   }
@@ -105,9 +105,7 @@ void WorkerThread::operator()() {
         if(f)
           (*f)(cj);
         else
-          // !FIXME! Actually use stat manager...
-          // (*fStat)(cj, *statManager);
-          (*fStat)(cj, &std::cout);
+          (*fStat)(cj, logStream);
 
         break;
       }
@@ -147,7 +145,7 @@ WorkerQueue::WorkerQueue(
   , m_NextBlock(0)
   , m_CompressionFunc(func)
   , m_CompressionFuncWithStats(NULL)
-  , m_BlockStatManager(NULL)
+  , m_LogStream(NULL)
 {
   clamp(m_NumThreads, uint32(1), uint32(kMaxNumWorkerThreads));
 
@@ -165,7 +163,7 @@ WorkerQueue::WorkerQueue(
   const uint8 *inBuf, 
   uint32 inBufSz, 
   CompressionFuncWithStats func, 
-  BlockStatManager &blockStatManager,
+  std::ostream *logStream,
   uint8 *outBuf
 )
   : m_NumCompressions(0)
@@ -180,7 +178,7 @@ WorkerQueue::WorkerQueue(
   , m_NextBlock(0)
   , m_CompressionFunc(NULL)
   , m_CompressionFuncWithStats(func)
-  , m_BlockStatManager(&blockStatManager)
+  , m_LogStream(logStream)
 {
   clamp(m_NumThreads, uint32(1), uint32(kMaxNumWorkerThreads));
 
