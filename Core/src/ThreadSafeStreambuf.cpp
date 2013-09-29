@@ -53,14 +53,19 @@
 #include "ThreadSafeStreambuf.h"
 
 #include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <iostream>
+#include <sstream>
+#include <string>
 
 #include "Thread.h"
 
-ThreadSafeStreambuf::ThreadSafeStreambuf()
+ThreadSafeStreambuf::ThreadSafeStreambuf(std::ostream &sink)
   : ::std::streambuf()
+  , m_Sink(sink)
   , m_Mutex(new TCMutex)
-{
-}
+{ }
 
 ThreadSafeStreambuf::~ThreadSafeStreambuf() {
   if(m_Mutex) {
@@ -72,7 +77,6 @@ ThreadSafeStreambuf::~ThreadSafeStreambuf() {
                                               ::std::streamsize count) {
   // Lock it.
   TCLock lock(*m_Mutex);
-  // then just do what you would have done...
-  return ::std::streambuf::xsputn(s, count);
+  ::std::streambuf *sinkStream = m_Sink.rdbuf();
+  return sinkStream->sputn(s, count);
 }
-

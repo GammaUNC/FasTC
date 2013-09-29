@@ -41,14 +41,17 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include <cassert>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <iostream>
+#include <fstream>
 
-#include "BlockStats.h"
-#include "TexComp.h"
-#include "ImageFile.h"
 #include "Image.h"
+#include "ImageFile.h"
+#include "TexComp.h"
+#include "ThreadSafeStreambuf.h"
 
 void PrintUsage() {
   fprintf(stderr, "Usage: tc [OPTIONS] imagefile\n");
@@ -210,10 +213,13 @@ int main(int argc, char **argv) {
     img.SetBlockStreamOrder(false);
   }
 
-  int numBlocks = (img.GetWidth() * img.GetHeight())/16;
-  BlockStatManager *statManager = NULL;
+  std::ofstream logFile;
+  ThreadSafeStreambuf streamBuf(std::cout);
+  std::ostream logStream(&streamBuf);
   if(bSaveLog) {
-    statManager = new BlockStatManager(numBlocks);
+    char logname[256];
+    sprintf(logname, "%s.log", basename);
+    logFile.open(logname);
   }
   
   SCompressionSettings settings;
@@ -224,7 +230,7 @@ int main(int argc, char **argv) {
   settings.iQuality = quality;
   settings.iNumCompressions = numCompressions;
   settings.iJobSize = numJobs;
-  settings.pStatManager = statManager;
+  settings.logStream = &logStream;
 
   CompressedImage *ci = CompressImage(&img, settings);
   if(NULL == ci) {
@@ -240,12 +246,6 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Error computing PSNR\n");
   }
 
-  if(bSaveLog) {
-    char logname[256];
-    sprintf(logname, "%s.log", basename);
-    statManager->ToFile(logname);
-  }
-
   if(format == eCompressionFormat_BPTC) {
     strcat(basename, "-bc7.png");
   } else if(format == eCompressionFormat_PVRTC) {
@@ -257,8 +257,8 @@ int main(int argc, char **argv) {
 
   // Cleanup 
   delete ci;
-  if(statManager)
-    delete statManager;
-
+  if(bSaveLog) {
+    logFile.close();
+  }
   return 0;
 }

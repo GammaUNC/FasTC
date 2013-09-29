@@ -57,18 +57,20 @@
 class TCMutex;
 
 #include <streambuf>
+#include <iosfwd>
 
 class ThreadSafeStreambuf : public ::std::streambuf {
  public:
-  ThreadSafeStreambuf();
+  ThreadSafeStreambuf(std::ostream &sink);
   virtual ~ThreadSafeStreambuf();
 
+ protected:
   virtual std::streamsize xsputn(const char_type *s, std::streamsize count);
-
  private:
   // Not implemented -- not allowed...
   ThreadSafeStreambuf(const ThreadSafeStreambuf &);
   ThreadSafeStreambuf &operator=(const ThreadSafeStreambuf &);
+  std::ostream &m_Sink;
   TCMutex *m_Mutex;
 };
 
