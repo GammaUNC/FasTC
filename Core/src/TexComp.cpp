@@ -156,14 +156,10 @@ static double CompressImageInSerial(
     stopWatch.Reset();
     stopWatch.Start();
 
-    // !FIXME! We're assuming that we have 4x4 blocks here...
     CompressionJob cj (imgData, outBuf, imgWidth, imgHeight);
     if(fStats && settings.logStream) {
-      // !FIXME! Actually use the stat manager...
-      //(*fStats)(cj, *(settings.pStatManager));
       (*fStats)(cj, settings.logStream);
-    }
-    else {
+    } else {
       (*f)(cj);
     }
 
