@@ -50,45 +50,36 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#ifndef PVRTCENCODER_INCLUDE_PVRTCCOMPRESSOR_H_
-#define PVRTCENCODER_INCLUDE_PVRTCCOMPRESSOR_H_
+// Our library include...
+#include "PVRTCCompressor.h"
 
-#include "CompressionJob.h"
-#include "PVRTCDefines.h"
+// PVRLib library include...
+#include "PVRTextureUtilities.h"
+
+#include <cassert>
 
 namespace PVRTCC {
 
-  // PVRTC works by bilinearly interpolating between blocks in order to
-  // compress and decompress data. As such, the wrap mode defines how the
-  // texture behaves at the boundaries.
-  enum EWrapMode {
-    eWrapMode_Clamp,  // Block endpoints are clamped at boundaries
-    eWrapMode_Wrap,   // Block endpoints wrap around at boundaries
-  };
+  void CompressPVRLib(const CompressionJob &cj,
+                  bool bTwoBitMode,
+                  const EWrapMode) {
+    pvrtexture::CPVRTextureHeader pvrTexHdr;
+    pvrTexHdr.setPixelFormat(pvrtexture::PVRStandard8PixelType);
+    pvrTexHdr.setWidth(cj.width);
+    pvrTexHdr.setHeight(cj.height);
+    pvrTexHdr.setIsFileCompressed(false);
+    pvrTexHdr.setIsPreMultiplied(false);
 
-  // Takes a stream of compressed PVRTC data and decompresses it into R8G8B8A8
-  // format. The width and height must be specified in order to properly
-  // decompress the data.
-  void Decompress(const DecompressionJob &,
-                  bool bTwoBitMode = false,
-                  const EWrapMode wrapMode = eWrapMode_Wrap,
-                  bool bDebugImages = false);
+    pvrtexture::CPVRTexture pvrTex = pvrtexture::CPVRTexture(pvrTexHdr, cj.inBuf);
+    bool result = pvrtexture::Transcode(pvrTex,
+                                        ePVRTPF_PVRTCI_4bpp_RGBA,
+                                        ePVRTVarTypeUnsignedByte,
+                                        ePVRTCSpacelRGB,
+                                        pvrtexture::ePVRTCFast);
+    assert(result);
+    (void)result;
 
-  // Takes a stream of uncompressed RGBA8 data and compresses it into PVRTC
-  // version one. The width and height must be specified in order to properly
-  // decompress the data.
-  void Compress(const CompressionJob &,
-                bool bTwoBitMode = false,
-                const EWrapMode wrapMode = eWrapMode_Wrap);
-
-#ifdef PVRTEXLIB_FOUND
-  void CompressPVRLib(const CompressionJob &,
-                      bool bTwoBitMode = false,
-                      const EWrapMode wrapMode = eWrapMode_Wrap);
-#endif
-
-  static const uint32 kBlockSize = sizeof(uint64);
+    memcpy(cj.outBuf, static_cast<uint8 *>(pvrTex.getDataPtr()), cj.width * cj.height / 2);
+  }
 
 }  // namespace PVRTCC
-
-#endif  // PVRTCENCODER_INCLUDE_PVRTCCOMPRESSOR_H_
