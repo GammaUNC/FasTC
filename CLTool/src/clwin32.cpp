@@ -43,6 +43,7 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -69,19 +70,24 @@ void PrintUsage() {
   fprintf(stderr, "\t-j <num>\tUse <num> blocks for each work item in a worker queue threading model. Default: (Blocks / Threads)\n");
 }
 
-void ExtractBasename(const char *filename, char *buf, uint32 bufSz) {
-  size_t len = strlen(filename);
+void ExtractBasename(const char *filename, char *buf, int bufSz) {
+  int len = strlen(filename);
   const char *end = filename + len;
-  while(--end != filename) {
-    if(*end == '.')
-    {
-      uint32 numChars = int32(end - filename + 1);
-      uint32 toCopy = (numChars > bufSz)? bufSz : numChars;
-      memcpy(buf, filename, toCopy);
-      buf[toCopy - 1] = '\0';
-      return;
+  const char *ext = end;
+  const char *base = NULL;
+  while(--end != filename && !base) {
+    if(*end == '.') {
+      ext = end;
+    } else if(*end == '\\' || *end == '/') {
+      base = end + 1;
     }
   }
+
+  int numChars = ext - base + 1;
+  int toCopy = ::std::min(numChars, bufSz);
+  memcpy(buf, base, toCopy);
+  buf[toCopy - 1] = '\0';
+  return;
 }
 
 int _tmain(int argc, _TCHAR* argv[])

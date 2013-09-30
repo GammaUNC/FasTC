@@ -69,16 +69,21 @@ void PrintUsage() {
 void ExtractBasename(const char *filename, char *buf, int bufSz) {
   int len = strlen(filename);
   const char *end = filename + len;
-  while(--end != filename) {
-    if(*end == '.')
-    {
-      int numChars = end - filename + 1;
-      int toCopy = (numChars > bufSz)? bufSz : numChars;
-      memcpy(buf, filename, toCopy);
-      buf[toCopy - 1] = '\0';
-      return;
+  const char *ext = end;
+  const char *base = NULL;
+  while(--end != filename && !base) {
+    if(*end == '.') {
+      ext = end;
+    } else if(*end == '\\' || *end == '/') {
+      base = end + 1;
     }
   }
+
+  int numChars = ext - base + 1;
+  int toCopy = ::std::min(numChars, bufSz);
+  memcpy(buf, base, toCopy);
+  buf[toCopy - 1] = '\0';
+  return;
 }
 
 int main(int argc, char **argv) {
