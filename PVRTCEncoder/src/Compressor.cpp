@@ -254,7 +254,7 @@ namespace PVRTCC {
           p.Component(c) = modVal;
         }
         p.A() = 255;
-        modulationImg(j, i) = p;
+        modulationImg(i, j) = p;
       }
     }
     modulationImg.DebugOutput("Modulation");
