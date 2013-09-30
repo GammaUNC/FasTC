@@ -230,7 +230,11 @@ int main(int argc, char **argv) {
   settings.iQuality = quality;
   settings.iNumCompressions = numCompressions;
   settings.iJobSize = numJobs;
-  settings.logStream = &logStream;
+  if(bSaveLog) {
+    settings.logStream = &logStream;
+  } else {
+    settings.logStream = NULL;
+  }
 
   CompressedImage *ci = CompressImage(&img, settings);
   if(NULL == ci) {
