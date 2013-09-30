@@ -243,6 +243,22 @@ namespace PVRTCC {
       }
     }
 
+    Image modulationImg(dcj.height, dcj.width);
+    for(uint32 j = 0; j < dcj.height; j++) {
+      for(uint32 i = 0; i < dcj.width; i++) {
+        uint32 idx = j * dcj.width + i;
+        uint8 modVal = static_cast<uint8>((static_cast<float>(modValues[idx]) / 3.0f) * 255.0f);
+
+        Pixel p;
+        for(uint32 c = 1; c < 4; c++) {
+          p.Component(c) = modVal;
+        }
+        p.A() = 255;
+        modulationImg(j, i) = p;
+      }
+    }
+    modulationImg.DebugOutput("Modulation");
+
     // Pack everything into a PVRTC blocks.
     assert(imgA.GetHeight() == blocksH);
     assert(imgA.GetWidth() == blocksW);
