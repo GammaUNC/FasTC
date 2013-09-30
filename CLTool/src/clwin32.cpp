@@ -105,11 +105,25 @@ int _tmain(int argc, _TCHAR* argv[])
   bool bUseSIMD = false;
   bool bSaveLog = false;
   bool bUseAtomics = false;
+  bool bUsePVRTexLib = false;
   ECompressionFormat format = eCompressionFormat_BPTC;
-  
+
   bool knowArg = false;
   do {
     knowArg = false;
+
+    if(strcmp(argv[fileArg], "-n") == 0) {
+      fileArg++;
+
+      if(fileArg == argc || (numCompressions = atoi(argv[fileArg])) < 0) {
+        PrintUsage();
+        exit(1);
+      }
+
+      fileArg++;
+      knowArg = true;
+      continue;
+    }
 
     if(strcmp(argv[fileArg], "-f") == 0) {
       fileArg++;
@@ -120,20 +134,10 @@ int _tmain(int argc, _TCHAR* argv[])
       } else {
         if(!strcmp(argv[fileArg], "PVRTC")) {
           format = eCompressionFormat_PVRTC;
+        } else if(!strcmp(argv[fileArg], "PVRTCLib")) {
+          format = eCompressionFormat_PVRTC;
+          bUsePVRTexLib = true;
         }
-      }
-
-      fileArg++;
-      knowArg = true;
-      continue;
-    }
-
-    if(strcmp(argv[fileArg], "-n") == 0) {
-      fileArg++;
-
-      if(fileArg == argc || (numCompressions = atoi(argv[fileArg])) < 0) {
-        PrintUsage();
-        exit(1);
       }
 
       fileArg++;
@@ -200,6 +204,7 @@ int _tmain(int argc, _TCHAR* argv[])
       knowArg = true;
       continue;
     }
+
   } while(knowArg && fileArg < argc);
 
   if(fileArg == argc) {
@@ -238,10 +243,12 @@ int _tmain(int argc, _TCHAR* argv[])
   settings.iQuality = quality;
   settings.iNumCompressions = numCompressions;
   settings.iJobSize = numJobs;
-  if(bSaveLog)
+  settings.bUsePVRTexLib = bUsePVRTexLib;
+  if(bSaveLog) {
     settings.logStream = &logStream;
-  else
+  } else {
     settings.logStream = NULL;
+  }
 
   CompressedImage *ci = CompressImage(&img, settings);
   if(NULL == ci) {
@@ -268,8 +275,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
   // Cleanup 
   delete ci;
-  if(bSaveLog)
+  if(bSaveLog) {
     logFile.close();
-
+  }
   return 0;
 }

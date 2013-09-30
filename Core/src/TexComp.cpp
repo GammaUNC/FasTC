@@ -73,6 +73,15 @@ static void CompressPVRTC(const CompressionJob &cj) {
   PVRTCC::Compress(cj);
 }
 
+static void CompressPVRTCLib(const CompressionJob &cj) {
+#ifdef PVRTEXLIB_FOUND
+  PVRTCC::CompressPVRLib(cj);
+#else
+  fprintf(stderr, "WARNING: PVRTexLib not found, defaulting to FasTC implementation.\n");
+  PVRTCC::Compress(cj);
+#endif
+}
+
 SCompressionSettings:: SCompressionSettings()
   : format(eCompressionFormat_BPTC)
   , bUseSIMD(false)
@@ -122,7 +131,11 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
 
     case eCompressionFormat_PVRTC:
     {
-      return CompressPVRTC;
+      if(s.bUsePVRTexLib) {
+        return CompressPVRTCLib;
+      } else {
+        return CompressPVRTC;
+      }
     }
 
     default:

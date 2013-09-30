@@ -86,6 +86,11 @@ struct SCompressionSettings {
   // in the platform and compiler will provide synchronization.
   bool bUseAtomics;
 
+  // This flag instructs the infrastructure to use the compression routine from
+  // PVRTexLib. If no such lib is found during configuration then this flag is
+  // ignored. The quality being used is the fastest compression quality.
+  bool bUsePVRTexLib;
+
   // This is the output stream with which we should output the logs for the
   // compression functions.
   std::ostream *logStream;

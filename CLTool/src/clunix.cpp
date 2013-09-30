@@ -101,6 +101,7 @@ int main(int argc, char **argv) {
   bool bUseSIMD = false;
   bool bSaveLog = false;
   bool bUseAtomics = false;
+  bool bUsePVRTexLib = false;
   ECompressionFormat format = eCompressionFormat_BPTC;
 
   bool knowArg = false;
@@ -129,6 +130,9 @@ int main(int argc, char **argv) {
       } else {
         if(!strcmp(argv[fileArg], "PVRTC")) {
           format = eCompressionFormat_PVRTC;
+        } else if(!strcmp(argv[fileArg], "PVRTCLib")) {
+          format = eCompressionFormat_PVRTC;
+          bUsePVRTexLib = true;
         }
       }
 
@@ -235,6 +239,7 @@ int main(int argc, char **argv) {
   settings.iQuality = quality;
   settings.iNumCompressions = numCompressions;
   settings.iJobSize = numJobs;
+  settings.bUsePVRTexLib = bUsePVRTexLib;
   if(bSaveLog) {
     settings.logStream = &logStream;
   } else {
