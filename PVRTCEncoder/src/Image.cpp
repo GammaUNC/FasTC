@@ -73,11 +73,6 @@ inline T Clamp(const T &v, const T &a, const T &b) {
   return ::std::min(::std::max(a, v), b);
 }
 
-static float ConvertChannelToFloat(uint8 channel, uint8 bitDepth) {
-  float denominator = static_cast<float>((1 << bitDepth) - 1);
-  return static_cast<float>(channel) / denominator;
-}
-
 namespace PVRTCC {
 
 Image::Image(uint32 height, uint32 width)
@@ -280,14 +275,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
 
   // Then, compute the intensity of the image
   for(uint32 i = 0; i < w * h; i++) {
-    // First convert the pixel values to floats using
-    // premultiplied alpha...
-    float a = ConvertChannelToFloat(m_Pixels[i].A(), bitDepth[0]);
-    float r = a * ConvertChannelToFloat(m_Pixels[i].R(), bitDepth[1]);
-    float g = a * ConvertChannelToFloat(m_Pixels[i].G(), bitDepth[2]);
-    float b = a * ConvertChannelToFloat(m_Pixels[i].B(), bitDepth[3]);
-
-    I[i] = r * 0.21f + g * 0.71f + b * 0.07f;
+    I[i] = m_Pixels[i].ToIntensity();
   }
 
   // Use central differences to calculate Ix, Iy, Ixx, Iyy...
@@ -308,7 +296,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
       Iy[idx] = (I[yphidx] - I[ymhidx]) / 2.0f;
 
       for(uint32 c = 0; c <= 3; c++) {
-        #define CPNT(dx) ConvertChannelToFloat(m_Pixels[dx].Component(c), bitDepth[c])
+#define CPNT(dx) Pixel::ConvertChannelToFloat(m_Pixels[dx].Component(c), bitDepth[c])
         Ix[c][idx] = (CPNT(xphidx) - CPNT(xmhidx)) / 2.0f;
         Ixx[c][idx] = (CPNT(xphidx) - 2.0f*CPNT(idx) + CPNT(xmhidx)) / 2.0f;
         Iyy[c][idx] = (CPNT(yphidx) - 2.0f*CPNT(idx) + CPNT(ymhidx)) / 2.0f;
@@ -349,7 +337,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
       float denom = Ixsq + Iysq;
 
       for(uint32 c = 0; c < 4; c++) {
-        float I0 = ConvertChannelToFloat(current.Component(c), bitDepth[c]);
+        float I0 = Pixel::ConvertChannelToFloat(current.Component(c), bitDepth[c]);
         float It = Ixx[c][idx] + Iyy[c][idx];
         if(fabs(denom) > 1e-6) {
           It -= (Ixsq * Ixx[c][idx] +

@@ -96,6 +96,16 @@ class Pixel {
   // smaller to larger bit depths.
   void ChangeBitDepth(const uint8 (&newDepth)[4]);
 
+  static float ConvertChannelToFloat(uint8 channel, uint8 bitDepth) {
+    float denominator = static_cast<float>((1 << bitDepth) - 1);
+    return static_cast<float>(channel) / denominator;
+  }
+
+  // Returns the intensity of the pixel. Computed using the following 
+  // formula:
+  // a*r*0.21f + a*g*0.71f + a*b*0.07f;
+  float ToIntensity() const;
+
   // Changes the bit depth of a single component. See the comment
   // above for how we do this.
   static uint8 ChangeBitDepth(uint8 val, uint8 oldDepth, uint8 newDepth);

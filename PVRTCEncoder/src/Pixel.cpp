@@ -190,6 +190,15 @@ namespace PVRTCC {
     }
   }
 
+  float Pixel::ToIntensity() const {
+    // First convert the pixel values to floats using premultiplied alpha...
+    float a = ConvertChannelToFloat(A(), m_BitDepth[0]);
+    float r = a * ConvertChannelToFloat(R(), m_BitDepth[1]);
+    float g = a * ConvertChannelToFloat(G(), m_BitDepth[2]);
+    float b = a * ConvertChannelToFloat(B(), m_BitDepth[3]);
+    return r * 0.21f + g * 0.71f + b * 0.07f;
+  }
+
   uint32 Pixel::PackRGBA() const {
     Pixel eightBit(*this);
     const uint8 eightBitDepth[4] = { 8, 8, 8, 8 };
