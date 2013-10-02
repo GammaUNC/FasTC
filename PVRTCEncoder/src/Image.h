@@ -56,6 +56,8 @@
 #include "TexCompTypes.h"
 #include "PVRTCCompressor.h"
 
+#include <vector>
+
 namespace PVRTCC {
 
 class Pixel;
@@ -79,6 +81,10 @@ class Image {
   void ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
                              EWrapMode wrapMode = eWrapMode_Wrap,
                              bool bOffsetNewPixels = false);
+
+  void ComputeHessianEigenvalues(::std::vector<float> &eigOne, 
+                                 ::std::vector<float> &eigTwo,
+                                 EWrapMode wrapMode = eWrapMode_Wrap);
 
   void ChangeBitDepth(const uint8 (&depths)[4]);
   void ExpandTo8888();

@@ -360,6 +360,67 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
   delete [] imgData;
 }
 
+void Image::ComputeHessianEigenvalues(::std::vector<float> &eigOne, 
+                                      ::std::vector<float> &eigTwo,
+                                      EWrapMode wrapMode) {
+  const uint32 w = GetWidth();
+  const uint32 h = GetHeight();
+
+  assert(eigOne.size() == w * h);
+  assert(eigTwo.size() == w * h);
+
+  ::std::vector<float> intensities(w * h);
+  for(uint32 j = 0; j < h; j++) {
+    for(uint32 i = 0; i < w; i++) {
+      intensities[j*w + i] = GetPixel(i, j).ToIntensity();
+    }
+  }
+
+  for(uint32 j = 0; j < h; j++) {
+    for(uint32 i = 0; i < w; i++) {
+      float I0 = intensities[GetPixelIndex(i, j, wrapMode)];
+
+      float upright = intensities[GetPixelIndex(i+1, j+1, wrapMode)];
+      float upleft = intensities[GetPixelIndex(i-1, j+1, wrapMode)];
+      float downright = intensities[GetPixelIndex(i+1, j-1, wrapMode)];
+      float downleft = intensities[GetPixelIndex(i-1, j-1, wrapMode)];
+
+      float right = intensities[GetPixelIndex(i+1, j, wrapMode)];
+      float left = intensities[GetPixelIndex(i-1, j, wrapMode)];
+
+      float up = intensities[GetPixelIndex(i, j-1, wrapMode)];
+      float down = intensities[GetPixelIndex(i, j+1, wrapMode)];
+
+      float Ixx = (left + right - 2*I0)*0.5f;
+      float Iyy = (up + down - 2*I0)*0.5f;
+      float Ixy = (upright + downleft - upleft - downright) * 0.25f;
+
+      // Eigenvalues are the solution of the following quadratic equation
+      // that corresponds to the characteristic polynomial of the hessian:
+      // A^2 - A * (Ixx + Iyy) - (Ixy ^ 2)
+      float c = Ixy * Ixy;
+      float b = Ixx + Iyy;
+      float a = 1;
+
+      float inner = b*b - 4*a*c;
+
+      // Both of the eigenvalues are imaginary... treat them as
+      // zeros.
+      uint32 idx = j*w+i;
+      if(inner < 0) {
+        eigOne[idx] = 0.0f;
+        eigTwo[idx] = 0.0f;
+        continue;
+      }
+
+      float sqr = sqrt(inner);
+      eigOne[idx] = (-b + sqr) * 0.5f;
+      eigTwo[idx] = (-b - sqr) * 0.5f;
+    }
+  }
+}
+
+
 void Image::ChangeBitDepth(const uint8 (&depths)[4]) {
   for(uint32 j = 0; j < GetHeight(); j++) {
     for(uint32 i = 0; i < GetWidth(); i++) {
