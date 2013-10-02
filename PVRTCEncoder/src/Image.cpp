@@ -363,7 +363,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
 void Image::ChangeBitDepth(const uint8 (&depths)[4]) {
   for(uint32 j = 0; j < GetHeight(); j++) {
     for(uint32 i = 0; i < GetWidth(); i++) {
-      uint32 pidx = j * GetWidth() + i;
+      uint32 pidx = GetPixelIndex(i, j);
       m_Pixels[pidx].ChangeBitDepth(depths);
     }
   }
