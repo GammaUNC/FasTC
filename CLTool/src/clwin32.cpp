@@ -70,8 +70,8 @@ void PrintUsage() {
   fprintf(stderr, "\t-j <num>\tUse <num> blocks for each work item in a worker queue threading model. Default: (Blocks / Threads)\n");
 }
 
-void ExtractBasename(const char *filename, char *buf, int bufSz) {
-  int len = strlen(filename);
+void ExtractBasename(const char *filename, char *buf, size_t bufSz) {
+  size_t len = strlen(filename);
   const char *end = filename + len;
   const char *ext = end;
   const char *base = NULL;
@@ -83,8 +83,8 @@ void ExtractBasename(const char *filename, char *buf, int bufSz) {
     }
   }
 
-  int numChars = ext - base + 1;
-  int toCopy = ::std::min(numChars, bufSz);
+  size_t numChars = ext - base + 1;
+  size_t toCopy = (::std::min)(numChars, bufSz);
   memcpy(buf, base, toCopy);
   buf[toCopy - 1] = '\0';
   return;
