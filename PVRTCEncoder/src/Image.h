@@ -82,6 +82,10 @@ class Image {
                              EWrapMode wrapMode = eWrapMode_Wrap,
                              bool bOffsetNewPixels = false);
 
+  // Downscales the image by using a simple averaging of the neighboring pixel values
+  void AverageDownscale(uint32 xtimes, uint32 ytimes,
+                        EWrapMode wrapMode = eWrapMode_Wrap);
+
   void ComputeHessianEigenvalues(::std::vector<float> &eigOne, 
                                  ::std::vector<float> &eigTwo,
                                  EWrapMode wrapMode = eWrapMode_Wrap);
