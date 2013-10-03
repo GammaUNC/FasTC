@@ -56,7 +56,6 @@ INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)
 
 SET( HEADERS
   include/PVRTCCompressor.h
-  src/Pixel.h
   src/Block.h
   src/Image.h
 )
@@ -64,7 +63,6 @@ SET( HEADERS
 SET( SOURCES
   src/Compressor.cpp
   src/Decompressor.cpp
-  src/Pixel.cpp
   src/Block.cpp
   src/Image.cpp
 )
@@ -74,5 +72,6 @@ ADD_LIBRARY( PVRTCEncoder
   ${SOURCES}
 )
 
+TARGET_LINK_LIBRARIES( PVRTCEncoder FasTCBase )
 TARGET_LINK_LIBRARIES( PVRTCEncoder FasTCCore )
 TARGET_LINK_LIBRARIES( PVRTCEncoder FasTCIO )

@@ -56,7 +56,7 @@
 #include <cassert>
 #include <algorithm>
 
-namespace PVRTCC {
+namespace FasTC {
 
   void Pixel::FromBits(const uint8 *bits,
                        const uint8 channelDepth[4],
@@ -82,7 +82,7 @@ namespace PVRTCC {
     }
 
     for(int32 i = 0; i < 4; i++) {
-      uint8 &channel = m_Component[i];
+      uint8 &channel = Component(i);
       uint32 depth = m_BitDepth[i];
 
       assert(depth <= 8);
@@ -185,12 +185,12 @@ namespace PVRTCC {
 
   void Pixel::ChangeBitDepth(const uint8 (&depth)[4]) {
     for(uint32 i = 0; i < 4; i++) {
-      m_Component[i] = ChangeBitDepth(m_Component[i], m_BitDepth[i], depth[i]);
+      Component(i) = ChangeBitDepth(Component(i), m_BitDepth[i], depth[i]);
       m_BitDepth[i] = depth[i];
     }
   }
 
-  uint32 Pixel::PackRGBA() const {
+  uint32 Pixel::Pack() const {
     Pixel eightBit(*this);
     const uint8 eightBitDepth[4] = { 8, 8, 8, 8 };
     eightBit.ChangeBitDepth(eightBitDepth);
@@ -206,7 +206,7 @@ namespace PVRTCC {
     return r;
   }
 
-  void Pixel::UnpackRGBA(uint32 rgba) {
+  void Pixel::Unpack(uint32 rgba) {
     A() = ChangeBitDepth((rgba >> 24) & 0xFF, 8, m_BitDepth[0]);
     R() = ChangeBitDepth(rgba & 0xFF, 8, m_BitDepth[1]);
     G() = ChangeBitDepth((rgba >> 8) & 0xFF, 8, m_BitDepth[2]);
@@ -228,4 +228,4 @@ namespace PVRTCC {
     return ok;
   }
 
-}  // namespace PVRTCC
+}  // namespace FasTC

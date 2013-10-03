@@ -179,7 +179,7 @@ TEST(Image, BilinearUpscaleMaintainsPixels) {
     for(uint32 j = 2; j < img.GetHeight(); j+=4) {
       PVRTCC::Pixel p = img(i, j);
       uint32 idx = ((j - 2) / 4) * w + ((i-2)/4);
-      EXPECT_EQ(PixelPrinter(p.PackRGBA()), PixelPrinter(pxs[idx].PackRGBA()));
+      EXPECT_EQ(PixelPrinter(p.Pack()), PixelPrinter(pxs[idx].Pack()));
     }
   }
 }

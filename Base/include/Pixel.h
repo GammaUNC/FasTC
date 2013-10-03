@@ -50,27 +50,33 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#ifndef PVRTCENCODER_SRC_PIXEL_H_
-#define PVRTCENCODER_SRC_PIXEL_H_
+#ifndef BASE_INCLUDE_PIXEL_H_
+#define BASE_INCLUDE_PIXEL_H_
 
 #include "TexCompTypes.h"
+#include "Vector4.h"
 
-namespace PVRTCC {
+namespace FasTC {
 
-class Pixel {
+class Pixel : public Vector4<uint8> {
+ private:
+  uint8 m_BitDepth[4];
+
  public:
-  Pixel(): m_A(0), m_R(0), m_G(0), m_B(0) {
-    for(int i = 0; i < 4; i++) m_BitDepth[i] = 8;
+  Pixel() : Vector4<uint8>(0, 0, 0, 0) {
+    for(int i = 0; i < 4; i++)
+      m_BitDepth[i] = 8;
   }
 
-  explicit Pixel(uint32 rgba) {
-    for(int i = 0; i < 4; i++) m_BitDepth[i] = 8;
-    UnpackRGBA(rgba);
+  explicit Pixel(uint32 rgba) : Vector4<uint8>() {
+    for(int i = 0; i < 4; i++)
+      m_BitDepth[i] = 8;
+    Unpack(rgba);
   }
 
   Pixel(const uint8 *bits,
         const uint8 channelDepth[4] = static_cast<uint8 *>(0),
-        uint8 bitOffset = 0) {
+        uint8 bitOffset = 0) : Vector4<uint8>() {
     FromBits(bits, channelDepth, bitOffset);
   }
 
@@ -100,16 +106,16 @@ class Pixel {
   // above for how we do this.
   static uint8 ChangeBitDepth(uint8 val, uint8 oldDepth, uint8 newDepth);
 
-  const uint8 &A() const { return m_A; }
-  uint8 &A() { return m_A; }
-  const uint8 &R() const { return m_R; }
-  uint8 &R() { return m_R; }
-  const uint8 &G() const { return m_G; }
-  uint8 &G() { return m_G; }
-  const uint8 &B() const { return m_B; }
-  uint8 &B() { return m_B; }
-  const uint8 &Component(uint32 idx) const { return m_Component[idx]; }
-  uint8 &Component(uint32 idx) { return m_Component[idx]; }
+  const uint8 &A() const { return X(); }
+  uint8 &A() { return X(); }
+  const uint8 &R() const { return Y(); }
+  uint8 &R() { return Y(); }
+  const uint8 &G() const { return Z(); }
+  uint8 &G() { return Z(); }
+  const uint8 &B() const { return W(); }
+  uint8 &B() { return W(); }
+  const uint8 &Component(uint32 idx) const { return vec[idx]; }
+  uint8 &Component(uint32 idx) { return vec[idx]; }
 
   void GetBitDepth(uint8 (&outDepth)[4]) const {
     for(int i = 0; i < 4; i++) {
@@ -121,27 +127,13 @@ class Pixel {
   // and then pack each channel into an R8G8B8A8 32-bit integer. We assume
   // that the architecture is little-endian, so the alpha channel will end
   // up in the most-significant byte.
-  uint32 PackRGBA() const;
-  void UnpackRGBA(uint32 rgba);
+  uint32 Pack() const;
+  void Unpack(uint32 rgba);
 
   // Tests for equality by comparing the values and the bit depths.
   bool operator==(const Pixel &) const;
-
- private:
-  union {
-    struct {
-      uint8 m_A;
-      uint8 m_R;
-      uint8 m_G;
-      uint8 m_B;
-    };
-    uint8 m_Component[4];
-  };
-
-  // This contains the number of bits that each pixel has.
-  uint8 m_BitDepth[4];
 };
 
-}  // namespace PVRTCC
+}  // namespace FasTC
 
-#endif  // PVRTCENCODER_SRC_PIXEL_H_
+#endif  // BASE_INCLUDE_PIXEL_H_

@@ -56,10 +56,14 @@
 #include "TexCompTypes.h"
 #include "PVRTCCompressor.h"
 
+// Forward include
+namespace FasTC {
+  class Pixel;
+}
+
 namespace PVRTCC {
 
-class Pixel;
-
+using FasTC::Pixel;
 class Image {
  public:
   Image(uint32 height, uint32 width);

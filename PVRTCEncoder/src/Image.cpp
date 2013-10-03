@@ -476,7 +476,7 @@ void Image::DebugOutput(const char *filename) const {
       p.ChangeBitDepth(fullDepth);
       p.A() = 255;
 
-      outPixels[idx] = p.PackRGBA();
+      outPixels[idx] = p.Pack();
     }
   }
 

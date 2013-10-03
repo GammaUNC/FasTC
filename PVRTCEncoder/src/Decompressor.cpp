@@ -160,7 +160,7 @@ namespace PVRTCC {
         }
 
         uint32 *outPixels = reinterpret_cast<uint32 *>(outBuf);
-        outPixels[(j * w) + i] = result.PackRGBA();
+        outPixels[(j * w) + i] = result.Pack();
       }
     }
 
@@ -269,7 +269,7 @@ namespace PVRTCC {
         }
 
         uint32 *outPixels = reinterpret_cast<uint32 *>(outBuf);
-        outPixels[(j * w) + i] = result.PackRGBA();
+        outPixels[(j * w) + i] = result.Pack();
       }
     }
 

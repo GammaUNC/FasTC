@@ -58,6 +58,7 @@
 
 namespace PVRTCC {
 
+using FasTC::Pixel;
 class Block {
  public:
   Block(): m_LongData(0) { }

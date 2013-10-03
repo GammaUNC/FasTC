@@ -49,33 +49,18 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
-SET( SOURCES
-  "src/Image.cpp"
-  "src/CompressionJob.cpp"
-  "src/Pixel.cpp"
-)
-
-SET( HEADERS
-  "include/TexCompTypes.h"
-  "include/Image.h"
-  "include/CompressionJob.h"
-  "include/Pixel.h"
-  "include/VectorBase.h"
-  "include/Vector2.h"
-  "include/Vector3.h"
-  "include/Vector4.h"
-  "include/MatrixBase.h"
-  "include/MatrixSquare.h"
-  "include/Matrix3x3.h"
-)
-
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)
+INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/GTest/include)
 
-ADD_LIBRARY( FasTCBase
-	${HEADERS}
-	${SOURCES}
+SET(TESTS
+  Pixel
 )
 
-IF( NOT WIN32 AND NOT APPLE )
-  	TARGET_LINK_LIBRARIES( FasTCBase rt )
-ENDIF()
+FOREACH(TEST ${TESTS})
+  SET(TEST_NAME Test${TEST})
+  SET(TEST_MODULE Test${TEST}.cpp)
+  ADD_EXECUTABLE(${TEST_NAME} ${TEST_MODULE})
+  TARGET_LINK_LIBRARIES(${TEST_NAME} FasTCBase)
+  TARGET_LINK_LIBRARIES(${TEST_NAME} gtest_main)
+  ADD_TEST(${TEST_NAME} ${TEST_NAME})
+ENDFOREACH()
