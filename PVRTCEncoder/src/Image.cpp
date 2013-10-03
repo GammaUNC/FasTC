@@ -356,7 +356,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
       Iy[idx] = (I[yphidx] - I[ymhidx]) / 2.0f;
 
       for(uint32 c = 0; c <= 3; c++) {
-#define CPNT(dx) Pixel::ConvertChannelToFloat(m_Pixels[dx].Component(c), bitDepth[c])
+        #define CPNT(dx) Pixel::ConvertChannelToFloat(m_Pixels[dx].Component(c), bitDepth[c])
         Ix[c][idx] = (CPNT(xphidx) - CPNT(xmhidx)) / 2.0f;
         Ixx[c][idx] = (CPNT(xphidx) - 2.0f*CPNT(idx) + CPNT(xmhidx)) / 2.0f;
         Iyy[c][idx] = (CPNT(yphidx) - 2.0f*CPNT(idx) + CPNT(ymhidx)) / 2.0f;
@@ -408,7 +408,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
         result.Component(c) = static_cast<uint8>(Clamp(I0 + 0.25f*It, 0.0f, 1.0f) * scale + 0.5f);
       }
 
-      downscaledPixels[j * newHeight + i] = result;
+      downscaledPixels[j * newWidth + i] = result;
     }
   }
 
