@@ -48,9 +48,9 @@
 #include "CompressionJob.h"
 
 #include <iosfwd>
+#include "ImageFwd.h"
 
 // Forward declarations
-class Image;
 class ImageFile;
 
 struct SCompressionSettings {
@@ -91,7 +91,8 @@ struct SCompressionSettings {
   std::ostream *logStream;
 };
 
-extern CompressedImage *CompressImage(Image *img, const SCompressionSettings &settings);
+template<typename PixelType>
+extern CompressedImage *CompressImage(FasTC::Image<PixelType> *img, const SCompressionSettings &settings);
 
 extern bool CompressImageData(
   const unsigned char *data,

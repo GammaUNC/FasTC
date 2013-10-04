@@ -58,7 +58,7 @@
 #include <vector>
 
 #include "Pixel.h"
-#include "Image.h"
+#include "PVRTCImage.h"
 #include "Block.h"
 
 namespace PVRTCC {

@@ -47,19 +47,23 @@
 #include "ImageFileFormat.h"
 #include "TexCompTypes.h"
 
+namespace FasTC {
+  class Pixel;
+}
+
 class ImageWriter {
 
  protected:
 
-  const uint8 *m_PixelData;
+  const FasTC::Pixel *m_Pixels;
   uint32 m_RawFileDataSz;
   uint8 *m_RawFileData;
   
   uint32 m_Width;
   uint32 m_Height;
 
-  ImageWriter(const int width, const int height, const uint8 *rawData) 
-  : m_PixelData(rawData)
+  ImageWriter(const int width, const int height, const FasTC::Pixel *rawData) 
+  : m_Pixels(rawData)
   , m_RawFileDataSz(256)
   , m_RawFileData(new uint8[m_RawFileDataSz])
   , m_Width(width), m_Height(height)
@@ -69,15 +73,15 @@ class ImageWriter {
 
  public:
   virtual ~ImageWriter() {
-		if(m_RawFileData) {
-			delete m_RawFileData;
-			m_RawFileData = 0;
-		}
+    if(m_RawFileData) {
+      delete m_RawFileData;
+      m_RawFileData = 0;
+    }
   }
 
   uint32 GetWidth() const { return m_Width; }
   uint32 GetHeight() const { return m_Height; }
-  uint32 GetImageDataSz() const { return m_Width * m_Height * 4; }
+  uint32 GetImageDataSz() const { return m_Width * m_Height * sizeof(uint32); }
   uint32 GetRawFileDataSz() const { return m_RawFileDataSz; }
   uint8 *GetRawFileData() const { return m_RawFileData; }
   virtual bool WriteImage() = 0;

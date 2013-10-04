@@ -55,6 +55,7 @@
 
 #include "TexCompTypes.h"
 #include "PVRTCCompressor.h"
+#include "Image.h"
 
 // Forward include
 namespace FasTC {
@@ -63,15 +64,13 @@ namespace FasTC {
 
 namespace PVRTCC {
 
-using FasTC::Pixel;
-class Image {
+class Image : public FasTC::Image<FasTC::Pixel> {
  public:
-  Image(uint32 height, uint32 width);
-  Image(uint32 height, uint32 width, const Pixel *pixels);
+  Image(uint32 width, uint32 height);
+  Image(uint32 width, uint32 height, const FasTC::Pixel *pixels);
   Image(const Image &);
   Image &operator=(const Image &);
-  ~Image();
-
+  virtual ~Image();
   void BilinearUpscale(uint32 xtimes, uint32 ytimes,
                        EWrapMode wrapMode = eWrapMode_Wrap);
 
@@ -84,25 +83,15 @@ class Image {
                              EWrapMode wrapMode = eWrapMode_Wrap,
                              bool bOffsetNewPixels = false);
 
-  void ChangeBitDepth(const uint8 (&depths)[4]);
   void ExpandTo8888();
-
-  Pixel &operator()(uint32 i, uint32 j);
-  const Pixel &operator()(uint32 i, uint32 j) const;
-
-  uint32 GetWidth() const { return m_Width; }
-  uint32 GetHeight() const { return m_Height; }
-
+  void ChangeBitDepth(const uint8 (&depths)[4]);
   void DebugOutput(const char *filename) const;
 
  private:
-  uint32 m_Width;
-  uint32 m_Height;
-  Pixel *m_Pixels;
-  Pixel *m_FractionalPixels;
+  FasTC::Pixel *m_FractionalPixels;
 
   const uint32 GetPixelIndex(int32 i, int32 j, EWrapMode wrapMode = eWrapMode_Clamp) const;
-  const Pixel &GetPixel(int32 i, int32 j, EWrapMode wrapMode = eWrapMode_Clamp) const;
+  const FasTC::Pixel &GetPixel(int32 i, int32 j, EWrapMode wrapMode = eWrapMode_Clamp) const;
 };
 
 }  // namespace PVRTCC

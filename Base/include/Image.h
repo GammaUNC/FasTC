@@ -41,58 +41,86 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#ifndef __TEXCOMP_IMAGE_H__
-#define __TEXCOMP_IMAGE_H__
+#ifndef FASTC_BASE_INCLUDE_IMAGE_H_
+#define FASTC_BASE_INCLUDE_IMAGE_H_
 
 #include "TexCompTypes.h"
+#include "ImageFwd.h"
 
-class Image {
+namespace FasTC {
 
- public:
-  Image(uint32 width, uint32 height,
-        const uint32 *pixels,
-        bool bBlockStreamOrder = false);
-  Image(const Image &);
-  Image &operator=(const Image &);
-  virtual ~Image();
+  template<typename U, typename V>
+  extern double ComputePSNR(Image<U> *img1, Image<V> *img2);
 
-  virtual Image *Clone() const {
-    return new Image(*this);
+  // Forward declare
+  template<typename PixelType>
+  class Image {
+
+   public:
+    Image(uint32 width, uint32 height);
+    Image(uint32 width, uint32 height,
+          const PixelType *pixels,
+          bool bBlockStreamOrder = false);
+    Image(uint32 width, uint32 height,
+          const uint32 *pixels,
+          bool bBlockStreamOrder = false);
+    Image(const Image<PixelType> &);
+    Image &operator=(const Image<PixelType> &);
+    virtual ~Image();
+
+    virtual Image *Clone() const {
+      return new Image(*this);
+    };
+
+    PixelType &operator()(uint32 i, uint32 j);
+    const PixelType &operator()(uint32 i, uint32 j) const;
+
+    // Reads a buffer full of pixels and stores them in the
+    // data associated with this image.
+    virtual bool ReadPixels(const uint32 *rgba);
+    const PixelType *GetPixels() const { return m_Pixels; }
+
+    uint32 GetWidth() const { return m_Width; }
+    uint32 GetHeight() const { return m_Height; }
+    uint32 GetNumPixels() const { return GetWidth() * GetHeight(); }
+
+    void SetBlockStreamOrder(bool flag) {
+      if(flag) {
+        ConvertToBlockStreamOrder();
+      } else {
+        ConvertFromBlockStreamOrder();
+      }
+    }
+    bool GetBlockStreamOrder() const { return m_bBlockStreamOrder; }
+
+    template<typename OtherPixelType>
+    double ComputePSNR(Image<OtherPixelType> *other) {
+      return FasTC::ComputePSNR(this, other);
+    }
+
+    // Function to allow derived classes to populate the pixel array.
+    // This may involve decompressing a compressed image or otherwise
+    // processing some data in order to populate the m_Pixels pointer.
+    // This function should use SetImageData in order to set all of the
+    // appropriate pixels.
+    virtual void ComputePixels() { }
+
+   private:
+    uint32 m_Width;
+    uint32 m_Height;
+
+    bool m_bBlockStreamOrder;
+
+    PixelType *m_Pixels;
+
+   protected:
+
+    void SetImageData(uint32 width, uint32 height, PixelType *data);
+
+    void ConvertToBlockStreamOrder();
+    void ConvertFromBlockStreamOrder();
   };
 
-  const uint8 *RawData() const { return m_Data; }
-
-  uint32 GetWidth() const { return m_Width; }
-  uint32 GetHeight() const { return m_Height; }
-
-  void SetBlockStreamOrder(bool flag) {
-    if(flag) {
-      ConvertToBlockStreamOrder();
-    } else {
-      ConvertFromBlockStreamOrder();
-    }
-  }
-  bool GetBlockStreamOrder() const { return m_bBlockStreamOrder; }
-
-  double ComputePSNR(Image *other);
-
-  virtual void ComputeRGBA() { }
-  virtual const uint32 *GetRGBA() const {
-    return reinterpret_cast<const uint32 *>(RawData());
-  }
-
- private:
-  uint32 m_Width;
-  uint32 m_Height;
-
-  bool m_bBlockStreamOrder;
-
- protected:
-  uint32 m_DataSz;
-  uint8 *m_Data;
-
-  void ConvertToBlockStreamOrder();
-  void ConvertFromBlockStreamOrder();
-};
+}  // namespace FasTC
 
 #endif // __TEXCOMP_IMAGE_H__

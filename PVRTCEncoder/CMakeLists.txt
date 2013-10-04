@@ -57,14 +57,14 @@ INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)
 SET( HEADERS
   include/PVRTCCompressor.h
   src/Block.h
-  src/Image.h
+  src/PVRTCImage.h
 )
 
 SET( SOURCES
   src/Compressor.cpp
   src/Decompressor.cpp
   src/Block.cpp
-  src/Image.cpp
+  src/PVRTCImage.cpp
 )
 
 ADD_LIBRARY( PVRTCEncoder

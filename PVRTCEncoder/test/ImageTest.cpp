@@ -51,78 +51,14 @@
  */
 
 #include "gtest/gtest.h"
-#include "Image.h"
+#include "PVRTCImage.h"
 #include "Pixel.h"
 #include "TestUtils.h"
 
 #include <cstdlib>
 
-TEST(Image, NonSpecificConstructor) {
-  PVRTCC::Pixel p;
-
-  PVRTCC::Image img (4, 4);
-  for(uint32 i = 0; i < 4; i++) {
-    for(uint32 j = 0; j < 4; j++) {
-      EXPECT_TRUE(img(i, j) == p);
-    }
-  }
-}
-
-TEST(Image, SpecificConstructor) {
-  PVRTCC::Pixel pxs[16];
-  for(uint32 i = 0; i < 4; i++) {
-    for(uint32 j = 0; j < 4; j++) {
-      pxs[j*4 + i].R() = i;
-      pxs[j*4 + i].G() = j;
-    }
-  }
-
-  PVRTCC::Image img(4, 4, pxs);
-  for(uint32 i = 0; i < 4; i++) {
-    for(uint32 j = 0; j < 4; j++) {
-      EXPECT_TRUE(img(i, j) == pxs[j*4 + i]);
-    }
-  }
-}
-
-TEST(Image, CopyConstructor) {
-  PVRTCC::Pixel pxs[16];
-  for(uint32 i = 0; i < 4; i++) {
-    for(uint32 j = 0; j < 4; j++) {
-      pxs[j*4 + i].R() = i;
-      pxs[j*4 + i].G() = j;
-    }
-  }
-
-  PVRTCC::Image img(4, 4, pxs);
-  PVRTCC::Image img2(img);
-  for(uint32 i = 0; i < 4; i++) {
-    for(uint32 j = 0; j < 4; j++) {
-      EXPECT_TRUE(img2(i, j) == pxs[j*4 + i]);
-    }
-  }
-}
-
-TEST(Image, AssignmentOperator) {
-  PVRTCC::Pixel pxs[16];
-  for(uint32 i = 0; i < 4; i++) {
-    for(uint32 j = 0; j < 4; j++) {
-      pxs[j*4 + i].R() = i;
-      pxs[j*4 + i].G() = j;
-    }
-  }
-
-  PVRTCC::Image img(4, 4, pxs);
-  PVRTCC::Image img2 = img;
-  for(uint32 i = 0; i < 4; i++) {
-    for(uint32 j = 0; j < 4; j++) {
-      EXPECT_TRUE(img2(i, j) == pxs[j*4 + i]);
-    }
-  }
-}
-
 TEST(Image, BilinearUpscale) {
-  PVRTCC::Pixel pxs[16];
+  FasTC::Pixel pxs[16];
   for(uint32 i = 0; i < 4; i++) {
     for(uint32 j = 0; j < 4; j++) {
       pxs[j*4 + i].R() = i*2;
@@ -152,7 +88,6 @@ TEST(Image, BilinearUpscale) {
   }
 }
 
-
 TEST(Image, BilinearUpscaleMaintainsPixels) {
 
   srand(0xabd1ca7e);
@@ -160,7 +95,7 @@ TEST(Image, BilinearUpscaleMaintainsPixels) {
   const uint32 w = 4;
   const uint32 h = 4;
 
-  PVRTCC::Pixel pxs[16];
+  FasTC::Pixel pxs[16];
   for(uint32 i = 0; i < w; i++) {
     for(uint32 j = 0; j < h; j++) {
       pxs[j*w + i].R() = rand() % 256;
@@ -177,7 +112,7 @@ TEST(Image, BilinearUpscaleMaintainsPixels) {
 
   for(uint32 i = 2; i < img.GetWidth(); i+=4) {
     for(uint32 j = 2; j < img.GetHeight(); j+=4) {
-      PVRTCC::Pixel p = img(i, j);
+      FasTC::Pixel p = img(i, j);
       uint32 idx = ((j - 2) / 4) * w + ((i-2)/4);
       EXPECT_EQ(PixelPrinter(p.Pack()), PixelPrinter(pxs[idx].Pack()));
     }
@@ -190,7 +125,7 @@ TEST(Image, NonuniformBilinearUpscale) {
   const uint32 kWidth = 4;
   const uint32 kHeight = 8;
 
-  PVRTCC::Pixel pxs[kWidth * kHeight];
+  FasTC::Pixel pxs[kWidth * kHeight];
   for(uint32 i = 0; i < kWidth; i++) {
     for(uint32 j = 0; j < kHeight; j++) {
       pxs[j*kWidth + i].R() = i*4;
@@ -198,7 +133,7 @@ TEST(Image, NonuniformBilinearUpscale) {
     }
   }
 
-  PVRTCC::Image img(kHeight, kWidth, pxs);
+  PVRTCC::Image img(kWidth, kHeight, pxs);
   img.BilinearUpscale(2, 1, PVRTCC::eWrapMode_Clamp);
   EXPECT_EQ(img.GetWidth(), static_cast<uint32>(kWidth << 2));
   EXPECT_EQ(img.GetHeight(), static_cast<uint32>(kHeight << 1));
@@ -223,7 +158,7 @@ TEST(Image, NonuniformBilinearUpscale) {
 }
 
 TEST(Image, BilinearUpscaleWrapped) {
-  PVRTCC::Pixel pxs[16];
+  FasTC::Pixel pxs[16];
 
   // Make sure that our bit depth is less than full...
   for(uint32 i = 0; i < 16; i++) {
@@ -245,7 +180,7 @@ TEST(Image, BilinearUpscaleWrapped) {
 
   for(uint32 i = 0; i < img.GetWidth(); i++) {
     for(uint32 j = 0; j < img.GetHeight(); j++) {
-      const PVRTCC::Pixel &p = img(i, j);
+      const FasTC::Pixel &p = img(i, j);
 
       // First make sure that the bit depth didn't change
       uint8 depth[4];
@@ -284,9 +219,9 @@ TEST(Image, ContentAwareDownscale) {
   for(uint32 j = 0; j < img.GetHeight(); j++) {
     for(uint32 i = 0; i < img.GetWidth(); i++) {
       if(j < 4) {
-        img(i, j) = PVRTCC::Pixel( 0xFF000000 );
+        img(i, j) = FasTC::Pixel( 0xFF000000 );
       } else {
-        img(i, j) = PVRTCC::Pixel( 0xFF0000FF );
+        img(i, j) = FasTC::Pixel( 0xFF0000FF );
       }
     }
   }

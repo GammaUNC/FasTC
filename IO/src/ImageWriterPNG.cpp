@@ -43,13 +43,14 @@
 
 #include "ImageWriterPNG.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#include "Image.h"
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
 
 #include <png.h>
+
+#include "Image.h"
+#include "Pixel.h"
 
 class PNGStreamWriter {
 public:
@@ -84,13 +85,13 @@ public:
 
 };
 
-ImageWriterPNG::ImageWriterPNG(Image &im)
-  : ImageWriter(im.GetWidth(), im.GetHeight(), im.RawData())
+ImageWriterPNG::ImageWriterPNG(FasTC::Image<> &im)
+  : ImageWriter(im.GetWidth(), im.GetHeight(), im.GetPixels())
   , m_bBlockStreamOrder(im.GetBlockStreamOrder())
   , m_StreamPosition(0)
 {
-  im.ComputeRGBA();
-  m_PixelData = reinterpret_cast<const uint8 *>(im.GetRGBA());
+  im.ComputePixels();
+  m_Pixels = im.GetPixels();
 }
 
 bool ImageWriterPNG::WriteImage() {
@@ -136,8 +137,7 @@ bool ImageWriterPNG::WriteImage() {
           *row++ = GetChannelForPixel(x, y, ch);
         }
       } else {
-        reinterpret_cast<uint32 *>(row)[x] =
-          reinterpret_cast<const uint32 *>(m_PixelData)[y * m_Width + x];
+        reinterpret_cast<uint32 *>(row)[x] = m_Pixels[y * m_Width + x].Pack();
       }
     }
   }

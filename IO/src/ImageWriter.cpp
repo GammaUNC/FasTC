@@ -42,6 +42,7 @@
  */
 
 #include "ImageWriter.h"
+#include "Pixel.h"
 
 uint32 ImageWriter::GetChannelForPixel(uint32 x, uint32 y, uint32 ch) {
 
@@ -58,10 +59,8 @@ uint32 ImageWriter::GetChannelForPixel(uint32 x, uint32 y, uint32 ch) {
   const uint32 blockOffsetY = y % 4;
   const uint32 pixelOffset = blockOffsetY * 4 + blockOffsetX;
 
-  // There are 16 pixels per block and bytes per pixel...
-  uint32 dataOffset = blockIdx * 4 * 16;
-  dataOffset += 4 * pixelOffset;
-  dataOffset += ch;
+  // There are 16 pixels per block...
+  uint32 dataOffset = blockIdx * 16 + pixelOffset;
 
-  return m_PixelData[dataOffset];
+  return m_Pixels[dataOffset].Component(ch);
 }

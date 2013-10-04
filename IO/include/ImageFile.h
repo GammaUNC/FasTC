@@ -46,9 +46,9 @@
 
 #include "TexCompTypes.h"
 #include "ImageFileFormat.h"
+#include "ImageFwd.h"
 
 // Forward declare
-class Image;
 class CompressedImage;
 struct SCompressionSettings;
 
@@ -66,13 +66,13 @@ public:
 
   // Creates an imagefile with the corresponding image data. This is ready
   // to be written to disk with the passed filename.
-  ImageFile(const char *filename, EImageFileFormat format, const Image &);
+  ImageFile(const char *filename, EImageFileFormat format, const FasTC::Image<> &);
 
   ~ImageFile();
 
   unsigned int GetWidth() const { return m_Width; }
   unsigned int GetHeight() const { return m_Height; }
-  Image *GetImage() const { return m_Image; }
+  FasTC::Image<> *GetImage() const { return m_Image; }
 
   // Loads the image into memory. If this function returns true, then a valid
   // m_Image will be created and available.
@@ -91,12 +91,12 @@ public:
 
   const EImageFileFormat m_FileFormat;
 
-  Image *m_Image;
+  FasTC::Image<> *m_Image;
   
   static unsigned char *ReadFileData(const CHAR *filename);
   static bool WriteImageDataToFile(const uint8 *data, const uint32 dataSz, const CHAR *filename);
   static EImageFileFormat DetectFileFormat(const CHAR *filename);
 
-  Image *LoadImage(const unsigned char *rawImageData) const;
+  FasTC::Image<> *LoadImage(const unsigned char *rawImageData) const;
 };
 #endif // _IMAGE_FILE_H_ 

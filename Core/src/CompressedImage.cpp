@@ -48,6 +48,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "Pixel.h"
+
 #include "TexCompTypes.h"
 #include "BC7Compressor.h"
 #include "PVRTCCompressor.h"
@@ -55,11 +57,12 @@
 CompressedImage::CompressedImage( const CompressedImage &other )
   : Image(other)
   , m_Format(other.m_Format)
-  , m_RGBAData(0)
+  , m_CompressedData(0)
 {
-  if(other.m_RGBAData) {
-    m_RGBAData = new uint32[GetWidth() * GetHeight()];
-    memcpy(m_RGBAData, other.m_RGBAData, sizeof(uint32) * GetWidth() * GetHeight());
+  if(other.m_CompressedData) {
+    uint32 compressedSz = GetCompressedSize();
+    m_CompressedData = new uint8[compressedSz];
+    memcpy(m_CompressedData, other.m_CompressedData, compressedSz);
   }
 }
 
@@ -69,47 +72,44 @@ CompressedImage::CompressedImage(
   const ECompressionFormat format,
   const unsigned char *data
 )
-  : Image(width, height, NULL, format != eCompressionFormat_PVRTC)
+  : FasTC::Image<>(width, height,
+                   reinterpret_cast<uint32 *>(NULL),
+                   format != eCompressionFormat_PVRTC)
   , m_Format(format)
-  , m_RGBAData(0)
+  , m_CompressedData(0)
 {
-  m_DataSz = GetCompressedSize(GetWidth() * GetHeight() * 4, m_Format);
-  if(m_DataSz > 0) {
-    assert(!m_Data);
-    m_Data = new unsigned char[m_DataSz];
-    memcpy(m_Data, data, m_DataSz);
+  uint32 cmpSz = GetCompressedSize();
+  if(cmpSz > 0) {
+    assert(!m_CompressedData);
+    m_CompressedData = new uint8[cmpSz];
+    memcpy(m_CompressedData, data, cmpSz);
   }
 }
 
 CompressedImage &CompressedImage::operator=(const CompressedImage &other) {
   Image::operator=(other);
   m_Format = other.m_Format;
-  if(other.m_RGBAData) {
-    m_RGBAData = new uint32[GetWidth() * GetHeight()];
-    memcpy(m_RGBAData, other.m_RGBAData, sizeof(uint32) * GetWidth() * GetHeight());
+  if(other.m_CompressedData) {
+    uint32 cmpSz = GetCompressedSize();
+    m_CompressedData = new uint8[cmpSz];
+    memcpy(m_CompressedData, other.m_CompressedData, cmpSz);
   }
   return *this;
 }
 
 CompressedImage::~CompressedImage() {
-  if(m_RGBAData) {
-    delete m_RGBAData;
-    m_RGBAData = NULL;
+  if(m_CompressedData) {
+    delete m_CompressedData;
+    m_CompressedData = NULL;
   }
 }
 
 bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBufSz) const {
 
-  // First make sure that we have enough data
-  uint32 dataSz = GetUncompressedSize(m_DataSz, m_Format);
-  if(dataSz > outBufSz) {
-    fprintf(stderr, "Not enough space to store entire decompressed image! "
-                    "Got %d bytes, but need %d!\n", outBufSz, dataSz);
-    assert(false);
-    return false;
-  }
+  assert(outBufSz == GetUncompressedSize());
 
-  DecompressionJob dj (m_Data, outBuf, GetWidth(), GetHeight());
+  uint8 *byteData = reinterpret_cast<uint8 *>(m_CompressedData);
+  DecompressionJob dj (byteData, outBuf, GetWidth(), GetHeight());
   switch(m_Format) {
     case eCompressionFormat_PVRTC:
     {
@@ -135,15 +135,20 @@ bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBuf
   return true;
 }
 
-void CompressedImage::ComputeRGBA() {
+void CompressedImage::ComputePixels() {
 
-  if(m_RGBAData) {
-    delete m_RGBAData;
+  uint32 unCompSz = GetWidth() * GetHeight() * 4;
+  uint8 *unCompBuf = new uint8[unCompSz];
+  DecompressImage(unCompBuf, unCompSz);
+
+  uint32 * newPixelBuf = reinterpret_cast<uint32 *>(unCompBuf);
+
+  FasTC::Pixel *newPixels = new FasTC::Pixel[GetWidth() * GetHeight()];
+  for(uint32 i = 0; i < GetWidth() * GetHeight(); i++) {
+    newPixels[i].Unpack(newPixelBuf[i]);
   }
-  m_RGBAData = new uint32[GetWidth() * GetHeight()];
 
-  uint8 *pixelData = reinterpret_cast<uint8 *>(m_RGBAData);
-  DecompressImage(pixelData, GetWidth() * GetHeight() * 4);
+  SetImageData(GetWidth(), GetHeight(), newPixels);
 }
 
 uint32 CompressedImage::GetCompressedSize(uint32 uncompressedSize, ECompressionFormat format) {
@@ -167,4 +172,3 @@ uint32 CompressedImage::GetCompressedSize(uint32 uncompressedSize, ECompressionF
 
   return cmpDataSzNeeded;
 }
-

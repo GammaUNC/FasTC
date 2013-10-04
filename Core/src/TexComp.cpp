@@ -54,6 +54,7 @@
 #include "CompressionFuncs.h"
 #include "Image.h"
 #include "ImageFile.h"
+#include "Pixel.h"
 #include "PVRTCCompressor.h"
 #include "Thread.h"
 #include "ThreadGroup.h"
@@ -349,8 +350,9 @@ static double CompressImageWithWorkerQueue(
   return cmpTimeTotal / double(settings.iNumCompressions);
 }
 
+template<typename PixelType>
 CompressedImage *CompressImage(
-  Image *img, const SCompressionSettings &settings
+  FasTC::Image<PixelType> *img, const SCompressionSettings &settings
 ) {
   if(!img) return NULL;
 
@@ -359,6 +361,7 @@ CompressedImage *CompressImage(
 
   CompressedImage *outImg = NULL;
   const unsigned int dataSz = w * h * 4;
+  uint32 *data = new uint32[dataSz / 4];
 
   assert(dataSz > 0);
 
@@ -366,24 +369,33 @@ CompressedImage *CompressImage(
   uint32 cmpDataSz = CompressedImage::GetCompressedSize(dataSz, settings.format);
 
   // Make sure that we have RGBA data...
-  img->ComputeRGBA();
+  img->ComputePixels();
+  const PixelType *pixels = img->GetPixels();
+  for(uint32 i = 0; i < img->GetNumPixels(); i++) {
+    data[i] = pixels[i].Pack();
+  }
 
   unsigned char *cmpData = new unsigned char[cmpDataSz];
-  const uint8 *pixelData = reinterpret_cast<const uint8 *>(img->GetRGBA());
-  CompressImageData(pixelData, w, h, cmpData, cmpDataSz, settings);
+  CompressImageData(reinterpret_cast<uint8 *>(data), w, h, cmpData, cmpDataSz, settings);
 
   outImg = new CompressedImage(w, h, settings.format, cmpData);
   
+  delete [] data;
   delete [] cmpData;
   return outImg;
 }
 
+// !FIXME! Ideally, we wouldn't have to do this because there would be a way to instantiate this
+// function in the header or using some fancy template metaprogramming. I can't think of the way 
+// at the moment.
+template CompressedImage *CompressImage(FasTC::Image<FasTC::Pixel> *, const SCompressionSettings &settings);
+
 bool CompressImageData(
-  const unsigned char *data, 
-  const unsigned int width,
-  const unsigned int height,
-  unsigned char *cmpData,
-  const unsigned int cmpDataSz,
+  const uint8 *data, 
+  const uint32 width,
+  const uint32 height,
+  uint8 *compressedData,
+  const uint32 cmpDataSz,
   const SCompressionSettings &settings
 ) { 
 
@@ -417,14 +429,14 @@ bool CompressImageData(
   }
 
   // Allocate data based on the compression method
-  uint32 cmpDataSzNeeded =
+  uint32 compressedDataSzNeeded =
     CompressedImage::GetCompressedSize(dataSz, settings.format);
 
-  if(cmpDataSzNeeded == 0) {
+  if(compressedDataSzNeeded == 0) {
     ReportError("Unknown compression format");
     return false;
   }
-  else if(cmpDataSzNeeded > cmpDataSz) {
+  else if(compressedDataSzNeeded > cmpDataSz) {
     ReportError("Not enough space for compressed data!");
     return false;
   }
@@ -436,15 +448,15 @@ bool CompressImageData(
 
     if(numThreads > 1) {
       if(settings.bUseAtomics) {
-        cmpMSTime = CompressImageWithAtomics(data, width, height, settings, cmpData);
+        cmpMSTime = CompressImageWithAtomics(data, width, height, settings, compressedData);
       } else if(settings.iJobSize > 0) {
-        cmpMSTime = CompressImageWithWorkerQueue(data, dataSz, settings, cmpData);
+        cmpMSTime = CompressImageWithWorkerQueue(data, dataSz, settings, compressedData);
       } else {
-        cmpMSTime = CompressImageWithThreads(data, dataSz, settings, cmpData);
+        cmpMSTime = CompressImageWithThreads(data, dataSz, settings, compressedData);
       }
     }
     else {
-      cmpMSTime = CompressImageInSerial(data, width, height, settings, cmpData);
+      cmpMSTime = CompressImageInSerial(data, width, height, settings, compressedData);
     }
 
     // Report compression time

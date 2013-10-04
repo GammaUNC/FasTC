@@ -60,7 +60,7 @@ SET(TESTS
 )
 
 FOREACH(TEST ${TESTS})
-  SET(TEST_NAME Test${TEST})
+  SET(TEST_NAME Test_PVRTCEncoder_${TEST})
   SET(TEST_MODULE ${TEST}Test.cpp)
   ADD_EXECUTABLE(${TEST_NAME} ${TEST_MODULE})
   TARGET_LINK_LIBRARIES(${TEST_NAME} PVRTCEncoder)
@@ -71,7 +71,7 @@ ENDFOREACH()
 # Test the decompressor against the included PVR Texture library....
 IF(PVRTEXLIB_FOUND)
 
-  SET(TEST_NAME TestDecompVersusPVRLib)
+  SET(TEST_NAME Test_PVRTCEncoder_DecompVersusPVRLib)
 
   # Copy the .pvr files that we will use for testing...
   SET(TEST_IMAGES

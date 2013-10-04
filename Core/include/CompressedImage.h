@@ -57,10 +57,10 @@ enum ECompressionFormat {
 
 #include "Image.h"
 
-class CompressedImage : public Image {
+class CompressedImage : public FasTC::Image<FasTC::Pixel> {
  private:
   ECompressionFormat m_Format;
-  uint32 *m_RGBAData;
+  uint8 *m_CompressedData;
 
  public:
   CompressedImage(const CompressedImage &);
@@ -70,25 +70,31 @@ class CompressedImage : public Image {
   // the passed format. The size of the data is expected to conform
   // to the width, height, and format specified.
   CompressedImage(
-    const uint32 width, 
-    const uint32 height, 
-    const ECompressionFormat format, 
+    const uint32 width,
+    const uint32 height,
+    const ECompressionFormat format,
     const uint8 *data
   );
 
   virtual ~CompressedImage();
 
-  virtual Image *Clone() const {
+  virtual FasTC::Image<FasTC::Pixel> *Clone() const {
     return new CompressedImage(*this);
   }
 
-  virtual void ComputeRGBA();
-  virtual const uint32 *GetRGBA() const { return m_RGBAData; }
+  virtual void ComputePixels();
 
   static uint32 GetCompressedSize(uint32 uncompressedSize, ECompressionFormat format);
   static uint32 GetUncompressedSize(uint32 compressedSize, ECompressionFormat format) {
     uint32 cmp = GetCompressedSize(compressedSize, format);
     return compressedSize * (compressedSize / cmp);
+  }
+
+  uint32 GetCompressedSize() const {
+    return GetCompressedSize(GetUncompressedSize(), m_Format);
+  }
+  uint32 GetUncompressedSize() const {
+    return GetWidth() * GetHeight() * sizeof(uint32);
   }
 
   // Decompress the compressed image data into outBuf. outBufSz is expected
