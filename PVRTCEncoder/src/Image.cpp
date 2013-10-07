@@ -225,6 +225,66 @@ void Image::BilinearUpscale(uint32 xtimes, uint32 ytimes,
   m_Height = newHeight;
 }
 
+static Pixel AveragePixels(const ::std::vector<Pixel> &pixels) {
+  if(pixels.size() == 0) {
+    return Pixel();
+  }
+
+  uint32 sum[4] = {0};
+  ::std::vector<Pixel>::const_iterator it;
+  for(it = pixels.begin(); it != pixels.end(); it++) {
+    for(uint32 c = 0; c < 4; c++) {
+      sum[c] += (*it).Component(c);
+    }
+  }
+
+  Pixel result;
+  for(uint32 c = 0; c < 4; c++) {
+    result.Component(c) = sum[c] / pixels.size();
+  }
+
+  return result;
+}
+
+void Image::AverageDownscale(uint32 xtimes, uint32 ytimes, EWrapMode wrapMode) {
+  const uint32 w = GetWidth();
+  const uint32 h = GetHeight();
+
+  const uint32 newWidth = w >> xtimes;
+  const uint32 newHeight = h >> ytimes;
+
+  Pixel *downscaledPixels = new Pixel[newWidth * newHeight];
+
+  uint8 bitDepth[4];
+  m_Pixels[0].GetBitDepth(bitDepth);
+
+  uint32 pixelsX = 1 << xtimes;
+  uint32 pixelsY = 1 << ytimes;
+
+  ::std::vector<Pixel> toAvg;
+  toAvg.reserve(pixelsX * pixelsY);
+
+  for(uint32 j = 0; j < newHeight; j++) {
+    for(uint32 i = 0; i < newWidth; i++) {
+      uint32 newIdx = j * newWidth + i;
+
+      toAvg.clear();
+      for(uint32 y = j * pixelsY; y < (j+1) * pixelsY; y++) {
+        for(uint32 x = i * pixelsX; x < (i+1) * pixelsX; x++) {
+          toAvg.push_back(GetPixel(x, y, wrapMode));
+        }
+      }
+
+      downscaledPixels[newIdx] = AveragePixels(toAvg);
+    }
+  }
+
+  delete m_Pixels;
+  m_Pixels = downscaledPixels;
+  m_Width = newWidth;
+  m_Height = newHeight;
+}
+
 void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
                                   EWrapMode wrapMode, bool bOffsetNewPixels) {
   const uint32 w = GetWidth();
@@ -296,7 +356,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
       Iy[idx] = (I[yphidx] - I[ymhidx]) / 2.0f;
 
       for(uint32 c = 0; c <= 3; c++) {
-#define CPNT(dx) Pixel::ConvertChannelToFloat(m_Pixels[dx].Component(c), bitDepth[c])
+        #define CPNT(dx) Pixel::ConvertChannelToFloat(m_Pixels[dx].Component(c), bitDepth[c])
         Ix[c][idx] = (CPNT(xphidx) - CPNT(xmhidx)) / 2.0f;
         Ixx[c][idx] = (CPNT(xphidx) - 2.0f*CPNT(idx) + CPNT(xmhidx)) / 2.0f;
         Iyy[c][idx] = (CPNT(yphidx) - 2.0f*CPNT(idx) + CPNT(ymhidx)) / 2.0f;
@@ -348,7 +408,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
         result.Component(c) = static_cast<uint8>(Clamp(I0 + 0.25f*It, 0.0f, 1.0f) * scale + 0.5f);
       }
 
-      downscaledPixels[j * newHeight + i] = result;
+      downscaledPixels[j * newWidth + i] = result;
     }
   }
 

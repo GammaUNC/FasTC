@@ -279,6 +279,29 @@ TEST(Image, BilinearUpscaleWrapped) {
   }
 }
 
+TEST(Image, AverageDownscale) {
+  PVRTCC::Image img(8, 8);
+  for(uint32 j = 0; j < img.GetHeight(); j++) {
+    for(uint32 i = 0; i < img.GetWidth(); i++) {
+      if((i ^ j) & 1) {
+        img(i, j) = PVRTCC::Pixel(0xFF000000);
+      } else {
+        img(i, j) = PVRTCC::Pixel(0xFFFFFFFF);
+      }
+    }
+  }
+
+  img.AverageDownscale(1, 2);
+  EXPECT_EQ(img.GetWidth(), static_cast<uint32>(4));
+  EXPECT_EQ(img.GetHeight(), static_cast<uint32>(2));
+
+  for(uint32 j = 0; j < img.GetHeight(); j++) {
+    for(uint32 i = 0; i < img.GetWidth(); i++) {
+      EXPECT_EQ(PixelPrinter(0xFF7F7F7F), PixelPrinter(img(i, j).PackRGBA()));
+    }
+  }
+}
+
 TEST(Image, ContentAwareDownscale) {
   PVRTCC::Image img(8, 8);
   for(uint32 j = 0; j < img.GetHeight(); j++) {
