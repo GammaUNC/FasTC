@@ -51,6 +51,8 @@ namespace FasTC {
       }
     }
 
+    static const int Size = N;
+
     // Accessors
     T &operator()(int idx) { return vec[idx]; }
     T &operator[](int idx) { return vec[idx]; }
@@ -71,89 +73,6 @@ namespace FasTC {
       return VectorBase<_T, N>(vec); 
     }
 
-    // Operators
-    template<typename _T>
-    VectorBase<T, N> operator+(const VectorBase<_T, N> &v) const {
-      VectorBase a;
-      for(int i = 0; i < N; i++)
-        a.vec[i] = v(i) + vec[i];
-      return a;
-    }
-
-    template<typename _T>
-    VectorBase<T, N> &operator+=(const VectorBase<_T, N> &v) const {
-      for(int i = 0; i < N; i++)
-        vec[i] += v(i);
-      return *this;
-    }
-
-    template<typename _T>
-    VectorBase<T, N> operator-(const VectorBase<_T, N> &v) const {
-      VectorBase<T, N> a;
-      for(int i = 0; i < N; i++)
-        a(i) = vec[i] - v[i];
-      return a;
-    }
-
-    template<typename _T>
-    VectorBase<T, N> &operator-=(const VectorBase<_T, N> &v) const {
-      for(int i = 0; i < N; i++) {
-        vec[i] -= v[i];
-      }
-      return *this;
-    }
-
-    template<typename _T>
-    VectorBase<T, N> &operator=(const VectorBase<_T, N> &v) {
-      for(int i = 0; i < N; i++)
-        vec[i] = v[i];
-      return *this;
-    }
-
-    template<typename _T>
-    VectorBase<T, N> operator*(const _T s) const {
-      VectorBase<T, N> a;
-      for(int i = 0; i < N; i++)
-        a[i] = vec[i] * s;
-      return a;
-    }
-  
-    template<typename _T>
-    friend VectorBase<T, N> operator*(const _T s, const VectorBase<T, N> &v) {
-      VectorBase<T, N> a;
-      for(int i = 0; i < N; i++)
-        a[i] = v[i] * s;
-      return a;
-    }
-
-    template<typename _T>
-    VectorBase<T, N> operator/(const _T s) const {
-      VectorBase<T, N> a;
-      for(int i = 0; i < N; i++)
-        a[i] = vec[i] / s;
-      return a;
-    }
-  
-    template<typename _T>
-    friend VectorBase<T, N> operator/(const _T s, const VectorBase<T, N> &v) {
-      VectorBase<T, N> a;
-      for(int i = 0; i < N; i++)
-        a[i] = v[i] / s;
-      return a;
-    }
-
-    template<typename _T>
-    void operator*=(const _T s) {
-      for(int i = 0; i < N; i++)
-        vec[i] *= s;
-    }
-
-    template<typename _T>
-    void operator/=(const _T s) {
-      for(int i = 0; i < N; i++)
-        vec[i] /= s;
-    }
-
     // Vector operations
     template<typename _T>
     T Dot(const VectorBase<_T, N> &v) const {
@@ -166,6 +85,88 @@ namespace FasTC {
     T LengthSq() const { return this->Dot(*this); }
     T Length() const { return sqrt(LengthSq()); }
   };
+
+  // Operators
+  template<typename VectorTypeOne, typename VectorTypeTwo>
+  static inline VectorTypeOne operator+(const VectorTypeOne &v1,
+                                        const VectorTypeTwo &v2) {
+    VectorTypeOne a;
+    for(int i = 0; i < VectorTypeOne::Size; i++)
+      a(i) = v1(i) + v2(i);
+    return a;
+  }
+
+  template<typename VectorTypeOne, typename VectorTypeTwo>
+  static inline VectorTypeOne &operator+=(VectorTypeOne &v1,
+                                          const VectorTypeTwo &v2) {
+    for(int i = 0; i < VectorTypeOne::Size; i++)
+      v1(i) += v2(i);
+    return v1;
+  }
+
+  template<typename VectorTypeOne, typename VectorTypeTwo>
+  static inline VectorTypeOne operator-(const VectorTypeOne &v1,
+                                        const VectorTypeTwo &v2) {
+    VectorTypeOne a;
+    for(int i = 0; i < VectorTypeOne::Size; i++)
+      a(i) = v1(i) - v2(i);
+    return a;
+  }
+
+  template<typename VectorTypeOne, typename VectorTypeTwo>
+  static inline VectorTypeOne &operator-=(VectorTypeOne &v1,
+                                          const VectorTypeTwo &v2) {
+    for(int i = 0; i < VectorTypeOne::Size; i++) {
+      v1(i) -= v2(i);
+    }
+    return v1;
+  }
+
+  template<typename VectorType, typename ScalarType>
+  static inline VectorType operator*(const VectorType &v, const ScalarType &s) {
+    VectorType a;
+    for(int i = 0; i < VectorType::Size; i++)
+      a(i) = v(i) * s;
+    return a;
+  }
+
+  template<typename VectorType, typename ScalarType>
+  static inline VectorType operator*(const ScalarType &s, const VectorType &v) {
+    VectorType a;
+    for(int i = 0; i < VectorType::Size; i++)
+      a(i) = v(i) * s;
+    return a;
+  }
+
+  template<typename VectorType, typename ScalarType>
+  static inline VectorType operator/(const VectorType &v, const ScalarType &s) {
+    VectorType a;
+    for(int i = 0; i < VectorType::Size; i++)
+      a(i) = v(i) / s;
+    return a;
+  }
+
+  template<typename VectorType, typename ScalarType>
+  static inline operator/(const ScalarType &s, const VectorType &v) {
+    VectorType a;
+    for(int i = 0; i < VectorType::Size; i++)
+      a(i) = v(i) / s;
+    return a;
+  }
+
+  template<typename VectorType, typename ScalarType>
+  static inline VectorType &operator*=(VectorType &v, const ScalarType &s) {
+    for(int i = 0; i < VectorType::Size; i++)
+      v(i) *= s;
+    return v;
+  }
+
+  template<typename VectorType, typename ScalarType>
+  static inline VectorType &operator/=(VectorType &v, const ScalarType &s) {
+    for(int i = 0; i < VectorType::Size; i++)
+      v(i) /= s;
+    return v;
+  }
 };
 
 #endif  // BASE_INCLUDE_VECTORBASE_H_
