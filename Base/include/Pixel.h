@@ -58,18 +58,17 @@
 
 namespace FasTC {
 
-class Pixel {
+class Pixel : public Vector4<uint8> {
  private:
-  Vector4<uint8> m_Vec;
   uint8 m_BitDepth[4];
 
  public:
-  Pixel() : m_Vec(0, 0, 0, 0) {
+  Pixel() : Vector4<uint8>(0, 0, 0, 0) {
     for(int i = 0; i < 4; i++)
       m_BitDepth[i] = 8;
   }
 
-  explicit Pixel(uint32 rgba) {
+  explicit Pixel(uint32 rgba) : Vector4<uint8>() {
     for(int i = 0; i < 4; i++)
       m_BitDepth[i] = 8;
     Unpack(rgba);
@@ -77,7 +76,7 @@ class Pixel {
 
   Pixel(const uint8 *bits,
         const uint8 channelDepth[4] = static_cast<uint8 *>(0),
-        uint8 bitOffset = 0) {
+        uint8 bitOffset = 0) : Vector4<uint8>() {
     FromBits(bits, channelDepth, bitOffset);
   }
 
@@ -107,16 +106,16 @@ class Pixel {
   // above for how we do this.
   static uint8 ChangeBitDepth(uint8 val, uint8 oldDepth, uint8 newDepth);
 
-  const uint8 &A() const { return m_Vec.X(); }
-  uint8 &A() { return m_Vec.X(); }
-  const uint8 &R() const { return m_Vec.Y(); }
-  uint8 &R() { return m_Vec.Y(); }
-  const uint8 &G() const { return m_Vec.Z(); }
-  uint8 &G() { return m_Vec.Z(); }
-  const uint8 &B() const { return m_Vec.W(); }
-  uint8 &B() { return m_Vec.W(); }
-  const uint8 &Component(uint32 idx) const { return m_Vec[idx]; }
-  uint8 &Component(uint32 idx) { return m_Vec[idx]; }
+  const uint8 &A() const { return X(); }
+  uint8 &A() { return X(); }
+  const uint8 &R() const { return Y(); }
+  uint8 &R() { return Y(); }
+  const uint8 &G() const { return Z(); }
+  uint8 &G() { return Z(); }
+  const uint8 &B() const { return W(); }
+  uint8 &B() { return W(); }
+  const uint8 &Component(uint32 idx) const { return vec[idx]; }
+  uint8 &Component(uint32 idx) { return vec[idx]; }
 
   void GetBitDepth(uint8 (&outDepth)[4]) const {
     for(int i = 0; i < 4; i++) {
