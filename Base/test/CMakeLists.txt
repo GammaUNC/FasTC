@@ -53,7 +53,7 @@ INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/GTest/include)
 
 SET(TESTS
-  Pixel Image
+  Pixel Image Color
 )
 
 FOREACH(TEST ${TESTS})
