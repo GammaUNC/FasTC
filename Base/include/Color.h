@@ -94,6 +94,7 @@ class Color : public Vec4f {
   // Tests for equality by comparing the values and the bit depths.
   bool operator==(const Color &) const;
 };
+REGISTER_VECTOR_TYPE(Color);
 
 }  // namespace FasTC
 

@@ -135,6 +135,7 @@ class Pixel : public Vector4<uint16> {
   // Tests for equality by comparing the values and the bit depths.
   bool operator==(const Pixel &) const;
 };
+REGISTER_VECTOR_TYPE(Pixel);
 
 }  // namespace FasTC
 

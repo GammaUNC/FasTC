@@ -411,6 +411,7 @@ namespace FasTC {
     _VEX_VEC4_SWIZZLE_DEF(W, W, W, W)
     #endif // _VEX_ENABLE_SWIZZLE_
   };
+  REGISTER_ONE_TEMPLATE_VECTOR_TYPE(Vector4);
 
   typedef Vector4<float> Vec4f;
   typedef Vector4<double> Vec4d;

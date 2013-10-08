@@ -71,6 +71,7 @@ namespace FasTC {
     _VEX_VEC2_SWIZZLE_DEF(Y, Y)
     #endif //_VEX_ENABLE_SWIZZLE_
   };
+  REGISTER_ONE_TEMPLATE_VECTOR_TYPE(Vector2);
 
   typedef Vector2<float> Vec2f;
   typedef Vector2<double> Vec2d;

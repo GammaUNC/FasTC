@@ -115,6 +115,7 @@ namespace FasTC {
     _VEX_VEC3_SWIZZLE_DEF(Z, Z, Z)
     #endif // _VEX_ENABLE_SWIZZLE_
   };
+  REGISTER_ONE_TEMPLATE_VECTOR_TYPE(Vector3);
 
   typedef Vector3<float> Vec3f;
   typedef Vector3<double> Vec3d;
