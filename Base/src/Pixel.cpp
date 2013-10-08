@@ -82,7 +82,7 @@ namespace FasTC {
     }
 
     for(int32 i = 0; i < 4; i++) {
-      uint8 &channel = Component(i);
+      ChannelType &channel = Component(i);
       uint32 depth = m_BitDepth[i];
 
       assert(depth <= 8);
@@ -125,7 +125,7 @@ namespace FasTC {
 
     uint8 bitIdx = bitOffset;
     for(int i = 3; i >= 0; i--) {
-      uint8 val = Component(i);
+      ChannelType val = Component(i);
       uint8 depth = m_BitDepth[i];
 
       if(depth + bitIdx > 8) {
@@ -146,7 +146,7 @@ namespace FasTC {
     }
   }
 
-  uint8 Pixel::ChangeBitDepth(uint8 val, uint8 oldDepth, uint8 newDepth) {
+  Pixel::ChannelType Pixel::ChangeBitDepth(Pixel::ChannelType val, uint8 oldDepth, uint8 newDepth) {
     assert(newDepth <= 8);
     assert(oldDepth <= 8);
 
@@ -222,7 +222,7 @@ namespace FasTC {
       ok = ok && m_BitDepth[i] == depths[i];
 
       uint8 mask = (1 << depths[i]) - 1;
-      const uint8 c = other.Component(i) & mask;
+      const ChannelType c = other.Component(i) & mask;
       ok = ok && (c == (Component(i) & mask));
     }
     return ok;

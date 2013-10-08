@@ -58,17 +58,19 @@
 
 namespace FasTC {
 
-class Pixel : public Vector4<uint8> {
+class Pixel : public Vector4<uint16> {
  private:
+  typedef uint16 ChannelType;
+  typedef Vector4<ChannelType> VectorType;
   uint8 m_BitDepth[4];
 
  public:
-  Pixel() : Vector4<uint8>(0, 0, 0, 0) {
+  Pixel() : VectorType(0, 0, 0, 0) {
     for(int i = 0; i < 4; i++)
       m_BitDepth[i] = 8;
   }
 
-  explicit Pixel(uint32 rgba) : Vector4<uint8>() {
+  explicit Pixel(uint32 rgba) : VectorType() {
     for(int i = 0; i < 4; i++)
       m_BitDepth[i] = 8;
     Unpack(rgba);
@@ -76,7 +78,7 @@ class Pixel : public Vector4<uint8> {
 
   Pixel(const uint8 *bits,
         const uint8 channelDepth[4] = static_cast<uint8 *>(0),
-        uint8 bitOffset = 0) : Vector4<uint8>() {
+        uint8 bitOffset = 0) : VectorType() {
     FromBits(bits, channelDepth, bitOffset);
   }
 
@@ -104,18 +106,18 @@ class Pixel : public Vector4<uint8> {
 
   // Changes the bit depth of a single component. See the comment
   // above for how we do this.
-  static uint8 ChangeBitDepth(uint8 val, uint8 oldDepth, uint8 newDepth);
+  static ChannelType ChangeBitDepth(ChannelType val, uint8 oldDepth, uint8 newDepth);
 
-  const uint8 &A() const { return X(); }
-  uint8 &A() { return X(); }
-  const uint8 &R() const { return Y(); }
-  uint8 &R() { return Y(); }
-  const uint8 &G() const { return Z(); }
-  uint8 &G() { return Z(); }
-  const uint8 &B() const { return W(); }
-  uint8 &B() { return W(); }
-  const uint8 &Component(uint32 idx) const { return vec[idx]; }
-  uint8 &Component(uint32 idx) { return vec[idx]; }
+  const ChannelType &A() const { return X(); }
+  ChannelType &A() { return X(); }
+  const ChannelType &R() const { return Y(); }
+  ChannelType &R() { return Y(); }
+  const ChannelType &G() const { return Z(); }
+  ChannelType &G() { return Z(); }
+  const ChannelType &B() const { return W(); }
+  ChannelType &B() { return W(); }
+  const ChannelType &Component(uint32 idx) const { return vec[idx]; }
+  ChannelType &Component(uint32 idx) { return vec[idx]; }
 
   void GetBitDepth(uint8 (&outDepth)[4]) const {
     for(int i = 0; i < 4; i++) {
