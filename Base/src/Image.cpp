@@ -49,6 +49,7 @@
 #include <cassert>
 #include <cmath>
 
+#include "Color.h"
 #include "Pixel.h"
 
 template <typename T>
@@ -288,5 +289,6 @@ void Image<PixelType>::SetImageData(uint32 width, uint32 height, PixelType *data
 }
 
 template class Image<Pixel>;
+template class Image<Color>;
 
 }  // namespace FasTC
