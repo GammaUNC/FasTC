@@ -196,15 +196,17 @@ void Image::BilinearUpscale(uint32 xtimes, uint32 ytimes,
       for(uint32 c = 0; c < 4; c++) fpDepths[c] = xtimes + ytimes;
       fp.ChangeBitDepth(fpDepths);
 
+      const FasTC::Pixel tl = topLeft * topLeftWeight;
+      const FasTC::Pixel tr = topRight * topRightWeight;
+      const FasTC::Pixel bl = bottomLeft * bottomLeftWeight;
+      const FasTC::Pixel br = bottomRight * bottomRightWeight;
+      const FasTC::Pixel sum = tl + tr + bl + br;
+
       for(uint32 c = 0; c < 4; c++) {
-        const uint32 tl = topLeft.Component(c) * topLeftWeight;
-        const uint32 tr = topRight.Component(c) * topRightWeight;
-        const uint32 bl = bottomLeft.Component(c) * bottomLeftWeight;
-        const uint32 br = bottomRight.Component(c) * bottomRightWeight;
-        const uint32 sum = tl + tr + bl + br;
-        fp.Component(c) = sum & scaleMask;
-        p.Component(c) = sum / (xscale * yscale);
+        fp.Component(c) = sum.Component(c) & scaleMask;
       }
+
+      p = sum / (xscale * yscale);
     }
   }
 

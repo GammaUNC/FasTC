@@ -146,15 +146,7 @@ namespace PVRTCC {
           }
         }
 
-        Pixel result;
-        for(uint32 c = 0; c < 4; c++) {
-          uint16 va = static_cast<uint16>(pa.Component(c));
-          uint16 vb = static_cast<uint16>(pb.Component(c));
-
-          uint16 res = (va * (8 - lerpVal) + vb * lerpVal) / 8;
-          result.Component(c) = static_cast<uint8>(res);
-        }
-
+        Pixel result = (pa * (8 - lerpVal) + pb * lerpVal) / 8;
         if(punchThrough) {
           result.A() = 0;
         }
@@ -259,15 +251,7 @@ namespace PVRTCC {
         const Pixel &pa = imgA(i, j);
         const Pixel &pb = imgB(i, j);
 
-        Pixel result;
-        for(uint32 c = 0; c < 4; c++) {
-          uint16 va = static_cast<uint16>(pa.Component(c));
-          uint16 vb = static_cast<uint16>(pb.Component(c));
-
-          uint16 res = (va * (8 - lerpVal) + vb * lerpVal) / 8;
-          result.Component(c) = static_cast<uint8>(res);
-        }
-
+        Pixel result = (pa * (8 - lerpVal) + pb * lerpVal) / 8;
         uint32 *outPixels = reinterpret_cast<uint32 *>(outBuf);
         outPixels[(j * w) + i] = result.Pack();
       }
