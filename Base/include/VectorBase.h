@@ -88,38 +88,47 @@ namespace FasTC {
 
   // Operators
   template<typename VectorTypeOne, typename VectorTypeTwo>
+  static inline VectorTypeOne VectorAddition(const VectorTypeOne &v1,
+                                             const VectorTypeTwo &v2) {
+    VectorTypeOne a;
+    for(int i = 0; i < VectorTypeOne::Size; i++) {
+      a(i) = v1(i) + v2(i);
+    }
+    return a;
+  }
+
+  template<typename VectorTypeOne, typename VectorTypeTwo>
   static inline VectorTypeOne operator+(const VectorTypeOne &v1,
                                         const VectorTypeTwo &v2) {
-    VectorTypeOne a;
-    for(int i = 0; i < VectorTypeOne::Size; i++)
-      a(i) = v1(i) + v2(i);
-    return a;
+    return VectorAddition(v1, v2);
   }
 
   template<typename VectorTypeOne, typename VectorTypeTwo>
   static inline VectorTypeOne &operator+=(VectorTypeOne &v1,
                                           const VectorTypeTwo &v2) {
-    for(int i = 0; i < VectorTypeOne::Size; i++)
-      v1(i) += v2(i);
-    return v1;
+    return v1 = VectorAddition(v1, v2);
+  }
+
+  template<typename VectorTypeOne, typename VectorTypeTwo>
+  static inline VectorTypeOne VectorSubtraction(const VectorTypeOne &v1,
+                                                const VectorTypeTwo &v2) {
+    VectorTypeOne a;
+    for(int i = 0; i < VectorTypeOne::Size; i++) {
+      a(i) = v1(i) - v2(i);
+    }
+    return a;
   }
 
   template<typename VectorTypeOne, typename VectorTypeTwo>
   static inline VectorTypeOne operator-(const VectorTypeOne &v1,
                                         const VectorTypeTwo &v2) {
-    VectorTypeOne a;
-    for(int i = 0; i < VectorTypeOne::Size; i++)
-      a(i) = v1(i) - v2(i);
-    return a;
+    return VectorSubtraction(v1, v2);
   }
 
   template<typename VectorTypeOne, typename VectorTypeTwo>
   static inline VectorTypeOne &operator-=(VectorTypeOne &v1,
                                           const VectorTypeTwo &v2) {
-    for(int i = 0; i < VectorTypeOne::Size; i++) {
-      v1(i) -= v2(i);
-    }
-    return v1;
+    return v1 = VectorSubtraction(v1, v2);
   }
 
   template<typename T>
@@ -217,18 +226,12 @@ namespace FasTC {
 
   template<typename VectorType, typename ScalarType>
   static inline VectorType &operator*=(VectorType &v, const ScalarType &s) {
-    for(int i = 0; i < VectorType::Size; i++) {
-      v(i) *= s;
-    }
-    return v;
+    return v = ScalarMultiply(v, s);
   }
 
   template<typename VectorType, typename ScalarType>
   static inline VectorType &operator/=(VectorType &v, const ScalarType &s) {
-    for(int i = 0; i < VectorType::Size; i++) {
-      v(i) /= s;
-    }
-    return v;
+    return v = ScalarDivide(v, s);
   }
 };
 

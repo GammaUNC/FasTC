@@ -137,6 +137,41 @@ class Pixel : public Vector4<uint16> {
 };
 REGISTER_VECTOR_TYPE(Pixel);
 
+// Overload operators so that we can preserve bit depths...
+template<typename ScalarType>
+static inline Pixel ScalarMultiply(const Pixel &p, const ScalarType &s) {
+  Pixel a(p);
+  for(int i = 0; i < Pixel::Size; i++)
+    a(i) = p(i) * s;
+  return a;
+}
+
+template<typename ScalarType>
+static inline Pixel ScalarDivide(const Pixel &p, const ScalarType &s) {
+  Pixel a(p);
+  for(int i = 0; i < Pixel::Size; i++)
+    a(i) = p(i) / s;
+  return a;
+}
+
+template<typename VectorType>
+static inline Pixel VectorAddition(const Pixel &p, const VectorType &v) {
+  Pixel a(p);
+  for(int i = 0; i < Pixel::Size; i++) {
+    a(i) += v(i);
+  }
+  return a;
+}
+
+template<typename VectorType>
+static inline Pixel VectorSubtraction(const Pixel &p, const VectorType &v) {
+  Pixel a(p);
+  for(int i = 0; i < Pixel::Size; i++) {
+    a(i) -= v(i);
+  }
+  return a;
+}
+
 }  // namespace FasTC
 
 #endif  // BASE_INCLUDE_PIXEL_H_
