@@ -246,7 +246,7 @@ static Pixel AveragePixels(const ::std::vector<Pixel> &pixels) {
   return result;
 }
 
-void Image::AverageDownscale(uint32 xtimes, uint32 ytimes, EWrapMode wrapMode) {
+void Image::AverageDownscale(uint32 xtimes, uint32 ytimes) {
   const uint32 w = GetWidth();
   const uint32 h = GetHeight();
 
@@ -271,7 +271,7 @@ void Image::AverageDownscale(uint32 xtimes, uint32 ytimes, EWrapMode wrapMode) {
       toAvg.clear();
       for(uint32 y = j * pixelsY; y < (j+1) * pixelsY; y++) {
         for(uint32 x = i * pixelsX; x < (i+1) * pixelsX; x++) {
-          toAvg.push_back(GetPixel(x, y, wrapMode));
+          toAvg.push_back((*this)(x, y));
         }
       }
 
