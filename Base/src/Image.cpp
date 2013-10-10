@@ -51,6 +51,7 @@
 
 #include "Color.h"
 #include "Pixel.h"
+#include "IPixel.h"
 
 template <typename T>
 static inline T sad( const T &a, const T &b ) {
@@ -289,6 +290,7 @@ void Image<PixelType>::SetImageData(uint32 width, uint32 height, PixelType *data
 }
 
 template class Image<Pixel>;
+template class Image<IPixel>;
 template class Image<Color>;
 
 }  // namespace FasTC
