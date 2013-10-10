@@ -49,6 +49,8 @@
 
 namespace FasTC {
 
+  class IPixel;
+
   template<typename U, typename V>
   extern double ComputePSNR(Image<U> *img1, Image<V> *img2);
 
@@ -104,6 +106,11 @@ namespace FasTC {
     // This function should use SetImageData in order to set all of the
     // appropriate pixels.
     virtual void ComputePixels() { }
+
+    // Filters the image with a given set of kernel values. The values
+    // are normalized before they are used (i.e. we make sure that they
+    // sum up to one).
+    void Filter(const Image<IPixel> &kernel);
 
    private:
     uint32 m_Width;

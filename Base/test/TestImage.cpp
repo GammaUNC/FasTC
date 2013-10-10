@@ -52,6 +52,7 @@
 
 #include "gtest/gtest.h"
 #include "Image.h"
+#include "IPixel.h"
 #include "Pixel.h"
 #include "Utils.h"
 
@@ -116,6 +117,35 @@ TEST(Image, AssignmentOperator) {
   for(uint32 i = 0; i < 4; i++) {
     for(uint32 j = 0; j < 4; j++) {
       EXPECT_TRUE(img2(i, j) == pxs[j*4 + i]);
+    }
+  }
+}
+
+TEST(Image, Filter) {
+  const uint32 w = 16;
+  const uint32 h = 16;
+
+  // Make a black and white image...
+  FasTC::Image<FasTC::IPixel> img(w, h);
+  for(uint32 j = 0; j < h; j++) {
+    for(uint32 i = 0; i < w; i++) {
+      if((i ^ j) % 2)
+        img(i, j) = 1.0f;
+      else
+        img(i, j) = 0.0f;
+    }
+  }
+
+  // Make a weird averaging kernel...
+  FasTC::Image<FasTC::IPixel> kernel(3, 3);
+  kernel(0, 1) = kernel(1, 0) = kernel(1, 2) = kernel(2, 1) = 0.125f;
+  kernel(1, 1) = 0.5f;
+
+  img.Filter(kernel);
+
+  for(uint32 j = 1; j < h-1; j++) {
+    for(uint32 i = 1; i < w-1; i++) {
+      EXPECT_NEAR(static_cast<float>(img(i, j)), 0.5f, 0.01);
     }
   }
 }

@@ -43,6 +43,7 @@
 
 #include "Image.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -287,6 +288,64 @@ void Image<PixelType>::SetImageData(uint32 width, uint32 height, PixelType *data
     m_Height = height;
     m_Pixels = data;
   }
+}
+
+  template<typename T>
+  static inline T Clamp(const T &v, const T &a, const T &b) {
+    return ::std::min(::std::max(a, v), b);
+  }
+
+template<typename PixelType>
+void Image<PixelType>::Filter(const Image<IPixel> &kernel) {
+  Image<IPixel> k(kernel);
+
+  // Only odd sized filters make sense....
+  assert(k.GetWidth() % 2);
+  assert(k.GetHeight() % 2);
+
+  double sum = 0.0;
+  for(uint32 j = 0; j < k.GetHeight(); j++) {
+    for(uint32 i = 0; i < k.GetWidth(); i++) {
+      sum += static_cast<float>(k(i, j));
+    }
+  }
+
+  for(uint32 j = 0; j < k.GetHeight(); j++) {
+    for(uint32 i = 0; i < k.GetWidth(); i++) {
+      k(i, j) = static_cast<float>(k(i, j)) / sum;
+    }
+  }
+
+  int32 ih = static_cast<int32>(GetHeight());
+  int32 iw = static_cast<int32>(GetWidth());
+
+  int32 kh = static_cast<int32>(k.GetHeight());
+  int32 kw = static_cast<int32>(k.GetWidth());
+
+  Image<PixelType> filtered(iw, ih);
+
+  for(int32 j = 0; j < ih; j++) {
+    for(int32 i = 0; i < iw; i++) {
+      int32 yoffset = j - (k.GetHeight() / 2);
+      int32 xoffset = i - (k.GetWidth() / 2);
+
+      Color newPixel;
+      for(int32 y = 0; y < kh; y++) {
+        for(int32 x = 0; x < kw; x++) {
+          PixelType pixel = ((*this)(
+            Clamp<int32>(x + xoffset, 0, GetWidth() - 1),
+            Clamp<int32>(y + yoffset, 0, GetHeight() - 1)));
+          Color c; c.Unpack(pixel.Pack());
+          Color scaled = c * static_cast<float>(k(x, y));
+          newPixel += scaled;
+        }
+      }
+
+      filtered(i, j).Unpack(newPixel.Pack());
+    }
+  }
+
+  *this = filtered;
 }
 
 template class Image<Pixel>;
