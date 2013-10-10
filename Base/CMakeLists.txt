@@ -53,6 +53,7 @@ SET( SOURCES
   "src/Image.cpp"
   "src/CompressionJob.cpp"
   "src/Pixel.cpp"
+  "src/IPixel.cpp"
   "src/Color.cpp"
 )
 
@@ -62,6 +63,7 @@ SET( HEADERS
   "include/Color.h"
   "include/CompressionJob.h"
   "include/Pixel.h"
+  "include/IPixel.h"
   "include/VectorBase.h"
   "include/Vector2.h"
   "include/Vector3.h"
