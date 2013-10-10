@@ -54,23 +54,21 @@
 #define BASE_INCLUDE_IPIXEL_H_
 
 #include "TexCompTypes.h"
+#include "VectorBase.h"
 
 namespace FasTC {
 
-class IPixel {
- private:
-  float m_Intensity;
-
+class IPixel : public VectorBase<float, 1> {
  public:
-  IPixel() : m_Intensity(0.0f) { }
-  IPixel(float f) : m_Intensity(f) { }
+  IPixel() : VectorBase<float, 1>() { vec[0] = 0.0f; }
+  IPixel(float f) : VectorBase<float, 1>(&f) { }
 
   operator float() const {
-    return m_Intensity;
+    return vec[0];
   }
 
   IPixel operator=(const float &f) {
-    return m_Intensity = f;
+    return vec[0] = f;
   }
 
   // Take all of the components, transform them to their 8-bit variants,
@@ -80,6 +78,7 @@ class IPixel {
   uint32 Pack() const;
   void Unpack(uint32 rgba);
 };
+REGISTER_VECTOR_TYPE(IPixel);
 
 }  // namespace FasTC
 

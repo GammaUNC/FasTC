@@ -62,14 +62,14 @@ namespace FasTC {
   uint32 IPixel::Pack() const {
     uint32 ret = 0xFF << 24;
     for(uint32 i = 0; i < 3; i++) {
-      ret |= static_cast<uint32>((255.0 * m_Intensity) + 0.5f) << i*8;
+      ret |= static_cast<uint32>((255.0 * vec[0]) + 0.5f) << i*8;
     }
     return ret;
   }
 
   void IPixel::Unpack(uint32 rgba) {
     Pixel p(rgba);
-    m_Intensity = p.ToIntensity();
+    vec[0] = p.ToIntensity();
   }
 
 }  // namespace FasTC
