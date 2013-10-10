@@ -50,27 +50,35 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#ifndef PVRTCENCODER_SRC_PIXEL_H_
-#define PVRTCENCODER_SRC_PIXEL_H_
+#ifndef BASE_INCLUDE_PIXEL_H_
+#define BASE_INCLUDE_PIXEL_H_
 
 #include "TexCompTypes.h"
+#include "Vector4.h"
 
-namespace PVRTCC {
+namespace FasTC {
 
-class Pixel {
+class Pixel : public Vector4<uint16> {
+ private:
+  typedef uint16 ChannelType;
+  typedef Vector4<ChannelType> VectorType;
+  uint8 m_BitDepth[4];
+
  public:
-  Pixel(): m_A(0), m_R(0), m_G(0), m_B(0) {
-    for(int i = 0; i < 4; i++) m_BitDepth[i] = 8;
+  Pixel() : VectorType(0, 0, 0, 0) {
+    for(int i = 0; i < 4; i++)
+      m_BitDepth[i] = 8;
   }
 
-  explicit Pixel(uint32 rgba) {
-    for(int i = 0; i < 4; i++) m_BitDepth[i] = 8;
-    UnpackRGBA(rgba);
+  explicit Pixel(uint32 rgba) : VectorType() {
+    for(int i = 0; i < 4; i++)
+      m_BitDepth[i] = 8;
+    Unpack(rgba);
   }
 
   Pixel(const uint8 *bits,
         const uint8 channelDepth[4] = static_cast<uint8 *>(0),
-        uint8 bitOffset = 0) {
+        uint8 bitOffset = 0) : VectorType() {
     FromBits(bits, channelDepth, bitOffset);
   }
 
@@ -108,18 +116,18 @@ class Pixel {
 
   // Changes the bit depth of a single component. See the comment
   // above for how we do this.
-  static uint8 ChangeBitDepth(uint8 val, uint8 oldDepth, uint8 newDepth);
+  static ChannelType ChangeBitDepth(ChannelType val, uint8 oldDepth, uint8 newDepth);
 
-  const uint8 &A() const { return m_A; }
-  uint8 &A() { return m_A; }
-  const uint8 &R() const { return m_R; }
-  uint8 &R() { return m_R; }
-  const uint8 &G() const { return m_G; }
-  uint8 &G() { return m_G; }
-  const uint8 &B() const { return m_B; }
-  uint8 &B() { return m_B; }
-  const uint8 &Component(uint32 idx) const { return m_Component[idx]; }
-  uint8 &Component(uint32 idx) { return m_Component[idx]; }
+  const ChannelType &A() const { return X(); }
+  ChannelType &A() { return X(); }
+  const ChannelType &R() const { return Y(); }
+  ChannelType &R() { return Y(); }
+  const ChannelType &G() const { return Z(); }
+  ChannelType &G() { return Z(); }
+  const ChannelType &B() const { return W(); }
+  ChannelType &B() { return W(); }
+  const ChannelType &Component(uint32 idx) const { return vec[idx]; }
+  ChannelType &Component(uint32 idx) { return vec[idx]; }
 
   void GetBitDepth(uint8 (&outDepth)[4]) const {
     for(int i = 0; i < 4; i++) {
@@ -131,27 +139,49 @@ class Pixel {
   // and then pack each channel into an R8G8B8A8 32-bit integer. We assume
   // that the architecture is little-endian, so the alpha channel will end
   // up in the most-significant byte.
-  uint32 PackRGBA() const;
-  void UnpackRGBA(uint32 rgba);
+  uint32 Pack() const;
+  void Unpack(uint32 rgba);
 
   // Tests for equality by comparing the values and the bit depths.
   bool operator==(const Pixel &) const;
-
- private:
-  union {
-    struct {
-      uint8 m_A;
-      uint8 m_R;
-      uint8 m_G;
-      uint8 m_B;
-    };
-    uint8 m_Component[4];
-  };
-
-  // This contains the number of bits that each pixel has.
-  uint8 m_BitDepth[4];
 };
+REGISTER_VECTOR_TYPE(Pixel);
 
-}  // namespace PVRTCC
+// Overload operators so that we can preserve bit depths...
+template<typename ScalarType>
+static inline Pixel ScalarMultiply(const Pixel &p, const ScalarType &s) {
+  Pixel a(p);
+  for(int i = 0; i < Pixel::Size; i++)
+    a(i) = p(i) * s;
+  return a;
+}
 
-#endif  // PVRTCENCODER_SRC_PIXEL_H_
+template<typename ScalarType>
+static inline Pixel ScalarDivide(const Pixel &p, const ScalarType &s) {
+  Pixel a(p);
+  for(int i = 0; i < Pixel::Size; i++)
+    a(i) = p(i) / s;
+  return a;
+}
+
+template<typename VectorType>
+static inline Pixel VectorAddition(const Pixel &p, const VectorType &v) {
+  Pixel a(p);
+  for(int i = 0; i < Pixel::Size; i++) {
+    a(i) += v(i);
+  }
+  return a;
+}
+
+template<typename VectorType>
+static inline Pixel VectorSubtraction(const Pixel &p, const VectorType &v) {
+  Pixel a(p);
+  for(int i = 0; i < Pixel::Size; i++) {
+    a(i) -= v(i);
+  }
+  return a;
+}
+
+}  // namespace FasTC
+
+#endif  // BASE_INCLUDE_PIXEL_H_

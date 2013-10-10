@@ -45,12 +45,12 @@
 #define _IMAGE_WRITER_PNG_H_
 
 #include "ImageWriter.h"
+#include "ImageFwd.h"
 
 // Forward Declare
-class Image;
 class ImageWriterPNG : public ImageWriter {
  public:
-  ImageWriterPNG(Image &);
+  ImageWriterPNG(FasTC::Image<> &);
   virtual ~ImageWriterPNG() { }
 
   virtual bool WriteImage();

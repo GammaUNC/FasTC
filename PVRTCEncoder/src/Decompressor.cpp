@@ -57,7 +57,7 @@
 
 #include "Pixel.h"
 #include "Block.h"
-#include "Image.h"
+#include "PVRTCImage.h"
 
 namespace PVRTCC {
 
@@ -94,7 +94,7 @@ namespace PVRTCC {
     assert(imgA.GetWidth() == imgB.GetWidth());
     assert(imgA.GetHeight() == imgB.GetHeight());
 
-    Image debugModulation(h, w);
+    Image debugModulation(w, h);
     const uint8 debugModulationBitDepth[4] = { 8, 4, 4, 4 };
     debugModulation.ChangeBitDepth(debugModulationBitDepth);
 
@@ -113,7 +113,6 @@ namespace PVRTCC {
         const Pixel &pa = imgA(i, j);
         const Pixel &pb = imgB(i, j);
 
-        Pixel result;
         bool punchThrough = false;
         uint8 lerpVal = 0;
         if(b.GetModeBit()) {
@@ -147,20 +146,13 @@ namespace PVRTCC {
           }
         }
 
-        for(uint32 c = 0; c < 4; c++) {
-          uint16 va = static_cast<uint16>(pa.Component(c));
-          uint16 vb = static_cast<uint16>(pb.Component(c));
-
-          uint16 res = (va * (8 - lerpVal) + vb * lerpVal) / 8;
-          result.Component(c) = static_cast<uint8>(res);
-        }
-
+        Pixel result = (pa * (8 - lerpVal) + pb * lerpVal) / 8;
         if(punchThrough) {
           result.A() = 0;
         }
 
         uint32 *outPixels = reinterpret_cast<uint32 *>(outBuf);
-        outPixels[(j * w) + i] = result.PackRGBA();
+        outPixels[(j * w) + i] = result.Pack();
       }
     }
 
@@ -259,22 +251,14 @@ namespace PVRTCC {
         const Pixel &pa = imgA(i, j);
         const Pixel &pb = imgB(i, j);
 
-        Pixel result;
-        for(uint32 c = 0; c < 4; c++) {
-          uint16 va = static_cast<uint16>(pa.Component(c));
-          uint16 vb = static_cast<uint16>(pb.Component(c));
-
-          uint16 res = (va * (8 - lerpVal) + vb * lerpVal) / 8;
-          result.Component(c) = static_cast<uint8>(res);
-        }
-
+        Pixel result = (pa * (8 - lerpVal) + pb * lerpVal) / 8;
         uint32 *outPixels = reinterpret_cast<uint32 *>(outBuf);
-        outPixels[(j * w) + i] = result.PackRGBA();
+        outPixels[(j * w) + i] = result.Pack();
       }
     }
 
     if(bDebugImages) {
-      Image dbgMod(h, w);
+      Image dbgMod(w, h);
       for(uint32 i = 0; i < h*w; i++) {
         float fb = static_cast<float>(modValues[i]);
         uint8 val = static_cast<uint8>((fb / 8.0f) * 15.0f);
@@ -324,8 +308,8 @@ namespace PVRTCC {
     assert(blocks.size() > 0);
 
     // Extract the endpoints into A and B images
-    Image imgA(blocksH, blocksW);
-    Image imgB(blocksH, blocksW);
+    Image imgA(blocksW, blocksH);
+    Image imgB(blocksW, blocksH);
 
     for(uint32 j = 0; j < blocksH; j++) {
       for(uint32 i = 0; i < blocksW; i++) {

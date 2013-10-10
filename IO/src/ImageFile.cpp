@@ -105,7 +105,7 @@ ImageFile::ImageFile(const CHAR *filename, EImageFileFormat format)
   strncpy(m_Filename, filename, kMaxFilenameSz);
 }
 
-ImageFile::ImageFile(const char *filename, EImageFileFormat format, const Image &image)
+ImageFile::ImageFile(const char *filename, EImageFileFormat format, const FasTC::Image<> &image)
   : m_FileFormat(format)
   , m_Image(image.Clone())
 {
@@ -165,7 +165,7 @@ bool ImageFile::Write() {
   return true;
 }
 
-Image *ImageFile::LoadImage(const unsigned char *rawImageData) const {
+FasTC::Image<> *ImageFile::LoadImage(const unsigned char *rawImageData) const {
 
   ImageLoader *loader = NULL;
   switch(m_FileFormat) {
@@ -207,7 +207,7 @@ Image *ImageFile::LoadImage(const unsigned char *rawImageData) const {
   }
 
   uint32 *pixels = reinterpret_cast<uint32 *>(pixelData);
-  Image *i = new Image(loader->GetWidth(), loader->GetHeight(), pixels, true);
+  FasTC::Image<> *i = new FasTC::Image<>(loader->GetWidth(), loader->GetHeight(), pixels, true);
 
   // Cleanup
   delete loader;

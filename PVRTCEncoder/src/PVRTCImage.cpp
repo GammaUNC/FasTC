@@ -55,7 +55,7 @@
 #  define snprintf _snprintf
 #endif
 
-#include "Image.h"
+#include "PVRTCImage.h"
 
 #include <algorithm>
 #include <cassert>
@@ -64,6 +64,7 @@
 #include <cmath>
 
 #include "Pixel.h"
+using FasTC::Pixel;
 
 #include "../../Base/include/Image.h"
 #include "../../IO/include/ImageFile.h"
@@ -75,55 +76,39 @@ inline T Clamp(const T &v, const T &a, const T &b) {
 
 namespace PVRTCC {
 
-Image::Image(uint32 height, uint32 width)
-  : m_Width(width)
-  , m_Height(height)
-  , m_Pixels(new Pixel[width * height])
-  , m_FractionalPixels(new Pixel[width * height]) {
+Image::Image(uint32 width, uint32 height)
+  : FasTC::Image<FasTC::Pixel>(width, height)
+  , m_FractionalPixels(new FasTC::Pixel[width * height]) {
   assert(width > 0);
   assert(height > 0);
 }
 
-Image::Image(uint32 height, uint32 width, const Pixel *pixels)
-  : m_Width(width)
-  , m_Height(height)
-  , m_Pixels(new Pixel[width * height])
-  , m_FractionalPixels(new Pixel[width * height]) {
+Image::Image(uint32 width, uint32 height, const FasTC::Pixel *pixels)
+  : FasTC::Image<FasTC::Pixel>(width, height, pixels)
+  , m_FractionalPixels(new FasTC::Pixel[width * height]) {
   assert(width > 0);
   assert(height > 0);
-  memcpy(m_Pixels, pixels, width * height * sizeof(Pixel));
 }
 
 Image::Image(const Image &other)
-  : m_Width(other.GetWidth())
-  , m_Height(other.GetHeight())
-  , m_Pixels(new Pixel[other.GetWidth() * other.GetHeight()])
-  , m_FractionalPixels(new Pixel[other.GetWidth() * other.GetHeight()]) {
-  memcpy(m_Pixels, other.m_Pixels, GetWidth() * GetHeight() * sizeof(Pixel));
+  : FasTC::Image<FasTC::Pixel>(other)
+  , m_FractionalPixels(new FasTC::Pixel[other.GetWidth() * other.GetHeight()]) {
+  memcpy(m_FractionalPixels, other.m_FractionalPixels, GetWidth() * GetHeight() * sizeof(FasTC::Pixel));
 }
 
 Image &Image::operator=(const Image &other) {
-  m_Width = other.GetWidth();
-  m_Height = other.GetHeight();
-
-  assert(m_Pixels);
-  delete m_Pixels;
-  m_Pixels = new Pixel[other.GetWidth() * other.GetHeight()];
-  memcpy(m_Pixels, other.m_Pixels, GetWidth() * GetHeight() * sizeof(Pixel));
+  FasTC::Image<FasTC::Pixel>::operator=(other);
 
   assert(m_FractionalPixels);
   delete m_FractionalPixels;
-  m_FractionalPixels = new Pixel[other.GetWidth() * other.GetHeight()];
+  m_FractionalPixels = new FasTC::Pixel[other.GetWidth() * other.GetHeight()];
   memcpy(m_FractionalPixels, other.m_FractionalPixels,
-         GetWidth() * GetHeight() * sizeof(Pixel));
+         GetWidth() * GetHeight() * sizeof(FasTC::Pixel));
 
   return *this;
 }
 
 Image::~Image() {
-  assert(m_Pixels);
-  delete [] m_Pixels;
-
   assert(m_FractionalPixels);
   delete [] m_FractionalPixels;
 }
@@ -150,18 +135,18 @@ void Image::BilinearUpscale(uint32 xtimes, uint32 ytimes,
   const uint32 yscale = 1 << ytimes;
   const uint32 yoffset = yscale >> 1;
 
-  Pixel *upscaledPixels = new Pixel[newWidth * newHeight];
+  FasTC::Pixel *upscaledPixels = new FasTC::Pixel[newWidth * newHeight];
 
   assert(m_FractionalPixels);
   delete m_FractionalPixels;
-  m_FractionalPixels = new Pixel[newWidth * newHeight];
+  m_FractionalPixels = new FasTC::Pixel[newWidth * newHeight];
 
   for(uint32 j = 0; j < newHeight; j++) {
     for(uint32 i = 0; i < newWidth; i++) {
 
       const uint32 pidx = j * newWidth + i;
-      Pixel &p = upscaledPixels[pidx];
-      Pixel &fp = m_FractionalPixels[pidx];
+      FasTC::Pixel &p = upscaledPixels[pidx];
+      FasTC::Pixel &fp = m_FractionalPixels[pidx];
 
       const int32 highXIdx = (i + xoffset) / xscale;
       const int32 lowXIdx = highXIdx - 1;
@@ -178,10 +163,10 @@ void Image::BilinearUpscale(uint32 xtimes, uint32 ytimes,
       const uint32 bottomLeftWeight = lowXWeight * highYWeight;
       const uint32 bottomRightWeight = highXWeight * highYWeight;
 
-      const Pixel &topLeft = GetPixel(lowXIdx, lowYIdx, wrapMode);
-      const Pixel &topRight = GetPixel(highXIdx, lowYIdx, wrapMode);
-      const Pixel &bottomLeft = GetPixel(lowXIdx, highYIdx, wrapMode);
-      const Pixel &bottomRight = GetPixel(highXIdx, highYIdx, wrapMode);
+      const FasTC::Pixel &topLeft = GetPixel(lowXIdx, lowYIdx, wrapMode);
+      const FasTC::Pixel &topRight = GetPixel(highXIdx, lowYIdx, wrapMode);
+      const FasTC::Pixel &bottomLeft = GetPixel(lowXIdx, highYIdx, wrapMode);
+      const FasTC::Pixel &bottomRight = GetPixel(highXIdx, highYIdx, wrapMode);
 
       // Make sure the bit depth matches the original...
       uint8 bitDepth[4];
@@ -207,22 +192,21 @@ void Image::BilinearUpscale(uint32 xtimes, uint32 ytimes,
       for(uint32 c = 0; c < 4; c++) fpDepths[c] = xtimes + ytimes;
       fp.ChangeBitDepth(fpDepths);
 
+      const FasTC::Pixel tl = topLeft * topLeftWeight;
+      const FasTC::Pixel tr = topRight * topRightWeight;
+      const FasTC::Pixel bl = bottomLeft * bottomLeftWeight;
+      const FasTC::Pixel br = bottomRight * bottomRightWeight;
+      const FasTC::Pixel sum = tl + tr + bl + br;
+
       for(uint32 c = 0; c < 4; c++) {
-        const uint32 tl = topLeft.Component(c) * topLeftWeight;
-        const uint32 tr = topRight.Component(c) * topRightWeight;
-        const uint32 bl = bottomLeft.Component(c) * bottomLeftWeight;
-        const uint32 br = bottomRight.Component(c) * bottomRightWeight;
-        const uint32 sum = tl + tr + bl + br;
-        fp.Component(c) = sum & scaleMask;
-        p.Component(c) = sum / (xscale * yscale);
+        fp.Component(c) = sum.Component(c) & scaleMask;
       }
+
+      p = sum / (xscale * yscale);
     }
   }
 
-  delete m_Pixels;
-  m_Pixels = upscaledPixels;
-  m_Width = newWidth;
-  m_Height = newHeight;
+  SetImageData(newWidth, newHeight, upscaledPixels);
 }
 
 static Pixel AveragePixels(const ::std::vector<Pixel> &pixels) {
@@ -256,7 +240,7 @@ void Image::AverageDownscale(uint32 xtimes, uint32 ytimes) {
   Pixel *downscaledPixels = new Pixel[newWidth * newHeight];
 
   uint8 bitDepth[4];
-  m_Pixels[0].GetBitDepth(bitDepth);
+  GetPixel(0, 0).GetBitDepth(bitDepth);
 
   uint32 pixelsX = 1 << xtimes;
   uint32 pixelsY = 1 << ytimes;
@@ -279,10 +263,7 @@ void Image::AverageDownscale(uint32 xtimes, uint32 ytimes) {
     }
   }
 
-  delete m_Pixels;
-  m_Pixels = downscaledPixels;
-  m_Width = newWidth;
-  m_Height = newHeight;
+  SetImageData(newWidth, newHeight, downscaledPixels);
 }
 
 void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
@@ -293,11 +274,11 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
   const uint32 newWidth = w >> xtimes;
   const uint32 newHeight = h >> ytimes;
 
-  Pixel *downscaledPixels = new Pixel[newWidth * newHeight];
+  FasTC::Pixel *downscaledPixels = new FasTC::Pixel[newWidth * newHeight];
   const uint32 numDownscaledPixels = newWidth * newHeight;
 
   uint8 bitDepth[4];
-  m_Pixels[0].GetBitDepth(bitDepth);
+  GetPixels()[0].GetBitDepth(bitDepth);
 
   for(uint32 i = 0; i < numDownscaledPixels; i++) {
     downscaledPixels[i].ChangeBitDepth(bitDepth);
@@ -335,7 +316,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
 
   // Then, compute the intensity of the image
   for(uint32 i = 0; i < w * h; i++) {
-    I[i] = m_Pixels[i].ToIntensity();
+    I[i] = GetPixels()[i].ToIntensity();
   }
 
   // Use central differences to calculate Ix, Iy, Ixx, Iyy...
@@ -356,7 +337,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
       Iy[idx] = (I[yphidx] - I[ymhidx]) / 2.0f;
 
       for(uint32 c = 0; c <= 3; c++) {
-        #define CPNT(dx) Pixel::ConvertChannelToFloat(m_Pixels[dx].Component(c), bitDepth[c])
+        #define CPNT(dx) Pixel::ConvertChannelToFloat(GetPixels()[dx].Component(c), bitDepth[c])
         Ix[c][idx] = (CPNT(xphidx) - CPNT(xmhidx)) / 2.0f;
         Ixx[c][idx] = (CPNT(xphidx) - 2.0f*CPNT(idx) + CPNT(xmhidx)) / 2.0f;
         Iyy[c][idx] = (CPNT(yphidx) - 2.0f*CPNT(idx) + CPNT(ymhidx)) / 2.0f;
@@ -387,9 +368,9 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
       }
 
       uint32 idx = GetPixelIndex(x, y);
-      Pixel current = m_Pixels[idx];
+      FasTC::Pixel current = GetPixels()[idx];
 
-      Pixel result;
+      FasTC::Pixel result;
       result.ChangeBitDepth(bitDepth);
 
       float Ixsq = Ix[4][idx] * Ix[4][idx];
@@ -412,11 +393,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
     }
   }
 
-  delete m_Pixels;
-  m_Pixels = downscaledPixels;
-  m_Width = newWidth;
-  m_Height = newHeight;
-
+  SetImageData(newWidth, newHeight, downscaledPixels);
   delete [] imgData;
 }
 
@@ -484,15 +461,14 @@ void Image::ComputeHessianEigenvalues(::std::vector<float> &eigOne,
 void Image::ChangeBitDepth(const uint8 (&depths)[4]) {
   for(uint32 j = 0; j < GetHeight(); j++) {
     for(uint32 i = 0; i < GetWidth(); i++) {
-      uint32 pidx = GetPixelIndex(i, j);
-      m_Pixels[pidx].ChangeBitDepth(depths);
+      (*this)(i, j).ChangeBitDepth(depths);
     }
   }
 }
 
 void Image::ExpandTo8888() {
   uint8 currentDepth[4];
-  m_Pixels[0].GetBitDepth(currentDepth);
+  GetPixels()[0].GetBitDepth(currentDepth);
 
   uint8 fractionDepth[4];
   const uint8 fullDepth[4] = { 8, 8, 8, 8 };
@@ -500,8 +476,10 @@ void Image::ExpandTo8888() {
   for(uint32 j = 0; j < GetHeight(); j++) {
     for(uint32 i = 0; i < GetWidth(); i++) {
 
+      FasTC::Pixel &p = (*this)(i, j);
+      p.ChangeBitDepth(fullDepth);
+
       uint32 pidx = j * GetWidth() + i;
-      m_Pixels[pidx].ChangeBitDepth(fullDepth);
       m_FractionalPixels[pidx].GetBitDepth(fractionDepth);
 
       for(uint32 c = 0; c < 4; c++) {
@@ -511,17 +489,17 @@ void Image::ExpandTo8888() {
         uint32 shift = fractionDepth[c] - (fullDepth[c] - currentDepth[c]);
         uint32 fractionBits = m_FractionalPixels[pidx].Component(c) >> shift;
 
-        uint32 component = m_Pixels[pidx].Component(c);
+        uint32 component = p.Component(c);
         component += ((fractionBits * numerator) / denominator);
 
-        m_Pixels[pidx].Component(c) = component;
+        p.Component(c) = component;
       }
     }
   }
 }
 
-const Pixel &Image::GetPixel(int32 i, int32 j, EWrapMode wrapMode) const {
-  return m_Pixels[GetPixelIndex(i, j, wrapMode)];
+const FasTC::Pixel &Image::GetPixel(int32 i, int32 j, EWrapMode wrapMode) const {
+  return GetPixels()[GetPixelIndex(i, j, wrapMode)];
 }
 
 const uint32 Image::GetPixelIndex(int32 i, int32 j, EWrapMode wrapMode) const {
@@ -563,33 +541,20 @@ const uint32 Image::GetPixelIndex(int32 i, int32 j, EWrapMode wrapMode) const {
   return idx;
 }
 
-Pixel & Image::operator()(uint32 i, uint32 j) {
-  assert(i < GetWidth());
-  assert(j < GetHeight());
-  return m_Pixels[j * GetWidth() + i];
-}
-
-const Pixel & Image::operator()(uint32 i, uint32 j) const {
-  assert(i < GetWidth());
-  assert(j < GetHeight());
-  return m_Pixels[j * GetWidth() + i];
-}
-
 void Image::DebugOutput(const char *filename) const {
   uint32 *outPixels = new uint32[GetWidth() * GetHeight()];
   const uint8 fullDepth[4] = { 8, 8, 8, 8 };
   for(uint32 j = 0; j < GetHeight(); j++) {
     for(uint32 i = 0; i < GetWidth(); i++) {
-      uint32 idx = j * GetWidth() + i;
-      Pixel p = m_Pixels[idx];
+      FasTC::Pixel p = (*this)(i, j);
       p.ChangeBitDepth(fullDepth);
       p.A() = 255;
 
-      outPixels[idx] = p.PackRGBA();
+      outPixels[j*GetWidth() + i] = p.Pack();
     }
   }
 
-  ::Image img(GetWidth(), GetHeight(), outPixels);
+  FasTC::Image<> img(GetWidth(), GetHeight(), outPixels);
 
   char debugFilename[256];
   snprintf(debugFilename, sizeof(debugFilename), "%s.png", filename);

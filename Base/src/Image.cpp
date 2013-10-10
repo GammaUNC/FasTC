@@ -49,107 +49,157 @@
 #include <cassert>
 #include <cmath>
 
+#include "Color.h"
+#include "Pixel.h"
+
 template <typename T>
 static inline T sad( const T &a, const T &b ) {
   return (a > b)? a - b : b - a;
 }
 
-Image::Image(const Image &other)
+namespace FasTC {
+
+template<typename PixelType>
+Image<PixelType>::Image(uint32 width, uint32 height)
+  : m_Width(width)
+  , m_Height(height)
+  , m_bBlockStreamOrder(false)
+  , m_Pixels(new PixelType[GetNumPixels()])
+{ }
+
+template<typename PixelType>
+Image<PixelType>::Image(uint32 width, uint32 height,
+                        const PixelType *pixels,
+                        bool bBlockStreamOrder)
+  : m_Width(width)
+  , m_Height(height)
+  , m_bBlockStreamOrder(false)
+{
+  if(pixels) {
+    m_Pixels = new PixelType[GetNumPixels()];
+    memcpy(m_Pixels, pixels, GetNumPixels() * sizeof(PixelType));
+  } else {
+    m_Pixels = 0;
+  }
+}
+
+template<typename PixelType>
+Image<PixelType>::Image(const Image<PixelType> &other)
   : m_Width(other.m_Width)
   , m_Height(other.m_Height)
   , m_bBlockStreamOrder(other.GetBlockStreamOrder())
-  , m_DataSz(other.m_DataSz)
-  , m_Data(new uint8[m_DataSz])
+  , m_Pixels(new PixelType[GetNumPixels()])
 {
-  if(m_Data) {
-    memcpy(m_Data, other.m_Data, m_DataSz);
-  } else {
-    fprintf(stderr, "Out of memory!\n");
-  }
+  memcpy(m_Pixels, other.m_Pixels, GetNumPixels() * sizeof(PixelType));
 }
 
-Image::Image(uint32 width, uint32 height, const uint32 *pixels, bool bBlockStreamOrder)
+template<typename PixelType>
+bool Image<PixelType>::ReadPixels(const uint32 *rgba) {
+
+  assert(m_Pixels);
+  for(uint32 i = 0; i < GetNumPixels(); i++) {
+    m_Pixels[i].Unpack(rgba[i]);
+  }
+
+  return true;
+}
+
+template<typename PixelType>
+Image<PixelType>::Image(uint32 width, uint32 height, const uint32 *pixels, bool bBlockStreamOrder)
   : m_Width(width)
   , m_Height(height)
   , m_bBlockStreamOrder(bBlockStreamOrder)
-  , m_DataSz(m_Width * m_Height * sizeof(uint32))
 {
   if(pixels) {
-    m_Data = new uint8[m_DataSz];
-    memcpy(m_Data, pixels, m_DataSz);
+    m_Pixels = new PixelType[GetNumPixels()];
+    ReadPixels(pixels);
   } else {
-    m_Data = NULL;
+    m_Pixels = NULL;
   }
 }
 
-Image::~Image() {
-  if(m_Data) {
-    delete [] m_Data;
-    m_Data = 0;
+template<typename PixelType>
+Image<PixelType>::~Image() {
+  if(m_Pixels) {
+    delete [] m_Pixels;
+    m_Pixels = 0;
   }
 }
 
-Image &Image::operator=(const Image &other) {
+template<typename PixelType>
+Image<PixelType> &Image<PixelType>::operator=(const Image &other) {
   
   m_Width = other.m_Width;
   m_Height = other.m_Height;
   m_bBlockStreamOrder = other.GetBlockStreamOrder();
-  m_DataSz = other.m_DataSz;
   
-  if(m_Data) {
-    delete [] m_Data;
+  if(m_Pixels) {
+    delete [] m_Pixels;
   }
   
-  if(other.m_Data) {
-    m_Data = new uint8[m_DataSz];
-    if(m_Data)
-      memcpy(m_Data, other.m_Data, m_DataSz);
+  if(other.m_Pixels) {
+    m_Pixels = new PixelType[GetNumPixels()];
+    if(m_Pixels)
+      memcpy(m_Pixels, other.m_Pixels, GetNumPixels() * sizeof(PixelType));
     else
       fprintf(stderr, "Out of memory!\n");
+  } else {
+    m_Pixels = NULL;
   }
-  else {
-    m_Data = other.m_Data;
-  }
-  
+
   return *this;
 }
 
-double Image::ComputePSNR(Image *other) {
-  if(!other)
+template<typename PixelType>
+PixelType & Image<PixelType>::operator()(uint32 i, uint32 j) {
+  assert(i < GetWidth());
+  assert(j < GetHeight());
+  return m_Pixels[j * GetWidth() + i];
+}
+
+template<typename PixelType>
+const PixelType & Image<PixelType>::operator()(uint32 i, uint32 j) const {
+  assert(i < GetWidth());
+  assert(j < GetHeight());
+  return m_Pixels[j * GetWidth() + i];
+}
+
+template<typename PixelTypeOne, typename PixelTypeTwo>
+double ComputePSNR(Image<PixelTypeOne> *img1, Image<PixelTypeTwo> *img2) {
+  if(!img1 || !img2)
     return -1.0;
 
-  if(other->GetWidth() != GetWidth() ||
-     other->GetHeight() != GetHeight()) {
+  if(img1->GetWidth() != img2->GetWidth() ||
+     img1->GetHeight() != img2->GetHeight()) {
     return -1.0;
   }
 
   // Compute raw 8-bit RGBA data...
-  other->ComputeRGBA();
-  ComputeRGBA();
+  img1->ComputePixels();
+  img2->ComputePixels();
 
-  const uint8 *ourData =
-    reinterpret_cast<const uint8 *>(GetRGBA());
-  const uint8 *otherData =
-    reinterpret_cast<const uint8 *>(other->GetRGBA());
+  const PixelTypeOne *ourPixels = img1->GetPixels();
+  const PixelTypeTwo *otherPixels = img2->GetPixels();
 
   //  const double w[3] = { 0.2126, 0.7152, 0.0722 };
   const double w[3] = { 1.0, 1.0, 1.0 };
     
   double mse = 0.0;
-  const uint32 imageSz = GetWidth() * GetHeight() * 4;
-  for(uint32 i = 0; i < imageSz; i+=4) {
+  const uint32 imageSz = img1->GetNumPixels();
+  for(uint32 i = 0; i < imageSz; i++) {
 
-    const unsigned char *pixelDataRaw = ourData + i;
-    const unsigned char *pixelDataUncomp = otherData + i;
+    uint32 ourPixel = ourPixels[i].Pack();
+    uint32 otherPixel = otherPixels[i].Pack();
 
     double r[4], u[4];
     for(uint32 c = 0; c < 4; c++) {
+      uint32 shift = c * 8;
       if(c == 3) {
-        r[c] = pixelDataRaw[c] / 255.0;
-        u[c] = pixelDataUncomp[c] / 255.0;
+        r[c] = static_cast<double>((ourPixel >> shift) & 0xFF) / 255.0;
+        u[c] = static_cast<double>((otherPixel >> shift) & 0xFF) / 255.0;
       } else {
-        r[c] = static_cast<double>(pixelDataRaw[c]) * w[c];
-        u[c] = static_cast<double>(pixelDataUncomp[c]) * w[c];
+        r[c] = static_cast<double>((ourPixel >> shift) & 0xFF) * w[c];
+        u[c] = static_cast<double>((otherPixel >> shift) & 0xFF) * w[c];
       }
     }
 
@@ -159,19 +209,22 @@ double Image::ComputePSNR(Image *other) {
     }
   }
 
-  mse /= GetWidth() * GetHeight();
+  mse /= img1->GetWidth() * img1->GetHeight();
 
   const double C = 255.0 * 255.0;
   double maxi = (w[0]*w[0] + w[1]*w[1] + w[2]*w[2]) * C;
   return 10 * log10(maxi/mse);
 }
 
+template double ComputePSNR(Image<Pixel> *, Image<Pixel> *);
+
 // !FIXME! These won't work for non-RGBA8 data.
-void Image::ConvertToBlockStreamOrder() {
-  if(m_bBlockStreamOrder || !m_Data)
+template<typename PixelType>
+void Image<PixelType>::ConvertToBlockStreamOrder() {
+  if(m_bBlockStreamOrder || !m_Pixels)
     return;
 
-  uint32 *newPixelData = new uint32[GetWidth() * GetHeight() * 4];
+  PixelType *newPixelData = new PixelType[GetWidth() * GetHeight()];
   for(uint32 j = 0; j < GetHeight(); j+=4) {
     for(uint32 i = 0; i < GetWidth(); i+=4) {
       uint32 blockX = i / 4;
@@ -182,22 +235,22 @@ void Image::ConvertToBlockStreamOrder() {
       for(uint32 t = 0; t < 16; t++) {
         uint32 x = i + t % 4;
         uint32 y = j + t / 4;
-        newPixelData[offset + t] =
-          reinterpret_cast<uint32 *>(m_Data)[y*GetWidth() + x];
+        newPixelData[offset + t] = m_Pixels[y*GetWidth() + x];
       }
     }
   }
 
-  delete m_Data;
-  m_Data = reinterpret_cast<uint8 *>(newPixelData);
+  delete m_Pixels;
+  m_Pixels = newPixelData;
   m_bBlockStreamOrder = true;
 }
 
-void Image::ConvertFromBlockStreamOrder() {
-  if(!m_bBlockStreamOrder || !m_Data)
+template<typename PixelType>
+void Image<PixelType>::ConvertFromBlockStreamOrder() {
+  if(!m_bBlockStreamOrder || !m_Pixels)
     return;
 
-  uint32 *newPixelData = new uint32[GetWidth() * GetHeight() * 4];
+  PixelType *newPixelData = new PixelType[GetWidth() * GetHeight()];
   for(uint32 j = 0; j < GetHeight(); j+=4) {
     for(uint32 i = 0; i < GetWidth(); i+=4) {
       uint32 blockX = i / 4;
@@ -208,13 +261,34 @@ void Image::ConvertFromBlockStreamOrder() {
       for(uint32 t = 0; t < 16; t++) {
         uint32 x = i + t % 4;
         uint32 y = j + t / 4;
-        newPixelData[y*GetWidth() + x] =
-          reinterpret_cast<uint32 *>(m_Data)[offset + t];
+        newPixelData[y*GetWidth() + x] = m_Pixels[offset + t];
       }
     }
   }
 
-  delete m_Data;
-  m_Data = reinterpret_cast<uint8 *>(newPixelData);
+  delete m_Pixels;
+  m_Pixels = newPixelData;
   m_bBlockStreamOrder = false;
 }
+
+template<typename PixelType>
+void Image<PixelType>::SetImageData(uint32 width, uint32 height, PixelType *data) {
+  if(m_Pixels) {
+    delete m_Pixels;
+  }
+
+  if(!data) {
+    width = 0;
+    height = 0;
+    m_Pixels = NULL;
+  } else {
+    m_Width = width;
+    m_Height = height;
+    m_Pixels = data;
+  }
+}
+
+template class Image<Pixel>;
+template class Image<Color>;
+
+}  // namespace FasTC

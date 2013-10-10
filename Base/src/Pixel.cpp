@@ -56,7 +56,7 @@
 #include <cassert>
 #include <algorithm>
 
-namespace PVRTCC {
+namespace FasTC {
 
   void Pixel::FromBits(const uint8 *bits,
                        const uint8 channelDepth[4],
@@ -82,7 +82,7 @@ namespace PVRTCC {
     }
 
     for(int32 i = 0; i < 4; i++) {
-      uint8 &channel = m_Component[i];
+      ChannelType &channel = Component(i);
       uint32 depth = m_BitDepth[i];
 
       assert(depth <= 8);
@@ -125,7 +125,7 @@ namespace PVRTCC {
 
     uint8 bitIdx = bitOffset;
     for(int i = 3; i >= 0; i--) {
-      uint8 val = Component(i);
+      ChannelType val = Component(i);
       uint8 depth = m_BitDepth[i];
 
       if(depth + bitIdx > 8) {
@@ -146,7 +146,7 @@ namespace PVRTCC {
     }
   }
 
-  uint8 Pixel::ChangeBitDepth(uint8 val, uint8 oldDepth, uint8 newDepth) {
+  Pixel::ChannelType Pixel::ChangeBitDepth(Pixel::ChannelType val, uint8 oldDepth, uint8 newDepth) {
     assert(newDepth <= 8);
     assert(oldDepth <= 8);
 
@@ -185,7 +185,7 @@ namespace PVRTCC {
 
   void Pixel::ChangeBitDepth(const uint8 (&depth)[4]) {
     for(uint32 i = 0; i < 4; i++) {
-      m_Component[i] = ChangeBitDepth(m_Component[i], m_BitDepth[i], depth[i]);
+      Component(i) = ChangeBitDepth(Component(i), m_BitDepth[i], depth[i]);
       m_BitDepth[i] = depth[i];
     }
   }
@@ -199,7 +199,7 @@ namespace PVRTCC {
     return r * 0.21f + g * 0.71f + b * 0.07f;
   }
 
-  uint32 Pixel::PackRGBA() const {
+  uint32 Pixel::Pack() const {
     Pixel eightBit(*this);
     const uint8 eightBitDepth[4] = { 8, 8, 8, 8 };
     eightBit.ChangeBitDepth(eightBitDepth);
@@ -215,7 +215,7 @@ namespace PVRTCC {
     return r;
   }
 
-  void Pixel::UnpackRGBA(uint32 rgba) {
+  void Pixel::Unpack(uint32 rgba) {
     A() = ChangeBitDepth((rgba >> 24) & 0xFF, 8, m_BitDepth[0]);
     R() = ChangeBitDepth(rgba & 0xFF, 8, m_BitDepth[1]);
     G() = ChangeBitDepth((rgba >> 8) & 0xFF, 8, m_BitDepth[2]);
@@ -231,10 +231,10 @@ namespace PVRTCC {
       ok = ok && m_BitDepth[i] == depths[i];
 
       uint8 mask = (1 << depths[i]) - 1;
-      const uint8 c = other.Component(i) & mask;
+      const ChannelType c = other.Component(i) & mask;
       ok = ok && (c == (Component(i) & mask));
     }
     return ok;
   }
 
-}  // namespace PVRTCC
+}  // namespace FasTC

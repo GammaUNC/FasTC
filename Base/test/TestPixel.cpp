@@ -54,7 +54,7 @@
 #include "Pixel.h"
 
 TEST(Pixel, DefaultConstructor) {
-  PVRTCC::Pixel p;
+  FasTC::Pixel p;
   EXPECT_EQ(p.R(), 0);
   EXPECT_EQ(p.G(), 0);
   EXPECT_EQ(p.B(), 0);
@@ -70,12 +70,12 @@ TEST(Pixel, DefaultConstructor) {
 
 TEST(Pixel, FromBitsAndAssociatedConstructor) {
   const uint8 bits[8] = { 0xA8, 0xB3, 0x7C, 0x21, 0xBD, 0xD4, 0x09, 0x92 };
-  PVRTCC::Pixel ps[2];
-  ps[0] = PVRTCC::Pixel(bits);
+  FasTC::Pixel ps[2];
+  ps[0] = FasTC::Pixel(bits);
   ps[1].FromBits(bits);
 
   for(int i = 0; i < 2; i++) {
-    PVRTCC::Pixel &p = ps[i];
+    FasTC::Pixel &p = ps[i];
 
     EXPECT_EQ(p.A(), 0xA8);
     EXPECT_EQ(p.R(), 0xB3);
@@ -90,11 +90,11 @@ TEST(Pixel, FromBitsAndAssociatedConstructor) {
   }
 
   const uint8 depth1[4] = { 3, 2, 0, 8 };
-  ps[0] = PVRTCC::Pixel(bits + 3, depth1);
+  ps[0] = FasTC::Pixel(bits + 3, depth1);
   ps[1].FromBits(bits + 3, depth1);
 
   for(int i = 0; i < 2; i++) {
-    PVRTCC::Pixel &p = ps[i];
+    FasTC::Pixel &p = ps[i];
 
     EXPECT_EQ(p.A(), 0x01);
     EXPECT_EQ(p.R(), 0x00);
@@ -112,11 +112,11 @@ TEST(Pixel, FromBitsAndAssociatedConstructor) {
 
 
   const uint8 depth2[4] = { 5, 6, 2, 4 };
-  ps[0] = PVRTCC::Pixel(bits + 4, depth2, 2);
+  ps[0] = FasTC::Pixel(bits + 4, depth2, 2);
   ps[1].FromBits(bits + 4, depth2, 2);
 
   for(int i = 0; i < 2; i++) {
-    PVRTCC::Pixel &p = ps[i];
+    FasTC::Pixel &p = ps[i];
 
     EXPECT_EQ(p.A(), 0x1E);
     EXPECT_EQ(p.R(), 0x3A);
@@ -134,7 +134,7 @@ TEST(Pixel, FromBitsAndAssociatedConstructor) {
 }
 
 TEST(Pixel, ToBits) {
-  PVRTCC::Pixel p;
+  FasTC::Pixel p;
 
   uint8 bitDepth[4] = { 2, 8, 1, 7 };
   p.ChangeBitDepth(bitDepth);
@@ -163,39 +163,39 @@ TEST(Pixel, ChangeChannelBitDepth) {
   uint8 val = 0x43;
   uint8 depth = 7;
 
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 8), 0x87);
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 7), 0x43);
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 6), 0x22);
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 2), 0x2);
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 0), 0xFF);
+  EXPECT_EQ(FasTC::Pixel::ChangeBitDepth(val, depth, 8), 0x87);
+  EXPECT_EQ(FasTC::Pixel::ChangeBitDepth(val, depth, 7), 0x43);
+  EXPECT_EQ(FasTC::Pixel::ChangeBitDepth(val, depth, 6), 0x22);
+  EXPECT_EQ(FasTC::Pixel::ChangeBitDepth(val, depth, 2), 0x2);
+  EXPECT_EQ(FasTC::Pixel::ChangeBitDepth(val, depth, 0), 0xFF);
 
   val = 0x3;
   depth = 3;
 
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 8), 0x6D);
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 6), 0x1B);
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 3), 0x03);
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 2), 0x02);
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 0), 0xFF);
+  EXPECT_EQ(FasTC::Pixel::ChangeBitDepth(val, depth, 8), 0x6D);
+  EXPECT_EQ(FasTC::Pixel::ChangeBitDepth(val, depth, 6), 0x1B);
+  EXPECT_EQ(FasTC::Pixel::ChangeBitDepth(val, depth, 3), 0x03);
+  EXPECT_EQ(FasTC::Pixel::ChangeBitDepth(val, depth, 2), 0x02);
+  EXPECT_EQ(FasTC::Pixel::ChangeBitDepth(val, depth, 0), 0xFF);
 }
 
 TEST(Pixel, ChangeChannelBitDepthFromZero) {
   uint8 val = 0x43;
   uint8 depth = 0;
 
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 8), 0xFF);
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 7), 0x7F);
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 6), 0x3F);
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 2), 0x03);
+  EXPECT_EQ(FasTC::Pixel::ChangeBitDepth(val, depth, 8), 0xFF);
+  EXPECT_EQ(FasTC::Pixel::ChangeBitDepth(val, depth, 7), 0x7F);
+  EXPECT_EQ(FasTC::Pixel::ChangeBitDepth(val, depth, 6), 0x3F);
+  EXPECT_EQ(FasTC::Pixel::ChangeBitDepth(val, depth, 2), 0x03);
 
   // Shouldn't change it...
-  EXPECT_EQ(PVRTCC::Pixel::ChangeBitDepth(val, depth, 0), 0x43);
+  EXPECT_EQ(FasTC::Pixel::ChangeBitDepth(val, depth, 0), 0x43);
 }
 
 TEST(Pixel, ChangePixelBitDepth) {
   const uint8 bits[4] = { 0x86, 0xC0, 0x0, 0x0 };
   const uint8 depth[4] = {7, 3, 0, 0};
-  PVRTCC::Pixel p(bits, depth);
+  FasTC::Pixel p(bits, depth);
 
   const uint8 newDepth[4] = { 8, 8, 8, 8 };
   p.ChangeBitDepth(newDepth);
@@ -216,32 +216,32 @@ TEST(Pixel, ChangePixelBitDepth) {
 TEST(Pixel, PackRGBA) {
   const uint8 bits[4] = { 0x86, 0xC0, 0x0, 0x0 };
   const uint8 depth[4] = {7, 3, 0, 0};
-  PVRTCC::Pixel p(bits, depth);
+  FasTC::Pixel p(bits, depth);
 
-  uint32 val = p.PackRGBA();
+  uint32 val = p.Pack();
   EXPECT_EQ(val, 0x87FFFF6D);
 }
 
 TEST(Pixel, UnpackRGBA) {
   uint32 rgba = 0x4619B3FE;
-  PVRTCC::Pixel p;
+  FasTC::Pixel p;
 
-  p.UnpackRGBA(rgba);
+  p.Unpack(rgba);
   EXPECT_EQ(p.A(), 0x46);
   EXPECT_EQ(p.B(), 0x19);
   EXPECT_EQ(p.G(), 0xB3);
   EXPECT_EQ(p.R(), 0xFE);
 
-  p = PVRTCC::Pixel(rgba);
+  p = FasTC::Pixel(rgba);
   EXPECT_EQ(p.A(), 0x46);
   EXPECT_EQ(p.B(), 0x19);
   EXPECT_EQ(p.G(), 0xB3);
   EXPECT_EQ(p.R(), 0xFE);
 
-  p = PVRTCC::Pixel();
+  p = FasTC::Pixel();
   uint8 newBitDepth[4] = { 3, 5, 2, 1 };  // A R G B
   p.ChangeBitDepth(newBitDepth);
-  p.UnpackRGBA(rgba);
+  p.Unpack(rgba);
 
   EXPECT_EQ(p.A(), 0x2);
   EXPECT_EQ(p.B(), 0x0);

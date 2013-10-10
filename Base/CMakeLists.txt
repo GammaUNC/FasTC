@@ -52,12 +52,23 @@
 SET( SOURCES
   "src/Image.cpp"
   "src/CompressionJob.cpp"
+  "src/Pixel.cpp"
+  "src/Color.cpp"
 )
 
 SET( HEADERS
   "include/TexCompTypes.h"
   "include/Image.h"
+  "include/Color.h"
   "include/CompressionJob.h"
+  "include/Pixel.h"
+  "include/VectorBase.h"
+  "include/Vector2.h"
+  "include/Vector3.h"
+  "include/Vector4.h"
+  "include/MatrixBase.h"
+  "include/MatrixSquare.h"
+  "include/Matrix3x3.h"
 )
 
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)

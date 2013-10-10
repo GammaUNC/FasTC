@@ -49,69 +49,18 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
-INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/PVRTCEncoder/include)
-INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/PVRTCEncoder/include)
-INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/PVRTCEncoder/src)
-
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/GTest/include)
 
 SET(TESTS
-  Block Image Decompressor
+  Pixel Image Color
 )
 
 FOREACH(TEST ${TESTS})
-  SET(TEST_NAME Test_PVRTCEncoder_${TEST})
-  SET(TEST_MODULE ${TEST}Test.cpp)
+  SET(TEST_NAME Test_Base_${TEST})
+  SET(TEST_MODULE Test${TEST}.cpp)
   ADD_EXECUTABLE(${TEST_NAME} ${TEST_MODULE})
-  TARGET_LINK_LIBRARIES(${TEST_NAME} PVRTCEncoder)
+  TARGET_LINK_LIBRARIES(${TEST_NAME} FasTCBase)
   TARGET_LINK_LIBRARIES(${TEST_NAME} gtest_main)
   ADD_TEST(${TEST_NAME} ${TEST_NAME})
 ENDFOREACH()
-
-# Test the decompressor against the included PVR Texture library....
-IF(PVRTEXLIB_FOUND)
-
-  SET(TEST_NAME Test_PVRTCEncoder_DecompVersusPVRLib)
-
-  # Copy the .pvr files that we will use for testing...
-  SET(TEST_IMAGES
-    4bpp-gradient 4bpp-white 4bpp-gray 4bpp-transparent 4bpp-trans-gradient
-    2bpp-gradient 2bpp-white 2bpp-gray 2bpp-transparent 2bpp-trans-gradient
-  )
-  FOREACH(IMAGE ${TEST_IMAGES})
-    FILE(COPY
-      ${FasTC_SOURCE_DIR}/PVRTCEncoder/test/data/${IMAGE}.pvr
-      DESTINATION ${CMAKE_BINARY_DIR}
-      USE_SOURCE_PERMISSIONS
-    )
-  ENDFOREACH()
-
-  # Make sure to include the PVR library headers...
-  INCLUDE_DIRECTORIES( ${PVRTEXLIB_INCLUDE_DIRS} )
-  INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Core/include )
-
-  # The cpp file to compile for the test
-  ADD_EXECUTABLE(${TEST_NAME} DecompTestPVR.cpp)
-
-  # Libraries that we need...
-  TARGET_LINK_LIBRARIES(${TEST_NAME} PVRTCEncoder)
-  TARGET_LINK_LIBRARIES(${TEST_NAME} gtest_main)
-  TARGET_LINK_LIBRARIES(${TEST_NAME} ${PVRTEXLIB_LIBRARIES} )
-  TARGET_LINK_LIBRARIES(${TEST_NAME} FasTCBase)
-  TARGET_LINK_LIBRARIES(${TEST_NAME} FasTCIO)
-  TARGET_LINK_LIBRARIES(${TEST_NAME} FasTCCore)
-
-  IF(MSVC)
-    ADD_TEST(${TEST_NAME}
-      ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}
-      ${CMAKE_CURRENT_BINARY_DIR}/Debug/${TEST_NAME}
-    )
-  ELSE()
-    ADD_TEST(${TEST_NAME}
-      ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}
-      ${CMAKE_CURRENT_BINARY_DIR}/${TEST_NAME}
-    )
-  ENDIF()
-
-ENDIF(PVRTEXLIB_FOUND)

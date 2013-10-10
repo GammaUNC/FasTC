@@ -50,66 +50,52 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#ifndef PVRTCENCODER_SRC_IMAGE_H_
-#define PVRTCENCODER_SRC_IMAGE_H_
+#ifndef BASE_INCLUDE_COLOR_H_
+#define BASE_INCLUDE_COLOR_H_
 
 #include "TexCompTypes.h"
-#include "PVRTCCompressor.h"
+#include "Vector4.h"
 
-#include <vector>
+namespace FasTC {
 
-namespace PVRTCC {
-
-class Pixel;
-
-class Image {
+class Color : public Vec4f {
  public:
-  Image(uint32 height, uint32 width);
-  Image(uint32 height, uint32 width, const Pixel *pixels);
-  Image(const Image &);
-  Image &operator=(const Image &);
-  ~Image();
+  Color(float r, float g, float b, float a) : Vec4f(a, r, g, b) { }
+  Color() : Vec4f(0, 0, 0, 0) { }
 
-  void BilinearUpscale(uint32 xtimes, uint32 ytimes,
-                       EWrapMode wrapMode = eWrapMode_Wrap);
+  // Let's allow us to use the operators...
+  template<typename T>
+  Color &operator=(const Vector4<T> &other) {
+    Vec4f::operator=(other);
+    return *this;
+  }
 
-  // Downscales the image by taking an anisotropic diffusion approach
-  // with respect to the gradient of the intensity. In this way, we can
-  // preserve the most important image structures by not blurring across
-  // edge boundaries, which when upscaled will retain the structural
-  // image quality...
-  void ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
-                             EWrapMode wrapMode = eWrapMode_Wrap,
-                             bool bOffsetNewPixels = false);
+  template<typename T>
+  Color(const Vector4<T> &other) : Vec4f(other) { }
+  
+  const float &A() const { return vec[0]; }
+  float &A() { return vec[0]; }
+  const float &R() const { return vec[1]; }
+  float &R() { return vec[1]; }
+  const float &G() const { return vec[2]; }
+  float &G() { return vec[2]; }
+  const float &B() const { return vec[3]; }
+  float &B() { return vec[3]; }
+  const float &Component(uint32 idx) const { return vec[idx]; }
+  float &Component(uint32 idx) { return vec[idx]; }
 
-  // Downscales the image by using a simple averaging of the neighboring pixel values
-  void AverageDownscale(uint32 xtimes, uint32 ytimes);
+  // Take all of the components, transform them to their 8-bit variants,
+  // and then pack each channel into an R8G8B8A8 32-bit integer. We assume
+  // that the architecture is little-endian, so the alpha channel will end
+  // up in the most-significant byte.
+  uint32 Pack() const;
+  void Unpack(uint32 rgba);
 
-  void ComputeHessianEigenvalues(::std::vector<float> &eigOne, 
-                                 ::std::vector<float> &eigTwo,
-                                 EWrapMode wrapMode = eWrapMode_Wrap);
-
-  void ChangeBitDepth(const uint8 (&depths)[4]);
-  void ExpandTo8888();
-
-  Pixel &operator()(uint32 i, uint32 j);
-  const Pixel &operator()(uint32 i, uint32 j) const;
-
-  uint32 GetWidth() const { return m_Width; }
-  uint32 GetHeight() const { return m_Height; }
-
-  void DebugOutput(const char *filename) const;
-
- private:
-  uint32 m_Width;
-  uint32 m_Height;
-  Pixel *m_Pixels;
-  Pixel *m_FractionalPixels;
-
-  const uint32 GetPixelIndex(int32 i, int32 j, EWrapMode wrapMode = eWrapMode_Clamp) const;
-  const Pixel &GetPixel(int32 i, int32 j, EWrapMode wrapMode = eWrapMode_Clamp) const;
+  // Tests for equality by comparing the values and the bit depths.
+  bool operator==(const Color &) const;
 };
+REGISTER_VECTOR_TYPE(Color);
 
-}  // namespace PVRTCC
+}  // namespace FasTC
 
-#endif  // PVRTCENCODER_SRC_IMAGE_H_
+#endif  // BASE_INCLUDE_COLOR_H_

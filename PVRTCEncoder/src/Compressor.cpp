@@ -58,7 +58,7 @@
 #include <vector>
 
 #include "Pixel.h"
-#include "Image.h"
+#include "PVRTCImage.h"
 #include "Block.h"
 
 namespace PVRTCC {
@@ -130,7 +130,7 @@ namespace PVRTCC {
       uint32 y = i / dcj.width;
 
       const uint32 *pixels = reinterpret_cast<const uint32 *>(dcj.inBuf);
-      img(x, y).UnpackRGBA(pixels[i]);      
+      img(x, y).Unpack(pixels[i]);      
     }
 
     Image original = img;
