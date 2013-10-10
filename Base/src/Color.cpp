@@ -56,13 +56,13 @@ namespace FasTC {
 
   uint32 Color::Pack() const {
     uint32 result = 0;
-    result = static_cast<uint32>((A() + 0.5f) * 255.0f);
+    result |= static_cast<uint32>((A() * 255.0f) + 0.5f);
     result <<= 8;
-    result = static_cast<uint32>((B() + 0.5f) * 255.0f);
+    result |= static_cast<uint32>((B() * 255.0f) + 0.5f);
     result <<= 8;
-    result = static_cast<uint32>((G() + 0.5f) * 255.0f);
+    result |= static_cast<uint32>((G() * 255.0f) + 0.5f);
     result <<= 8;
-    result = static_cast<uint32>((R() + 0.5f) * 255.0f);
+    result |= static_cast<uint32>((R() * 255.0f) + 0.5f);
     return result;
   }
 
