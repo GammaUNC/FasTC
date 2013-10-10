@@ -63,9 +63,14 @@ class IPixel {
 
  public:
   IPixel() : m_Intensity(0.0f) { }
+  IPixel(float f) : m_Intensity(f) { }
 
-  explicit IPixel(uint32 rgba) {
-    Unpack(rgba);
+  operator float() const {
+    return m_Intensity;
+  }
+
+  IPixel operator=(const float &f) {
+    return m_Intensity = f;
   }
 
   // Take all of the components, transform them to their 8-bit variants,
