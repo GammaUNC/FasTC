@@ -66,6 +66,9 @@ IF (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     PATHS ${PVRTEXLIB_ROOT}/OSX_x86/Static
           ${PVRTEXLIB_ROOT}/OSX_x86/Dynamic
   )
+
+  SET( USE_PTHREAD TRUE )
+
 ELSEIF (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
   SET( PVRTEXLIB_ROOT "/opt/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library" )
   find_path(
@@ -84,6 +87,8 @@ ELSEIF (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
             ${PVRTEXLIB_ROOT}/Linux_x86_32/Dynamic
     )
   ENDIF()
+
+  SET( USE_PTHREAD TRUE )
 
 ELSEIF(MSVC)
   SET( PVRTEXLIB_ROOT "C:/Imagination/PowerVR/GraphicsSDK/PVRTexTool/Library" )
@@ -105,7 +110,15 @@ ELSEIF(MSVC)
   ENDIF()
 ENDIF()
 
-set(PVRTEXLIB_LIBRARIES ${PVRTEXLIB_LIB} )
+IF( USE_PTHREAD )
+  FIND_PACKAGE( Threads REQUIRED )
+  set(PVRTEXLIB_LIBRARIES
+    ${PVRTEXLIB_LIB}
+    ${CMAKE_THREAD_LIBS_INIT}
+  )
+ELSE()
+  set(PVRTEXLIB_LIBRARIES ${PVRTEXLIB_LIB})
+ENDIF()
 set(PVRTEXLIB_INCLUDE_DIRS ${PVRTEXLIB_INCLUDE_DIR} )
 
 include(FindPackageHandleStandardArgs)
