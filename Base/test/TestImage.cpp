@@ -149,3 +149,20 @@ TEST(Image, Filter) {
     }
   }
 }
+
+TEST(Image, ComputeMSSIM) {
+
+  const uint32 w = 16;
+  const uint32 h = 16;
+
+  FasTC::Image<FasTC::IPixel> img(w, h);
+  for(uint32 j = 0; j < h; j++) {
+    for(uint32 i = 0; i < w; i++) {
+      img(i, j) =
+        (static_cast<double>(i) * static_cast<double>(j)) /
+        (static_cast<double>(w) * static_cast<double>(h));
+    }
+  }
+
+  EXPECT_EQ(img.ComputeMSSIM(&img), 1.0);
+}
