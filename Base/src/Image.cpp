@@ -363,7 +363,7 @@ void GenerateGaussianKernel(Image<IPixel> &out, uint32 size, float sigma) {
   int32 halfSz = static_cast<int32>(size) / 2;
   for(int32 j = -halfSz; j < halfSz; j++) {
     for(int32 i = -halfSz; i < halfSz; i++) {
-      out(i, j) = exp(- (j*j + i*i) / (2*sigma*sigma));
+      out(halfSz + i, halfSz + j) = exp(- (j*j + i*i) / (2*sigma*sigma));
     }
   }
 }
