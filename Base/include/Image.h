@@ -59,6 +59,7 @@ namespace FasTC {
   class Image {
 
    public:
+    Image() : m_Width(0), m_Height(0), m_Pixels(0) { }
     Image(uint32 width, uint32 height);
     Image(uint32 width, uint32 height,
           const PixelType *pixels,
@@ -94,6 +95,15 @@ namespace FasTC {
       }
     }
     bool GetBlockStreamOrder() const { return m_bBlockStreamOrder; }
+
+    template<typename OtherPixelType>
+    void ConvertTo(Image<OtherPixelType> &other) const {
+      for(uint32 j = 0; j < other.GetWidth(); j++) {
+        for(uint32 i = 0; i < other.GetHeight(); i++) {
+          other(i, j).Unpack((*this)(i, j).Pack());
+        }
+      }
+    }
 
     double ComputePSNR(Image<PixelType> *other);
 
