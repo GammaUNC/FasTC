@@ -264,6 +264,15 @@ int _tmain(int argc, _TCHAR* argv[])
     fprintf(stderr, "Error computing PSNR\n");
   }
 
+  double MSSIM;
+  double SSIM = img.ComputeSSIM(ci, &MSSIM);
+  if(SSIM > 0.0) {
+    fprintf(stdout, "SSIM: %.9f\n", SSIM);
+    fprintf(stdout, "MSSIM: %.9f\n", MSSIM);
+  } else {
+    fprintf(stderr, "Error computing MSSIM\n");
+  }
+
   if(format == eCompressionFormat_BPTC) {
     strcat_s(basename, "-bc7.png");
   } else if(format == eCompressionFormat_PVRTC) {
