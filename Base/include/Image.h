@@ -95,10 +95,7 @@ namespace FasTC {
     }
     bool GetBlockStreamOrder() const { return m_bBlockStreamOrder; }
 
-    template<typename OtherPixelType>
-    double ComputePSNR(Image<OtherPixelType> *other) {
-      return FasTC::ComputePSNR(this, other);
-    }
+    double ComputePSNR(Image<PixelType> *other);
 
     // Function to allow derived classes to populate the pixel array.
     // This may involve decompressing a compressed image or otherwise

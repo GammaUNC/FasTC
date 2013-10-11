@@ -166,28 +166,28 @@ const PixelType & Image<PixelType>::operator()(uint32 i, uint32 j) const {
   return m_Pixels[j * GetWidth() + i];
 }
 
-template<typename PixelTypeOne, typename PixelTypeTwo>
-double ComputePSNR(Image<PixelTypeOne> *img1, Image<PixelTypeTwo> *img2) {
-  if(!img1 || !img2)
+template<typename PixelType>
+double Image<PixelType>::ComputePSNR(Image<PixelType> *other) {
+  if(!other)
     return -1.0;
 
-  if(img1->GetWidth() != img2->GetWidth() ||
-     img1->GetHeight() != img2->GetHeight()) {
+  if(GetWidth() != other->GetWidth() ||
+     GetHeight() != other->GetHeight()) {
     return -1.0;
   }
 
   // Compute raw 8-bit RGBA data...
-  img1->ComputePixels();
-  img2->ComputePixels();
+  ComputePixels();
+  other->ComputePixels();
 
-  const PixelTypeOne *ourPixels = img1->GetPixels();
-  const PixelTypeTwo *otherPixels = img2->GetPixels();
+  const PixelType *ourPixels = GetPixels();
+  const PixelType *otherPixels = other->GetPixels();
 
   //  const double w[3] = { 0.2126, 0.7152, 0.0722 };
   const double w[3] = { 1.0, 1.0, 1.0 };
     
   double mse = 0.0;
-  const uint32 imageSz = img1->GetNumPixels();
+  const uint32 imageSz = GetNumPixels();
   for(uint32 i = 0; i < imageSz; i++) {
 
     uint32 ourPixel = ourPixels[i].Pack();
@@ -211,14 +211,12 @@ double ComputePSNR(Image<PixelTypeOne> *img1, Image<PixelTypeTwo> *img2) {
     }
   }
 
-  mse /= img1->GetWidth() * img1->GetHeight();
+  mse /= GetWidth() * GetHeight();
 
   const double C = 255.0 * 255.0;
   double maxi = (w[0]*w[0] + w[1]*w[1] + w[2]*w[2]) * C;
   return 10 * log10(maxi/mse);
 }
-
-template double ComputePSNR(Image<Pixel> *, Image<Pixel> *);
 
 // !FIXME! These won't work for non-RGBA8 data.
 template<typename PixelType>
