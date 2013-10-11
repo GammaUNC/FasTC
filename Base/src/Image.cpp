@@ -350,4 +350,22 @@ template class Image<Pixel>;
 template class Image<IPixel>;
 template class Image<Color>;
 
+void GenerateGaussianKernel(Image<IPixel> &out, uint32 size, float sigma) {
+
+  assert(size % 2);
+
+  out = Image<IPixel>(size, size);
+  if(size == 1) {
+    out(0, 0) = 1.0f;
+    return;
+  }
+
+  int32 halfSz = static_cast<int32>(size) / 2;
+  for(int32 j = -halfSz; j < halfSz; j++) {
+    for(int32 i = -halfSz; i < halfSz; i++) {
+      out(i, j) = exp(- (j*j + i*i) / (2*sigma*sigma));
+    }
+  }
+}
+
 }  // namespace FasTC

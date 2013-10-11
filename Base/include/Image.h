@@ -125,6 +125,8 @@ namespace FasTC {
     void ConvertFromBlockStreamOrder();
   };
 
+  extern void GenerateGaussianKernel(Image<IPixel> &out, uint32 size, float sigma);
+
 }  // namespace FasTC
 
 #endif // __TEXCOMP_IMAGE_H__
