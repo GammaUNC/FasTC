@@ -222,6 +222,7 @@ template<typename PixelType>
 static Image<PixelType> FilterValid(const Image<PixelType> &img, uint32 size, double sigma) {
   assert(size % 2);
   Image<IPixel> gaussian(size, size);
+  GenerateGaussianKernel(gaussian, size, sigma);
   Image<PixelType> tmp = img;
   tmp.Filter(gaussian);
 
@@ -237,7 +238,7 @@ static Image<PixelType> FilterValid(const Image<PixelType> &img, uint32 size, do
 }
 
 template<typename PixelType>
-double Image<PixelType>::ComputeMSSIM(Image<PixelType> *other) const {
+double Image<PixelType>::ComputeSSIM(Image<PixelType> *other) {
   if(!other) {
     return -1.0;
   }
@@ -246,6 +247,9 @@ double Image<PixelType>::ComputeMSSIM(Image<PixelType> *other) const {
      GetHeight() != other->GetHeight()) {
     return -1.0;
   }
+
+  ComputePixels();
+  other->ComputePixels();
 
   double C1 = (0.01 * 255.0 * 0.01 * 255.0);
   double C2 = (0.03 * 255.0 * 0.03 * 255.0);

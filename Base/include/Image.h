@@ -106,8 +106,8 @@ namespace FasTC {
     }
 
     double ComputePSNR(Image<PixelType> *other);
-    double ComputeMSSIM(Image<PixelType> *other) const;
-
+    double ComputeMSSIM(Image<PixelType> *other);
+    
     // Function to allow derived classes to populate the pixel array.
     // This may involve decompressing a compressed image or otherwise
     // processing some data in order to populate the m_Pixels pointer.
