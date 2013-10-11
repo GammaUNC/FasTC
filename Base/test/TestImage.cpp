@@ -164,5 +164,8 @@ TEST(Image, ComputeMSSIM) {
     }
   }
 
-  EXPECT_EQ(img.ComputeMSSIM(&img), 1.0);
+  double MSSIM;
+  double SSIM = img.ComputeSSIM(&img, &MSSIM);
+  EXPECT_EQ(SSIM, 1.0);
+  EXPECT_EQ(MSSIM, 1.0);
 }

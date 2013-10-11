@@ -238,7 +238,7 @@ static Image<PixelType> FilterValid(const Image<PixelType> &img, uint32 size, do
 }
 
 template<typename PixelType>
-double Image<PixelType>::ComputeSSIM(Image<PixelType> *other) {
+double Image<PixelType>::ComputeSSIM(Image<PixelType> *other, double *mssim) {
   if(!other) {
     return -1.0;
   }
@@ -361,7 +361,11 @@ double Image<PixelType>::ComputeSSIM(Image<PixelType> *other) {
     }
   }
 
-  double mssim = 0.0;
+  double minSSIM = 1.0;
+  if(mssim) {
+    *mssim = 0.0;
+  }
+
   for(uint32 j = 0; j < h; j++) {
     for(uint32 i = 0; i < w; i++) {
       double m1sq = static_cast<float>(mu1_sq(i, j));
@@ -372,13 +376,23 @@ double Image<PixelType>::ComputeSSIM(Image<PixelType> *other) {
       double s2sq = static_cast<float>(sigma2_sq(i, j));
       double s1s2 = static_cast<float>(sigma12(i, j));
 
-      mssim +=
+      double ssim =
         ((2.0 * m1m2 + C1) * (2.0 * s1s2 + C2)) /
         ((m1sq + m2sq + C1) * (s1sq + s2sq + C2));
+
+      if(mssim) {
+        *mssim += ssim;
+      }
+
+      minSSIM = ::std::min(ssim, minSSIM);
     }
   }
 
-  return mssim / static_cast<double>(w * h);
+  if(mssim) {
+    *mssim /= static_cast<double>(w * h);
+  }
+
+  return minSSIM;
 }
 
 // !FIXME! These won't work for non-RGBA8 data.
