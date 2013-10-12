@@ -192,11 +192,11 @@ namespace FasTC {
 
   float Pixel::ToIntensity() const {
     // First convert the pixel values to floats using premultiplied alpha...
-    float a = ConvertChannelToFloat(A(), m_BitDepth[0]);
-    float r = a * ConvertChannelToFloat(R(), m_BitDepth[1]);
-    float g = a * ConvertChannelToFloat(G(), m_BitDepth[2]);
-    float b = a * ConvertChannelToFloat(B(), m_BitDepth[3]);
-    return r * 0.21f + g * 0.71f + b * 0.07f;
+    double a = ConvertChannelToFloat(A(), m_BitDepth[0]);
+    double r = a * ConvertChannelToFloat(R(), m_BitDepth[1]);
+    double g = a * ConvertChannelToFloat(G(), m_BitDepth[2]);
+    double b = a * ConvertChannelToFloat(B(), m_BitDepth[3]);
+    return static_cast<float>(r * 0.2126 + g * 0.7152 + b * 0.0722);
   }
 
   uint32 Pixel::Pack() const {
