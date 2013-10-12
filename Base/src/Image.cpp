@@ -218,19 +218,42 @@ double Image<PixelType>::ComputePSNR(Image<PixelType> *other) {
   return 10 * log10(maxi/mse);
 }
 
-template<typename PixelType>
-static Image<PixelType> FilterValid(const Image<PixelType> &img, uint32 size, double sigma) {
+static Image<IPixel> FilterValid(const Image<IPixel> &img, uint32 size, double sigma) {
   assert(size % 2);
   Image<IPixel> gaussian(size, size);
   GenerateGaussianKernel(gaussian, size, sigma);
-  Image<PixelType> tmp = img;
-  tmp.Filter(gaussian);
 
-  Image<PixelType> out(tmp.GetWidth() - size + 1, tmp.GetHeight() - size + 1);
-  uint32 halfSz = size >> 1;
-  for(uint32 j = halfSz; j < img.GetHeight()-halfSz; j++) {
-    for(uint32 i = halfSz; i < img.GetWidth()-halfSz; i++) {
-      out(i-halfSz, j-halfSz) = tmp(i, j);
+  double sum = 0.0;
+  for(uint32 j = 0; j < size; j++) {
+    for(uint32 i = 0; i < size; i++) {
+      sum += static_cast<float>(gaussian(i, j));
+    }
+  }
+
+  for(uint32 j = 0; j < size; j++) {
+    for(uint32 i = 0; i < size; i++) {
+      double v = static_cast<float>(gaussian(i, j));
+      gaussian(i, j) = static_cast<float>(v / sum);
+    }
+  }      
+
+  int32 h = static_cast<int32>(img.GetHeight());
+  int32 w = static_cast<int32>(img.GetWidth());
+
+  Image<IPixel> out(img.GetWidth() - size + 1, img.GetHeight() - size + 1);
+  int32 halfSz = static_cast<int32>(size) >> 1;
+  for(int32 j = halfSz; j < h-halfSz; j++) {
+    for(int32 i = halfSz; i < w-halfSz; i++) {
+      int32 xoffset = -halfSz;
+      int32 yoffset = -halfSz;
+
+      double result = 0;
+      for(int32 y = 0; y < static_cast<int32>(size); y++)
+      for(int32 x = 0; x < static_cast<int32>(size); x++) {
+        double s = static_cast<float>(gaussian(x, y));
+        result += s * static_cast<float>(img(i+xoffset+x, j+yoffset+y));
+      }
+      out(i+xoffset, j+yoffset) = static_cast<float>(result);
     }
   }
 
@@ -262,8 +285,8 @@ double Image<PixelType>::ComputeSSIM(Image<PixelType> *other, double *mssim) {
 
   for(uint32 j = 0; j < GetHeight(); j++) {
     for(uint32 i = 0; i < GetWidth(); i++) {
-      img1(i, j) = 255.0f * static_cast<float>(img1(i, j));
-      img2(i, j) = 255.0f * static_cast<float>(img2(i, j));
+      img1(i, j) = 255.0 * static_cast<float>(img1(i, j));
+      img2(i, j) = 255.0 * static_cast<float>(img2(i, j));
     }
   }
 
