@@ -62,7 +62,11 @@ namespace FasTC {
   uint32 IPixel::Pack() const {
     uint32 ret = 0xFF << 24;
     for(uint32 i = 0; i < 3; i++) {
-      ret |= static_cast<uint32>((255.0 * vec[0]) + 0.5f) << i*8;
+      if(vec[0] > 1.0) {
+        ret |= static_cast<uint32>(vec[0]) << i*8;
+      } else {
+        ret |= static_cast<uint32>((255.0 * vec[0]) + 0.5f) << i*8;
+      }
     }
     return ret;
   }
