@@ -62,5 +62,5 @@ uint32 ImageWriter::GetChannelForPixel(uint32 x, uint32 y, uint32 ch) {
   // There are 16 pixels per block...
   uint32 dataOffset = blockIdx * 16 + pixelOffset;
 
-  return m_Pixels[dataOffset].Component(ch);
+  return m_Pixels[dataOffset].Component((ch+1) % 4);
 }
