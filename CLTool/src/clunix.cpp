@@ -260,11 +260,9 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Error computing PSNR\n");
   }
 
-  double MSSIM;
-  double SSIM = img.ComputeSSIM(ci, &MSSIM);
+  double SSIM = img.ComputeSSIM(ci);
   if(SSIM > 0.0) {
     fprintf(stdout, "SSIM: %.9f\n", SSIM);
-    fprintf(stdout, "MSSIM: %.9f\n", MSSIM);
   } else {
     fprintf(stderr, "Error computing MSSIM\n");
   }
