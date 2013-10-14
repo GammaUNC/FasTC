@@ -180,8 +180,8 @@ namespace PVRTCC {
 
       if(i == 0 && j == 0) continue;
 
-      int32 xx = (i + static_cast<int32>(x + width)) % width;
-      int32 yy = (j + static_cast<int32>(y + height)) % height;
+      int32 xx = (i + static_cast<int32>(x + width)) & (width - 1);
+      int32 yy = (j + static_cast<int32>(y + height)) & (height - 1);
 
       assert(xx >= 0 && xx < static_cast<int32>(width));
       assert(yy >= 0 && yy < static_cast<int32>(height));
@@ -284,16 +284,16 @@ namespace PVRTCC {
 
     for(uint32 j = 0; j < h+3; j++) {
       for(uint32 i = 0; i < w; i++) {
-        EExtremaResult result = ComputeLocalExtrema(labels, inBuf, i, j % h, w, h);
+        EExtremaResult result = ComputeLocalExtrema(labels, inBuf, i, j & (h - 1), w, h);
         bool dilateMax = result != eExtremaResult_LocalMax;
         bool dilateMin = result != eExtremaResult_LocalMin;
 
         if(dilateMax || dilateMin) {
           // Look up and to the left to determine the distance...
-          uint32 upIdx = ((j+h-1) % h) * w + i;
-          uint32 leftIdx = (j % h) * w + ((i+w-1) % w);
+          uint32 upIdx = ((j+h-1) & (h - 1)) * w + i;
+          uint32 leftIdx = (j & (h - 1)) * w + ((i+w-1) & (w - 1));
 
-          CompressionLabel &l = labels[(j % h)*w + i];
+          CompressionLabel &l = labels[(j & (h - 1))*w + i];
           CompressionLabel &up = labels[upIdx];
           CompressionLabel &left = labels[leftIdx];
 
@@ -359,22 +359,22 @@ namespace PVRTCC {
     for(int32 j = static_cast<int32>(h)+2; j >= 0; j--) {
       for(int32 i = static_cast<int32>(w)-1; i >= 0; i--) {
 
-        CompressionLabel &l = labels[(j % h) * w + i];
+        CompressionLabel &l = labels[(j & (h - 1)) * w + i];
 
         // Add top right corner
-        neighbors[0] = &(labels[((j + h - 1) % h) * w + ((i + 1) % w)]);
+        neighbors[0] = &(labels[((j + h - 1) & (h - 1)) * w + ((i + 1) & (w - 1))]);
 
         // Add right label
-        neighbors[1] = &(labels[(j % h) * w + ((i + 1) % w)]);
+        neighbors[1] = &(labels[(j & (h - 1)) * w + ((i + 1) & (w - 1))]);
 
         // Add bottom right label
-        neighbors[2] = &(labels[((j + 1) % h) * w + ((i + 1) % w)]);
+        neighbors[2] = &(labels[((j + 1) & (h - 1)) * w + ((i + 1) & (w - 1))]);
 
         // Add bottom label
-        neighbors[3] = &(labels[((j + 1) % h) * w + i]);
+        neighbors[3] = &(labels[((j + 1) & (h - 1)) * w + i]);
 
         // Add bottom left label
-        neighbors[4] = &(labels[((j + 1) % h) * w + ((i + w - 1) % w)]);
+        neighbors[4] = &(labels[((j + 1) & (h - 1)) * w + ((i + w - 1) & (w - 1))]);
 
         DilateLabelBackward(l.highLabel, neighbors, true);
         DilateLabelBackward(l.lowLabel, neighbors, false);
@@ -420,7 +420,7 @@ namespace PVRTCC {
         for(uint32 y = j*4; y <= (j+1)*4; y++)
         for(uint32 x = i*4; x <= (i+1)*4; x++) {
 
-          uint32 idx = (y%h)*w + (x%w);
+          uint32 idx = (y & (h-1))*w + (x & (w-1));
           float intensity = labels[idx].intensity;
           if(intensity < minIntensity) {
             minIntensity = intensity;
