@@ -677,8 +677,6 @@ namespace PVRTCC {
     assert(width & (width - 1) == 0);
     assert(height & (height - 1) == 0);
 
-    memset(cj.outBuf, 0, (width * height / 16) * kBlockSize);
-
     CompressionLabel *labels =
       (CompressionLabel *)calloc(width * height, sizeof(CompressionLabel));
 
