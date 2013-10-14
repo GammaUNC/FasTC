@@ -148,9 +148,21 @@ namespace PVRTCC {
     eExtremaResult_LocalMax
   };
 
+#ifndef NDEBUG
+  template<typename T>
+  void AssertPOT(const T &t) {
+    assert(t & (t - 1) == 0);
+  }
+#else
+  #define AssertPOT(x) (void)(0)
+#endif
+
   static EExtremaResult ComputeLocalExtrema(
     CompressionLabel *labels, const uint8 *inBuf,
     const uint32 x, const uint32 y, const uint32 width, const uint32 height) {
+
+    AssertPOT(width);
+    AssertPOT(height);
 
     assert(x < width);
     assert(y < height);
@@ -266,6 +278,10 @@ namespace PVRTCC {
   static void LabelImageForward(CompressionLabel *labels,
                                 const uint8 *inBuf,
                                 const uint32 w, const uint32 h) {
+
+    AssertPOT(w);
+    AssertPOT(h);
+
     for(uint32 j = 0; j < h+3; j++) {
       for(uint32 i = 0; i < w; i++) {
         EExtremaResult result = ComputeLocalExtrema(labels, inBuf, i, j % h, w, h);
@@ -335,6 +351,10 @@ namespace PVRTCC {
 
   static void LabelImageBackward(CompressionLabel *labels,
                                  const uint32 w, const uint32 h) {
+
+    AssertPOT(w);
+    AssertPOT(h);
+
     CompressionLabel *neighbors[5] = { 0 };
     for(int32 j = static_cast<int32>(h)+2; j >= 0; j--) {
       for(int32 i = static_cast<int32>(w)-1; i >= 0; i--) {
@@ -379,6 +399,8 @@ namespace PVRTCC {
                                     const uint32 w, const uint32 h) {
     assert((w % 4) == 0);
     assert((h % 4) == 0);
+    AssertPOT(w);
+    AssertPOT(h);
 
     uint32 blocksW = w / 4;
     uint32 blocksH = h / 4;
@@ -526,6 +548,10 @@ namespace PVRTCC {
   }
 
   static void GenerateModulationValues(uint8 *outBuf, const uint8 *inBuf, uint32 w, uint32 h) {
+
+    AssertPOT(w);
+    AssertPOT(h);
+
     // Start from the beginning block and generate the lerp values for the intermediate values
     uint64 *outBlocks = reinterpret_cast<uint64 *>(outBuf);
     const uint32 blocksW = w >> 2;
@@ -641,6 +667,10 @@ namespace PVRTCC {
   void Compress(const CompressionJob &cj, bool bTwoBit, EWrapMode wrapMode) {
     const uint32 width = cj.width;
     const uint32 height = cj.height;
+
+    // Make sure that width and height are a power of two.
+    assert(width & (width - 1) == 0);
+    assert(height & (height - 1) == 0);
 
     memset(cj.outBuf, 0, (width * height / 16) * kBlockSize);
 
