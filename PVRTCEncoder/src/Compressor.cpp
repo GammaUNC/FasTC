@@ -394,6 +394,10 @@ namespace PVRTCC {
     return ret;
   }
 
+  static uint32 GetBlockIndex(uint32 i, uint32 j) {
+    return Interleave(j, i);
+  }
+
   static void GenerateLowHighImages(CompressionLabel *labels,
                                     const uint8 *inBuf, uint8 *outBuf,
                                     const uint32 w, const uint32 h) {
@@ -477,7 +481,7 @@ namespace PVRTCC {
         b.SetColorB(p);
 
         uint64 *outBlocks = reinterpret_cast<uint64 *>(outBuf);
-        outBlocks[j * blocksW + i] = b.Pack();
+        outBlocks[GetBlockIndex(i, j)] = b.Pack();
       }
     }
   }
@@ -524,9 +528,9 @@ namespace PVRTCC {
       const uint32 numerator = denominator + 1;
 
       const uint32 shift = fractionDepth[c] - (fullDepth[c] - currentDepth[c]);
-      const uint32 fractionBits = tmp.Component(c) >> shift;
+      const uint32 fractionBits = fp.Component(c) >> shift;
 
-      uint32 component = p.Component(c);
+      uint32 component = tmp.Component(c);
       component += ((fractionBits * numerator) / denominator);
 
       tmp.Component(c) = component;
@@ -573,14 +577,14 @@ namespace PVRTCC {
       for(uint32 i = 0; i < blocksW; i++) {
 
         const int32 lowXIdx = i;
-        const int32 highXIdx = (i + 1) % w;
+        const int32 highXIdx = (i + 1) & (blocksW - 1);
         const int32 lowYIdx = j;
-        const int32 highYIdx = (j + 1) % h;
+        const int32 highYIdx = (j + 1) & (blocksH - 1);
 
-        const uint32 topLeftBlockIdx = lowYIdx * blocksW + lowXIdx;
-        const uint32 topRightBlockIdx = lowYIdx * blocksW + highXIdx;
-        const uint32 bottomLeftBlockIdx = highYIdx * blocksW + lowXIdx;
-        const uint32 bottomRightBlockIdx = highYIdx * blocksW + highXIdx;
+        const uint32 topLeftBlockIdx = GetBlockIndex(lowXIdx, lowYIdx);
+        const uint32 topRightBlockIdx = GetBlockIndex(highXIdx, lowYIdx);
+        const uint32 bottomLeftBlockIdx = GetBlockIndex(lowXIdx, highYIdx);
+        const uint32 bottomRightBlockIdx = GetBlockIndex(highXIdx, highYIdx);
 
         Block topLeftBlock(reinterpret_cast<uint8 *>(outBlocks + topLeftBlockIdx));
         Block topRightBlock(reinterpret_cast<uint8 *>(outBlocks + topRightBlockIdx));
@@ -596,8 +600,8 @@ namespace PVRTCC {
         FasTC::Pixel bottomLeftA (bottomLeftBlock.GetColorA());
         FasTC::Pixel bottomLeftB (bottomLeftBlock.GetColorB());
 
-        FasTC::Pixel bottomRightA (topLeftBlock.GetColorA());
-        FasTC::Pixel bottomRightB (topLeftBlock.GetColorB());
+        FasTC::Pixel bottomRightA (bottomRightBlock.GetColorA());
+        FasTC::Pixel bottomRightB (bottomRightBlock.GetColorB());
 
         ChangePixelTo4555(topLeftA);
         ChangePixelTo4555(topLeftB);
@@ -611,10 +615,10 @@ namespace PVRTCC {
         ChangePixelTo4555(bottomRightA);
         ChangePixelTo4555(bottomRightB);
 
-        for(uint32 x = 0; x < 4; x++) {
-          for(uint32 y = 0; y < 4; y++) {
-            uint32 pixelX = (i + 2 + x) % w;
-            uint32 pixelY = (j + 2 + y) % h;
+        for(uint32 y = 0; y < 4; y++) {
+          for(uint32 x = 0; x < 4; x++) {
+            uint32 pixelX = (i*4 + 2 + x) & (w - 1);
+            uint32 pixelY = (j*4 + 2 + y) & (h - 1);
             FasTC::Pixel colorA = BilerpPixels(x, y, p, fp, topLeftA, topRightA, bottomLeftA, bottomRightA);
             FasTC::Pixel colorB = BilerpPixels(x, y, p, fp, topLeftB, topRightB, bottomLeftB, bottomRightB);
             FasTC::Pixel original(pixels[pixelY * w + pixelX]);
@@ -656,10 +660,15 @@ namespace PVRTCC {
               pixelBlockIdx = bottomLeftBlockIdx;
             }
 
-            pixelBlock->SetLerpValue((pixelY % 4) * 4 + (pixelX % 4), bestMod);
-            outBlocks[pixelBlockIdx] = outBlocks[pixelBlockIdx] | pixelBlock->Pack();
+            assert(pixelBlockIdx < blocksW * blocksH);
+            pixelBlock->SetLerpValue((pixelY & 3) * 4 + (pixelX & 3), bestMod);
           }
         }
+
+        outBlocks[topLeftBlockIdx] = topLeftBlock.Pack();
+        outBlocks[topRightBlockIdx] = topRightBlock.Pack();
+        outBlocks[bottomLeftBlockIdx] = bottomLeftBlock.Pack();
+        outBlocks[bottomRightBlockIdx] = bottomRightBlock.Pack();
       }
     }
   }
