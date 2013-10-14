@@ -646,18 +646,14 @@ namespace PVRTCC {
             }
 
             Block *pixelBlock = &topLeftBlock;
-            uint32 pixelBlockIdx = topLeftBlockIdx;
             if(x > 1) {
               if(y > 1) {
                 pixelBlock = &bottomRightBlock;
-                pixelBlockIdx = bottomRightBlockIdx;
               } else {
                 pixelBlock = &topRightBlock;
-                pixelBlockIdx = topRightBlockIdx;
               }
             } else if(y > 1) {
               pixelBlock = &bottomLeftBlock;
-              pixelBlockIdx = bottomLeftBlockIdx;
             }
 
             assert(pixelBlockIdx < blocksW * blocksH);
