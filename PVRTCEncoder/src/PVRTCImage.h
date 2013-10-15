@@ -100,7 +100,7 @@ class Image : public FasTC::Image<FasTC::Pixel> {
  private:
   FasTC::Pixel *m_FractionalPixels;
 
-  const uint32 GetPixelIndex(int32 i, int32 j, EWrapMode wrapMode = eWrapMode_Clamp) const;
+  uint32 GetPixelIndex(int32 i, int32 j, EWrapMode wrapMode = eWrapMode_Clamp) const;
   const FasTC::Pixel &GetPixel(int32 i, int32 j, EWrapMode wrapMode = eWrapMode_Clamp) const;
 };
 

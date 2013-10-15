@@ -502,7 +502,7 @@ const FasTC::Pixel &Image::GetPixel(int32 i, int32 j, EWrapMode wrapMode) const 
   return GetPixels()[GetPixelIndex(i, j, wrapMode)];
 }
 
-const uint32 Image::GetPixelIndex(int32 i, int32 j, EWrapMode wrapMode) const {
+uint32 Image::GetPixelIndex(int32 i, int32 j, EWrapMode wrapMode) const {
   while(i < 0) {
     if(wrapMode == eWrapMode_Clamp) {
       i = 0;

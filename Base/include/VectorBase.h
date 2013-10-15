@@ -195,7 +195,7 @@ namespace FasTC {
   static inline VectorType ScalarMultiply(const VectorType &v, const ScalarType &s) {
     VectorType a;
     for(int i = 0; i < VectorType::Size; i++)
-      a(i) = static_cast<VectorType::ScalarType>(v(i) * s);
+      a(i) = static_cast<typename VectorType::ScalarType>(v(i) * s);
     return a;
   }
 
@@ -212,7 +212,7 @@ namespace FasTC {
   static inline VectorType ScalarDivide(const VectorType &v, const ScalarType &s) {
     VectorType a;
     for(int i = 0; i < VectorType::Size; i++)
-      a(i) = static_cast<VectorType::ScalarType>(v(i) / s);
+      a(i) = static_cast<typename VectorType::ScalarType>(v(i) / s);
     return a;
   }
 

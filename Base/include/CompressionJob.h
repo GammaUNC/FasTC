@@ -115,10 +115,10 @@ struct CompressionJobList {
     bool AddJob(const CompressionJob &);
 
     // Get the maximum number of jobs that this list can hold.
-    const uint32 GetTotalNumJobs() const { return m_TotalNumJobs; }
+    uint32 GetTotalNumJobs() const { return m_TotalNumJobs; }
 
     // Get the current number of jobs in the list.
-    const uint32 GetNumJobs() const { return m_NumJobs; }
+    uint32 GetNumJobs() const { return m_NumJobs; }
 
     // Returns the specified job.
     const CompressionJob *GetJob(uint32 idx) const;
