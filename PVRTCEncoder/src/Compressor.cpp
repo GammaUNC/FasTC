@@ -517,26 +517,15 @@ namespace PVRTCC {
     FasTC::Pixel tmp(p);
     tmp = sum / (16);
 
-#if 0
-    const uint8 fullDepth[4] = { 8, 8, 8, 8 };
-    tmp.ChangeBitDepth(fullDepth);
-#else
     tmp.A() = (tmp.A() << 4) | tmp.A();
     tmp.G() = (tmp.G() << 3) | (tmp.G() >> 2);
     tmp.B() = (tmp.B() << 3) | (tmp.B() >> 2);
     tmp.R() = (tmp.R() << 3) | (tmp.R() >> 2);
-#endif
 
-    const uint8 currentDepth[4] = { 4, 5, 5, 5 };
-    for(uint32 c = 0; c < 4; c++) {
-      const uint32 numerator = (1 << currentDepth[c]) + 1;
-      const uint32 shift = 4 - (8 - currentDepth[c]);
-      const uint32 fractionBits = fp.Component(c) >> shift;
-      uint16 component = tmp.Component(c);
-      component += ((fractionBits * numerator) >> currentDepth[c]);
-      tmp.Component(c) = component;
-    }
-
+    tmp.Component(0) += ((fp.Component(0) * 17) >> 4);
+    tmp.Component(1) += (((fp.Component(1) >> 1) * 33) >> 5);
+    tmp.Component(2) += (((fp.Component(2) >> 1) * 33) >> 5);
+    tmp.Component(3) += (((fp.Component(3) >> 1) * 33) >> 5);
     return tmp;
   }
 
