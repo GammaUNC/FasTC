@@ -151,7 +151,7 @@ namespace PVRTCC {
 #ifndef NDEBUG
   template<typename T>
   void AssertPOT(const T &t) {
-    assert(t & (t - 1) == 0);
+    assert((t & (t - 1)) == 0);
   }
 #else
   #define AssertPOT(x) (void)(0)
@@ -517,22 +517,23 @@ namespace PVRTCC {
     FasTC::Pixel tmp(p);
     tmp = sum / (16);
 
+#if 0
     const uint8 fullDepth[4] = { 8, 8, 8, 8 };
     tmp.ChangeBitDepth(fullDepth);
+#else
+    tmp.A() = (tmp.A() << 4) | tmp.A();
+    tmp.G() = (tmp.G() << 3) | (tmp.G() >> 2);
+    tmp.B() = (tmp.B() << 3) | (tmp.B() >> 2);
+    tmp.R() = (tmp.R() << 3) | (tmp.R() >> 2);
+#endif
 
     const uint8 currentDepth[4] = { 4, 5, 5, 5 };
-    const uint8 fractionDepth[4] = { 4, 4, 4, 4 };
-
     for(uint32 c = 0; c < 4; c++) {
-      const uint32 denominator = (1 << currentDepth[c]);
-      const uint32 numerator = denominator + 1;
-
-      const uint32 shift = fractionDepth[c] - (fullDepth[c] - currentDepth[c]);
+      const uint32 numerator = (1 << currentDepth[c]) + 1;
+      const uint32 shift = 4 - (8 - currentDepth[c]);
       const uint32 fractionBits = fp.Component(c) >> shift;
-
-      uint32 component = tmp.Component(c);
-      component += ((fractionBits * numerator) / denominator);
-
+      uint16 component = tmp.Component(c);
+      component += ((fractionBits * numerator) >> currentDepth[c]);
       tmp.Component(c) = component;
     }
 
@@ -656,7 +657,6 @@ namespace PVRTCC {
               pixelBlock = &bottomLeftBlock;
             }
 
-            assert(pixelBlockIdx < blocksW * blocksH);
             pixelBlock->SetLerpValue((pixelY & 3) * 4 + (pixelX & 3), bestMod);
           }
         }
@@ -674,8 +674,8 @@ namespace PVRTCC {
     const uint32 height = cj.height;
 
     // Make sure that width and height are a power of two.
-    assert(width & (width - 1) == 0);
-    assert(height & (height - 1) == 0);
+    assert((width & (width - 1)) == 0);
+    assert((height & (height - 1)) == 0);
 
     CompressionLabel *labels =
       (CompressionLabel *)calloc(width * height, sizeof(CompressionLabel));
