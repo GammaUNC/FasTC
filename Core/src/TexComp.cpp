@@ -186,6 +186,7 @@ static double CompressImageInSerial(
   return cmpTime;
 }
 
+#ifdef HAS_ATOMICS
 class AtomicThreadUnit : public TCCallable {
   CompressionJobList &m_CompressionJobList;
   TCBarrier *m_Barrier;
@@ -269,6 +270,16 @@ static double CompressImageWithAtomics(
   double cmpTimeTotal = sw.TimeInMilliseconds();
   return cmpTimeTotal / double(settings.iNumCompressions);
 }
+#else  // HAS_ATOMICS
+static double CompressImageWithAtomics(
+  const unsigned char *imgData,
+  const unsigned int width, const unsigned int height,
+  const SCompressionSettings &settings,
+  unsigned char *outBuf
+) {
+  fprintf(stderr, "Compiler does not support atomic operations!");
+}
+#endif
 
 static double CompressThreadGroup(ThreadGroup &tgrp, const SCompressionSettings &settings) {
   if(!(tgrp.PrepareThreads())) {
@@ -415,6 +426,13 @@ bool CompressImageData(
   #ifndef HAS_SSE_41
   if(settings.bUseSIMD) {
     ReportError("Platform does not support SIMD!\n");
+    return false;
+  }
+  #endif
+
+  #ifndef HAS_ATOMICS
+  if(settings.bUseAtomics) {
+    ReportError("Compiler's atomic operations are not supported!\n");
     return false;
   }
   #endif
