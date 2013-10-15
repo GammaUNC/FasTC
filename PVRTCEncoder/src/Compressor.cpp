@@ -487,11 +487,8 @@ namespace PVRTCC {
   }
 
   static FasTC::Pixel BilerpPixels(uint32 x, uint32 y,
-                                   const FasTC::Pixel &p, FasTC::Pixel &fp,
-                                   const FasTC::Pixel &topLeft,
-                                   const FasTC::Pixel &topRight,
-                                   const FasTC::Pixel &bottomLeft,
-                                   const FasTC::Pixel &bottomRight) {
+    const FasTC::Pixel &topLeft,    const FasTC::Pixel &topRight,
+    const FasTC::Pixel &bottomLeft, const FasTC::Pixel &bottomRight) {
 
     const uint32 highXWeight = x;
     const uint32 lowXWeight = 4 - x;
@@ -510,13 +507,12 @@ namespace PVRTCC {
     const FasTC::Pixel br = bottomRight * bottomRightWeight;
     const FasTC::Pixel sum = tl + tr + bl + br;
 
+    FasTC::Pixel fp;
     for(uint32 c = 0; c < 4; c++) {
       fp.Component(c) = sum.Component(c) & 15;
     }
 
-    FasTC::Pixel tmp(p);
-    tmp = sum / (16);
-
+    FasTC::Pixel tmp(sum / 16);
     tmp.A() = (tmp.A() << 4) | tmp.A();
     tmp.G() = (tmp.G() << 3) | (tmp.G() >> 2);
     tmp.B() = (tmp.B() << 3) | (tmp.B() >> 2);
@@ -553,16 +549,10 @@ namespace PVRTCC {
 
     const uint32 *pixels = reinterpret_cast<const uint32 *>(inBuf);
 
-    // Make sure the bit depth matches the original...
-    FasTC::Pixel p;
-    uint8 bitDepth[4] = { 4, 5, 5, 5 };
-    p.ChangeBitDepth(bitDepth);
-
-    // Save fractional bits
-    FasTC::Pixel fp;
-    uint8 fpDepths[4] = { 4, 4, 4, 4 };
-    fp.ChangeBitDepth(fpDepths);
-
+    // !SPEED! When we're iterating over the blocks here, we don't need to load from outBlocks
+    // every iteration of the loop. Once we finish with a block, topLeft becomes topRight and
+    // bottomLeft becomes bottomRight. Also, when we go to the next row, bottomRight becomes
+    // topLeft.
     for(uint32 j = 0; j < blocksH; j++) {
       for(uint32 i = 0; i < blocksW; i++) {
 
@@ -609,8 +599,8 @@ namespace PVRTCC {
           for(uint32 x = 0; x < 4; x++) {
             uint32 pixelX = (i*4 + 2 + x) & (w - 1);
             uint32 pixelY = (j*4 + 2 + y) & (h - 1);
-            FasTC::Pixel colorA = BilerpPixels(x, y, p, fp, topLeftA, topRightA, bottomLeftA, bottomRightA);
-            FasTC::Pixel colorB = BilerpPixels(x, y, p, fp, topLeftB, topRightB, bottomLeftB, bottomRightB);
+            FasTC::Pixel colorA = BilerpPixels(x, y, topLeftA, topRightA, bottomLeftA, bottomRightA);
+            FasTC::Pixel colorB = BilerpPixels(x, y, topLeftB, topRightB, bottomLeftB, bottomRightB);
             FasTC::Pixel original(pixels[pixelY * w + pixelX]);
 
             // !FIXME! there are two modulation modes... we're only using one.
