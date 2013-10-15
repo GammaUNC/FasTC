@@ -43,8 +43,9 @@
 
 #include "ImageLoaderPNG.h"
 
-#include <stdio.h>
-#include <assert.h>
+#include <algorithm>
+#include <cstdio>
+#include <cassert>
 
 #include <png.h>
 
@@ -139,14 +140,45 @@ bool ImageLoaderPNG::ReadData() {
 
   switch(colorType) {
     default:
-    case PNG_COLOR_TYPE_PALETTE:
       ReportError("PNG color type unsupported");
       png_destroy_read_struct(&png_ptr, NULL, NULL);
       return false;
 
+    case PNG_COLOR_TYPE_PALETTE:
+    {
+      m_RedChannelPrecision = bitDepth;
+      m_RedData = new unsigned char[numPixels];
+      m_GreenChannelPrecision = bitDepth;
+      m_GreenData = new unsigned char[numPixels];
+      m_BlueChannelPrecision = bitDepth;
+      m_BlueData = new unsigned char[numPixels];
+
+      png_colorp palette;
+      int nPaletteEntries;
+      png_uint_32 ret = png_get_PLTE(png_ptr, info_ptr, &palette, &nPaletteEntries);
+      assert(ret == PNG_INFO_PLTE);
+
+      for(uint32 i = 0; i < m_Height; i++) {
+        png_read_row(png_ptr, rowData, NULL);
+        unsigned int rowOffset = i * m_Width;
+        for(uint32 j = 0; j < m_Width; j++) {
+          assert(rowData[j] < nPaletteEntries);
+          const png_color &c = palette[::std::min<unsigned char>(rowData[j], nPaletteEntries - 1)];
+          m_RedData[rowOffset + j] = c.red;
+          m_GreenData[rowOffset + j] = c.green;
+          m_BlueData[rowOffset + j] = c.blue;
+        }
+      }
+    }
+    break;
+
     case PNG_COLOR_TYPE_GRAY: {
       m_RedChannelPrecision = bitDepth;
       m_RedData = new unsigned char[numPixels];
+      m_GreenChannelPrecision = bitDepth;
+      m_GreenData = new unsigned char[numPixels];
+      m_BlueChannelPrecision = bitDepth;
+      m_BlueData = new unsigned char[numPixels];
 
       for(uint32 i = 0; i < m_Height; i++) {
   
@@ -156,7 +188,10 @@ bool ImageLoaderPNG::ReadData() {
   
         unsigned int byteIdx = 0;
         for(uint32 j = 0; j < m_Width; j++) {
-          m_RedData[rowOffset + j] = rowData[byteIdx++];
+          m_RedData[rowOffset + j] = rowData[byteIdx];
+          m_GreenData[rowOffset + j] = rowData[byteIdx];
+          m_BlueData[rowOffset + j] = rowData[byteIdx];
+          byteIdx++;
         }
 
         assert(byteIdx == bpr);
