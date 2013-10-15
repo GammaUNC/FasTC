@@ -224,7 +224,7 @@ static Pixel AveragePixels(const ::std::vector<Pixel> &pixels) {
 
   Pixel result;
   for(uint32 c = 0; c < 4; c++) {
-    result.Component(c) = sum[c] / pixels.size();
+    result.Component(c) = static_cast<uint16>(sum[c] / pixels.size());
   }
 
   return result;
@@ -337,7 +337,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
       Iy[idx] = (I[yphidx] - I[ymhidx]) / 2.0f;
 
       for(uint32 c = 0; c <= 3; c++) {
-        #define CPNT(dx) Pixel::ConvertChannelToFloat(GetPixels()[dx].Component(c), bitDepth[c])
+        #define CPNT(dx) Pixel::ConvertChannelToFloat(static_cast<uint8>(GetPixels()[dx].Component(c)), bitDepth[c])
         Ix[c][idx] = (CPNT(xphidx) - CPNT(xmhidx)) / 2.0f;
         Ixx[c][idx] = (CPNT(xphidx) - 2.0f*CPNT(idx) + CPNT(xmhidx)) / 2.0f;
         Iyy[c][idx] = (CPNT(yphidx) - 2.0f*CPNT(idx) + CPNT(ymhidx)) / 2.0f;
@@ -378,7 +378,7 @@ void Image::ContentAwareDownscale(uint32 xtimes, uint32 ytimes,
       float denom = Ixsq + Iysq;
 
       for(uint32 c = 0; c < 4; c++) {
-        float I0 = Pixel::ConvertChannelToFloat(current.Component(c), bitDepth[c]);
+        float I0 = Pixel::ConvertChannelToFloat(static_cast<uint8>(current.Component(c)), bitDepth[c]);
         float It = Ixx[c][idx] + Iyy[c][idx];
         if(fabs(denom) > 1e-6) {
           It -= (Ixsq * Ixx[c][idx] +

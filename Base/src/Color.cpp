@@ -75,7 +75,7 @@ namespace FasTC {
 
   // Tests for equality by comparing the values and the bit depths.
   bool Color::operator==(const Color &other) const {
-    static const float kEpsilon = 0.001;
+    static const float kEpsilon = 0.001f;
     for(uint32 c = 0; c < 4; c++) {
       if(fabs(Component(c) - other.Component(c)) > kEpsilon) {
         return false;

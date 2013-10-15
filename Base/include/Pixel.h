@@ -104,7 +104,8 @@ class Pixel : public Vector4<uint16> {
   // smaller to larger bit depths.
   void ChangeBitDepth(const uint8 (&newDepth)[4]);
 
-  static float ConvertChannelToFloat(uint8 channel, uint8 bitDepth) {
+  template<typename IntType>
+  static float ConvertChannelToFloat(IntType channel, uint8 bitDepth) {
     float denominator = static_cast<float>((1 << bitDepth) - 1);
     return static_cast<float>(channel) / denominator;
   }

@@ -188,7 +188,7 @@ namespace PVRTCC {
 
       uint32 idx = static_cast<uint32>(xx) + width * static_cast<uint32>(yy);
       uint8 ix = static_cast<uint8>(255.0f * LookupIntensity(labels, pixels, idx) + 0.5f);
-      if(ix >= i0) {
+      if(ix > i0) {
         ng++;
       }
 
@@ -415,7 +415,7 @@ namespace PVRTCC {
     for(uint32 j = 0; j < blocksH; j++) {
       for(uint32 i = 0; i < blocksW; i++) {
 
-        float minIntensity = 1.1, maxIntensity = -0.1;
+        float minIntensity = 1.1f, maxIntensity = -0.1f;
         uint32 minIntensityIdx = 0, maxIntensityIdx = 0;
         for(uint32 y = j*4; y <= (j+1)*4; y++)
         for(uint32 x = i*4; x <= (i+1)*4; x++) {

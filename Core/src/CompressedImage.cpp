@@ -113,7 +113,11 @@ bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBuf
   switch(m_Format) {
     case eCompressionFormat_PVRTC:
     {
+#ifndef NDEBUG
+      PVRTCC::Decompress(dj, false, PVRTCC::eWrapMode_Wrap, true);
+#else
       PVRTCC::Decompress(dj);
+#endif
     }
     break;
 

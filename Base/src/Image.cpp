@@ -221,7 +221,7 @@ double Image<PixelType>::ComputePSNR(Image<PixelType> *other) {
 static Image<IPixel> FilterValid(const Image<IPixel> &img, uint32 size, double sigma) {
   assert(size % 2);
   Image<IPixel> gaussian(size, size);
-  GenerateGaussianKernel(gaussian, size, sigma);
+  GenerateGaussianKernel(gaussian, size, static_cast<float>(sigma));
 
   double sum = 0.0;
   for(uint32 j = 0; j < size; j++) {
@@ -285,8 +285,8 @@ double Image<PixelType>::ComputeSSIM(Image<PixelType> *other) {
 
   for(uint32 j = 0; j < GetHeight(); j++) {
     for(uint32 i = 0; i < GetWidth(); i++) {
-      img1(i, j) = 255.0 * static_cast<float>(img1(i, j));
-      img2(i, j) = 255.0 * static_cast<float>(img2(i, j));
+      img1(i, j) = 255.0f * static_cast<float>(img1(i, j));
+      img2(i, j) = 255.0f * static_cast<float>(img2(i, j));
     }
   }
 
@@ -498,7 +498,7 @@ void Image<PixelType>::Filter(const Image<IPixel> &kernel) {
 
   for(uint32 j = 0; j < k.GetHeight(); j++) {
     for(uint32 i = 0; i < k.GetWidth(); i++) {
-      k(i, j) = static_cast<float>(k(i, j)) / sum;
+      k(i, j) = static_cast<float>(k(i, j) / sum);
     }
   }
 
