@@ -221,7 +221,7 @@ int _tmain(int argc, _TCHAR* argv[])
     return 1;
   }
 
-  Image img (*file.GetImage());
+  FasTC::Image<> img (*file.GetImage());
   if(format == eCompressionFormat_PVRTC) {
     img.SetBlockStreamOrder(false);
   }

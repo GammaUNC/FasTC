@@ -60,7 +60,7 @@
 #include "ThreadSafeStreambuf.h"
 
 #ifdef _MSC_VER
-int _tmain(int argc, _TCHAR* argv[])
+int _tmain(int argc, _TCHAR* argv[]) {
 #else
 int main(int argc, char **argv) {
 #endif
