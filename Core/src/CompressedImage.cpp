@@ -53,6 +53,7 @@
 #include "TexCompTypes.h"
 #include "BC7Compressor.h"
 #include "PVRTCCompressor.h"
+#include "DXTCompressor.h"
 
 CompressedImage::CompressedImage( const CompressedImage &other )
   : Image(other)
@@ -74,7 +75,7 @@ CompressedImage::CompressedImage(
 )
   : FasTC::Image<>(width, height,
                    reinterpret_cast<uint32 *>(NULL),
-                   format != eCompressionFormat_PVRTC)
+                   format == eCompressionFormat_BPTC)
   , m_Format(format)
   , m_CompressedData(0)
 {
@@ -111,6 +112,10 @@ bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBuf
   uint8 *byteData = reinterpret_cast<uint8 *>(m_CompressedData);
   DecompressionJob dj (byteData, outBuf, GetWidth(), GetHeight());
   switch(m_Format) {
+    case eCompressionFormat_DXT1:
+      DXTC::DecompressDXT1(dj);
+      break;
+
     case eCompressionFormat_PVRTC:
     {
 #ifndef NDEBUG
