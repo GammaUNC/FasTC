@@ -347,6 +347,14 @@ namespace PVRTCC {
       }
     }
     l.distance = newDist;
+#if 0
+    // We've already visited this label, but we should have dilated from here,
+    // so try and dilate now...
+    if(l.distance < 4 && nbs[4]->distance == 0) {
+      nbs[4]->distance = l.distance + 1;
+      nbs[4]->Combine(l);
+    }
+#endif
   }
 
   static void LabelImageBackward(CompressionLabel *labels,
@@ -381,6 +389,58 @@ namespace PVRTCC {
       }
     }
   }
+
+#if 0
+  static void DilateImage(CompressionLabel *labels, uint32 w, uint32 h) {
+    for(uint32 j = 0; j < h; j++)
+    for(uint32 i = 0; i < w; i++) {
+      uint32 idx = j*w + i;
+
+      uint32 minLowDist = labels[idx].lowLabel.distance == 0? 5 : labels[idx].lowLabel.distance - 1;
+      uint32 minHighDist = labels[idx].highLabel.distance == 0? 5 : labels[idx].highLabel.distance - 1;
+
+      for(int32 y = 0; y < 3; y++)
+      for(int32 x = 0; x < 3; x++) {
+        uint32 cidx = ((j + y + h-1) & (h-1))*w + ((i+x+w-1) & (w-1));
+
+        if(labels[cidx].lowLabel.distance > 0)
+          minLowDist = ::std::min<uint32>(minLowDist, labels[cidx].lowLabel.distance);
+
+        if(labels[cidx].highLabel.distance > 0)
+          minHighDist = ::std::min<uint32>(minHighDist, labels[cidx].highLabel.distance);
+      }
+
+      if(minLowDist != labels[idx].lowLabel.distance - 1) {
+        labels[idx].lowLabel.nLabels = 0;
+      }
+
+      if(minHighDist != labels[idx].highLabel.distance - 1) {
+        labels[idx].highLabel.nLabels = 0;
+      }
+
+      for(int32 y = 0; y < 3; y++)
+      for(int32 x = 0; x < 3; x++) {
+        uint32 cidx = ((j + y + h-1) & (h-1))*w + ((i+x+w-1) & (w-1));
+
+        if(minLowDist > 0 && labels[cidx].lowLabel.distance == minLowDist) {
+          labels[idx].lowLabel.Combine(labels[cidx].lowLabel);
+        }
+
+        if(minHighDist > 0 && labels[cidx].highLabel.distance == minHighDist) {
+          labels[idx].highLabel.Combine(labels[cidx].highLabel);
+        }
+      }
+
+      if(minLowDist > 0 && minLowDist < 5) {
+        labels[idx].lowLabel.distance = minLowDist + 1;
+      }
+
+      if(minHighDist > 0 && minHighDist < 5) {
+        labels[idx].highLabel.distance = minHighDist + 1;
+      }
+    }
+  }
+#endif
 
   static FasTC::Color CollectLabel(const uint32 *pixels, const Label &label) {
     FasTC::Color ret;
@@ -648,21 +708,9 @@ namespace PVRTCC {
     }
   }
 
-  void Compress(const CompressionJob &cj, bool bTwoBit, EWrapMode wrapMode) {
-    const uint32 width = cj.width;
-    const uint32 height = cj.height;
-
-    // Make sure that width and height are a power of two.
-    assert((width & (width - 1)) == 0);
-    assert((height & (height - 1)) == 0);
-
-    CompressionLabel *labels =
-      (CompressionLabel *)calloc(width * height, sizeof(CompressionLabel));
-
-    // First traverse forward...
-    LabelImageForward(labels, cj.inBuf, width, height);
-
 #ifndef NDEBUG
+  void DebugOutputLabels(const char *outputPrefix, const CompressionLabel *labels,
+                         uint32 width, uint32 height) {
     Image highForwardLabels(width, height);
     Image lowForwardLabels(width, height);
 
@@ -689,8 +737,29 @@ namespace PVRTCC {
       }
     }
 
-    highForwardLabels.DebugOutput("HighForwardLabels");
-    lowForwardLabels.DebugOutput("LowForwardLabels");
+    ::std::string prefix(outputPrefix);
+
+    highForwardLabels.DebugOutput((prefix + ::std::string("HighLabels")).c_str());
+    lowForwardLabels.DebugOutput((prefix + ::std::string("LowLabels")).c_str());
+  }
+#endif
+
+  void Compress(const CompressionJob &cj, bool bTwoBit, EWrapMode wrapMode) {
+    const uint32 width = cj.width;
+    const uint32 height = cj.height;
+
+    // Make sure that width and height are a power of two.
+    assert((width & (width - 1)) == 0);
+    assert((height & (height - 1)) == 0);
+
+    CompressionLabel *labels =
+      (CompressionLabel *)calloc(width * height, sizeof(CompressionLabel));
+
+    // First traverse forward...
+    LabelImageForward(labels, cj.inBuf, width, height);
+
+#ifndef NDEBUG
+    DebugOutputLabels("Forward-", labels, width, height);
 
     Image highForwardImg(width, height);
     Image lowForwardImg(width, height);
@@ -737,6 +806,8 @@ namespace PVRTCC {
     LabelImageBackward(labels, width, height);
 
 #ifndef NDEBUG
+    DebugOutputLabels("Backward-", labels, width, height);
+
     Image highImg(width, height);
     Image lowImg(width, height);
     for(uint32 j = 0; j < height; j++) {
