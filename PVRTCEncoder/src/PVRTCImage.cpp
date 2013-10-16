@@ -66,7 +66,6 @@
 #include "Pixel.h"
 using FasTC::Pixel;
 
-#include "../../Base/include/Image.h"
 #include "../../IO/include/ImageFile.h"
 
 template <typename T>
