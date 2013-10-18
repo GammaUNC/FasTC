@@ -188,7 +188,7 @@ namespace PVRTCC {
 
       uint32 idx = static_cast<uint32>(xx) + width * static_cast<uint32>(yy);
       uint8 ix = static_cast<uint8>(255.0f * LookupIntensity(labels, pixels, idx) + 0.5f);
-      if(ix > i0) {
+      if(ix >= i0) {
         ng++;
       }
 
@@ -709,38 +709,107 @@ namespace PVRTCC {
   }
 
 #ifndef NDEBUG
+  typedef FasTC::Pixel (*LabelFunc)(const CompressionLabel &);
+
+  static const uint32 *gDbgPixels = NULL;
+  void DebugOutputImage(const char *imageName, const CompressionLabel *labels,
+                        uint32 width, uint32 height, LabelFunc func) {
+    Image output(width, height);
+    for(uint32 j = 0; j < height; j++)
+    for(uint32 i = 0; i < width; i++) {
+      output(i, j) = func(labels[j*width + i]);
+    }
+    
+    output.DebugOutput(imageName);
+  }
+
+  static const FasTC::Color kLabelPalette[4] = {
+    FasTC::Color(0.0, 0.0, 1.0, 1.0),
+    FasTC::Color(1.0, 0.0, 1.0, 1.0),
+    FasTC::Color(1.0, 0.0, 0.0, 1.0),
+    FasTC::Color(1.0, 1.0, 0.0, 1.0)
+  };
+
+  static FasTC::Pixel HighLabelDistance(const CompressionLabel &l) {
+    FasTC::Pixel ret;
+    const Label &hl = l.highLabel;
+    if(hl.distance > 0) {
+      ret.Unpack(kLabelPalette[hl.distance-1].Pack());
+    }
+    return ret;
+  }
+
+  static FasTC::Pixel HighPixel(const CompressionLabel &l) {
+    assert(gDbgPixels);
+    FasTC::Pixel ret;
+    const Label &hl = l.highLabel;
+    if(hl.distance > 0) {
+      FasTC::Color c;
+      uint32 nPs = 0;
+      for(uint32 p = 0; p < hl.nLabels; p++) {
+        FasTC::Color pc; pc.Unpack(gDbgPixels[hl.idxs[p]]);
+        c += pc * static_cast<float>(hl.times[p]);
+        nPs += hl.times[p];
+      }
+      c /= nPs;
+      ret.Unpack(c.Pack());
+    }
+    return ret;
+  }
+
+  static FasTC::Pixel LowPixel(const CompressionLabel &l) {
+    assert(gDbgPixels);
+    FasTC::Pixel ret;
+    const Label &ll = l.lowLabel;
+    if(ll.distance > 0) {
+      FasTC::Color c;
+      uint32 nPs = 0;
+      for(uint32 p = 0; p < ll.nLabels; p++) {
+        FasTC::Color pc; pc.Unpack(gDbgPixels[ll.idxs[p]]);
+        c += pc * static_cast<float>(ll.times[p]);
+        nPs += ll.times[p];
+      }
+      c /= nPs;
+      ret.Unpack(c.Pack());
+    }
+    return ret;
+  }
+
+  static FasTC::Pixel LowLabelDistance(const CompressionLabel &l) {
+    FasTC::Pixel ret;
+    const Label &ll = l.lowLabel;
+    if(ll.distance > 0) {
+      ret.Unpack(kLabelPalette[ll.distance-1].Pack());
+    }
+    return ret;
+  }
+
+  static FasTC::Pixel LabelIntensity(const CompressionLabel &l) {
+    assert(l.intensity <= 1.0f && l.intensity >= 0.0f);
+    uint32 iv = static_cast<uint32>(l.intensity * 255.0f + 0.5);
+    assert(iv < 256);
+    return FasTC::Pixel(static_cast<uint32>(0xFF000000 | (iv) | (iv << 8) | (iv << 16)));
+  }
+
+  static FasTC::Pixel ExtremaLabels(const CompressionLabel &l) {
+    assert(!(l.highLabel.distance == 1 && l.lowLabel.distance == 1));
+
+    if(l.highLabel.distance == 1) {
+      return FasTC::Pixel(0xFF00FF00U);
+    } 
+
+    if(l.lowLabel.distance == 1) {
+      return FasTC::Pixel(0xFFFF0000U);
+    } 
+
+    return LabelIntensity(l);
+  }
+
   void DebugOutputLabels(const char *outputPrefix, const CompressionLabel *labels,
                          uint32 width, uint32 height) {
-    Image highForwardLabels(width, height);
-    Image lowForwardLabels(width, height);
-
-    const FasTC::Color kLabelPalette[4] = {
-      FasTC::Color(0.0, 0.0, 1.0, 1.0),
-      FasTC::Color(1.0, 0.0, 1.0, 1.0),
-      FasTC::Color(1.0, 0.0, 0.0, 1.0),
-      FasTC::Color(1.0, 1.0, 0.0, 1.0)
-    };
-
-    for(uint32 j = 0; j < height; j++) {
-      for(uint32 i = 0; i < width; i++) {
-        const CompressionLabel &l = labels[j*width + i];
-
-        const Label &hl = l.highLabel;
-        if(hl.distance > 0) {
-          highForwardLabels(i, j).Unpack(kLabelPalette[hl.distance-1].Pack());
-        }
-
-        const Label &ll = l.lowLabel;
-        if(ll.distance > 0) {
-          lowForwardLabels(i, j).Unpack(kLabelPalette[ll.distance-1].Pack());
-        }
-      }
-    }
-
     ::std::string prefix(outputPrefix);
-
-    highForwardLabels.DebugOutput((prefix + ::std::string("HighLabels")).c_str());
-    lowForwardLabels.DebugOutput((prefix + ::std::string("LowLabels")).c_str());
+    DebugOutputImage((prefix + ::std::string("HighLabels")).c_str(), labels, width, height, HighLabelDistance);
+    DebugOutputImage((prefix + ::std::string("LowLabels")).c_str(), labels, width, height, LowLabelDistance);
   }
 #endif
 
@@ -759,47 +828,22 @@ namespace PVRTCC {
     LabelImageForward(labels, cj.inBuf, width, height);
 
 #ifndef NDEBUG
+    gDbgPixels = reinterpret_cast<const uint32 *>(cj.inBuf);
+
+    Image original(width, height);
+    for(uint32 j = 0; j < height; j++)
+    for(uint32 i = 0; i < width; i++) {
+      original(i, j).Unpack(gDbgPixels[j*width + i]);
+    }
+    original.DebugOutput("Original");
+
+    DebugOutputImage("Intensity", labels, width, height, LabelIntensity);
+    DebugOutputImage("Labels", labels, width, height, ExtremaLabels);
+
     DebugOutputLabels("Forward-", labels, width, height);
 
-    Image highForwardImg(width, height);
-    Image lowForwardImg(width, height);
-    const uint32 *pixels = reinterpret_cast<const uint32 *>(cj.inBuf);
-    for(uint32 j = 0; j < height; j++) {
-      for(uint32 i = 0; i < width; i++) {
-        const CompressionLabel &l = labels[j*width + i];
-
-        const Label &hl = l.highLabel;
-        if(hl.distance > 0) {
-          FasTC::Color c;
-          uint32 nPs = 0;
-          for(uint32 p = 0; p < hl.nLabels; p++) {
-            FasTC::Color pc; pc.Unpack(pixels[hl.idxs[p]]);
-            c += pc * static_cast<float>(hl.times[p]);
-            nPs += hl.times[p];
-          }
-          c /= nPs;
-          highForwardImg(i, j).Unpack(c.Pack());
-        }
-
-        const Label &ll = l.lowLabel;
-        if(ll.distance > 0) {
-          FasTC::Color c;
-          uint32 nPs = 0;
-          for(uint32 p = 0; p < ll.nLabels; p++) {
-            FasTC::Color pc; pc.Unpack(pixels[ll.idxs[p]]);
-            c += pc * static_cast<float>(ll.times[p]);
-            nPs += ll.times[p];
-          }
-          c /= nPs;
-          lowForwardImg(i, j).Unpack(c.Pack());
-        }
-      }
-    }
-
-    highForwardImg.DebugOutput("HighForwardImg");
-    lowForwardImg.DebugOutput("LowForwardImg");
-
-    std::cout << "Output Forward images." << std::endl;
+    DebugOutputImage("HighForwardImg", labels, width, height, HighPixel);
+    DebugOutputImage("LowForwardImg", labels, width, height, LowPixel);
 #endif
 
     // Then traverse backward...
@@ -808,40 +852,8 @@ namespace PVRTCC {
 #ifndef NDEBUG
     DebugOutputLabels("Backward-", labels, width, height);
 
-    Image highImg(width, height);
-    Image lowImg(width, height);
-    for(uint32 j = 0; j < height; j++) {
-      for(uint32 i = 0; i < width; i++) {
-        const CompressionLabel &l = labels[j*width + i];
-
-        const Label &hl = l.highLabel;
-        if(hl.distance > 0) {
-          FasTC::Color c;
-          for(uint32 p = 0; p < hl.nLabels; p++) {
-            FasTC::Color pc; pc.Unpack(pixels[hl.idxs[p]]);
-            c += pc;
-          }
-          c /= hl.nLabels;
-          highImg(i, j).Unpack(c.Pack());
-        }
-
-        const Label &ll = l.lowLabel;
-        if(ll.distance > 0) {
-          FasTC::Color c;
-          for(uint32 p = 0; p < ll.nLabels; p++) {
-            FasTC::Color pc; pc.Unpack(pixels[ll.idxs[p]]);
-            c += pc;
-          }
-          c /= ll.nLabels;
-          lowImg(i, j).Unpack(c.Pack());
-        }
-      }
-    }
-
-    highImg.DebugOutput("HighImg");
-    lowImg.DebugOutput("LowImg");
-
-    std::cout << "Output images." << std::endl;
+    DebugOutputImage("HighImg", labels, width, height, HighPixel);
+    DebugOutputImage("LowImg", labels, width, height, LowPixel);
 #endif
 
     // Then combine everything...
