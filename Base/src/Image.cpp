@@ -406,6 +406,62 @@ double Image<PixelType>::ComputeSSIM(Image<PixelType> *other) {
   return mssim / static_cast<double>(w * h);
 }
 
+template<typename PixelType>
+double Image<PixelType>::ComputeMeanLocalEntropy() {
+  const uint32 kKernelSz = 15;
+  const uint32 kHalfKernelSz = kKernelSz / 2;
+  Image<IPixel> entropyIdx(GetWidth() - kKernelSz + 1, GetHeight() - kKernelSz + 1);
+  for(uint32 j = kHalfKernelSz; j < GetHeight() - kHalfKernelSz; j++) {
+    for(uint32 i = kHalfKernelSz; i < GetWidth() - kHalfKernelSz; i++) {
+
+      Image<PixelType> subImg(kKernelSz, kKernelSz);
+      for(uint32 y = 0; y < kKernelSz; y++)
+      for(uint32 x = 0; x < kKernelSz; x++) {
+        subImg(x, y) = (*this)(i - kHalfKernelSz + x, j - kHalfKernelSz + y);
+      }
+      entropyIdx(i-kHalfKernelSz, j-kHalfKernelSz) =
+        static_cast<float>(subImg.ComputeEntropy());
+    }
+  }
+
+  double sum = 0;
+  for(uint32 j = 0; j < entropyIdx.GetHeight(); j++)
+  for(uint32 i = 0; i < entropyIdx.GetWidth(); i++) {
+    sum += static_cast<float>(entropyIdx(i, j));
+  }
+  return sum / (entropyIdx.GetHeight() * entropyIdx.GetWidth());
+}
+
+template<typename PixelType>
+double Image<PixelType>::ComputeEntropy() {
+  uint32 hist[256];
+  memset(hist, 0, sizeof(hist));
+
+  ComputePixels();
+
+  Image<IPixel> intensity(GetWidth(), GetHeight());
+  ConvertTo(intensity);
+
+  for(uint32 j = 0; j < GetHeight(); j++) {
+    for(uint32 i = 0; i < GetWidth(); i++) {
+      float iflt = static_cast<float>(intensity(i, j));
+      uint32 iv = static_cast<uint32>(iflt * 255.0f + 0.5f);
+      assert(iv < 256);
+
+      hist[iv]++;
+    }
+  }
+
+  double ret = 0;
+  for(uint32 i = 0; i < 256; i++) {
+    if(hist[i] > 0) {
+      float p = static_cast<float>(hist[i]) / static_cast<float>(GetHeight() * GetWidth());
+      ret += p * log2(p);
+    }
+  }
+  return -ret;
+}
+
 // !FIXME! These won't work for non-RGBA8 data.
 template<typename PixelType>
 void Image<PixelType>::ConvertToBlockStreamOrder() {
