@@ -226,6 +226,9 @@ int main(int argc, char **argv) {
     img.SetBlockStreamOrder(false);
   }
 
+  fprintf(stdout, "Entropy: %.5f\n", img.ComputeEntropy());
+  fprintf(stdout, "Mean Local Entropy: %.5f\n", img.ComputeMeanLocalEntropy());
+
   std::ofstream logFile;
   ThreadSafeStreambuf streamBuf(logFile);
   std::ostream logStream(&streamBuf);
