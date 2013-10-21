@@ -50,6 +50,7 @@
 #include <cassert>
 #include <iostream>
 
+#include "DXTCompressor.h"
 #include "BC7Compressor.h"
 #include "CompressionFuncs.h"
 #include "Image.h"
@@ -95,12 +96,15 @@ SCompressionSettings:: SCompressionSettings()
 
 static  CompressionFuncWithStats ChooseFuncFromSettingsWithStats(const SCompressionSettings &s) {
   switch(s.format) {
+
     case eCompressionFormat_BPTC:
     {
        return BC7C::CompressWithStats;
     }
     break;
 
+    case eCompressionFormat_DXT1:
+    case eCompressionFormat_DXT5:
     case eCompressionFormat_PVRTC:
     {
       // !FIXME! actually implement one of these methods...
@@ -129,6 +133,12 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
       return BC7C::Compress;
     }
     break;
+
+    case eCompressionFormat_DXT1:
+      return DXTC::CompressImageDXT1;
+
+    case eCompressionFormat_DXT5:
+      return DXTC::CompressImageDXT5;
 
     case eCompressionFormat_PVRTC:
     {
