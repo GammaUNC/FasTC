@@ -53,7 +53,7 @@
 #include "gtest/gtest.h"
 #include "Color.h"
 
-static const float kEpsilon = 1e-6;
+static const float kEpsilon = 1e-6f;
 
 TEST(Color, DefaultConstructor) {
   FasTC::Color c;
@@ -72,8 +72,8 @@ TEST(Color, AssignmentConstructor) {
 }
 
 TEST(Color, VectorOperators) {
-  FasTC::Color a(0.1, 0.2, 0.3, 0.4);
-  FasTC::Color b(0.2, 0.3, 0.4, 0.5);
+  FasTC::Color a(0.1f, 0.2f, 0.3f, 0.4f);
+  FasTC::Color b(0.2f, 0.3f, 0.4f, 0.5f);
   FasTC::Color c = a + b;
 
   EXPECT_NEAR(c.R(), 0.3, kEpsilon);
@@ -90,8 +90,8 @@ TEST(Color, VectorOperators) {
 }
 
 TEST(Color, EqualityComparison) {
-  FasTC::Color a(0.1, 0.2, 0.3, 0.4);
-  FasTC::Color b(0.2, 0.3, 0.4, 0.5);
+  FasTC::Color a(0.1f, 0.2f, 0.3f, 0.4f);
+  FasTC::Color b(0.2f, 0.3f, 0.4f, 0.5f);
 
   EXPECT_TRUE(a == a && b == b);
   EXPECT_FALSE(a == b && b == a);

@@ -59,6 +59,11 @@ static inline T sad( const T &a, const T &b ) {
   return (a > b)? a - b : b - a;
 }
 
+// wtf
+#ifdef _MSC_VER
+template<typename T> T log2(T x) { return static_cast<T>(log((long double)x) / log(2.0)); }
+#endif
+
 namespace FasTC {
 
 template<typename PixelType>

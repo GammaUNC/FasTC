@@ -158,9 +158,9 @@ TEST(Image, ComputeMSSIM) {
   FasTC::Image<FasTC::IPixel> img(w, h);
   for(uint32 j = 0; j < h; j++) {
     for(uint32 i = 0; i < w; i++) {
-      img(i, j) =
+      img(i, j) = static_cast<float>(
         (static_cast<double>(i) * static_cast<double>(j)) /
-        (static_cast<double>(w) * static_cast<double>(h));
+        (static_cast<double>(w) * static_cast<double>(h)));
     }
   }
 

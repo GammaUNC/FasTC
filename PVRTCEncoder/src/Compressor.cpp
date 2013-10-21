@@ -907,9 +907,13 @@ namespace PVRTCC {
 
   void DebugOutputLabels(const char *outputPrefix, const CompressionLabel *labels,
                          uint32 width, uint32 height) {
-    ::std::string prefix(outputPrefix);
-    DebugOutputImage((prefix + ::std::string("HighLabels")).c_str(), labels, width, height, HighLabelDistance);
-    DebugOutputImage((prefix + ::std::string("LowLabels")).c_str(), labels, width, height, LowLabelDistance);
+    ::std::string highName = ::std::string(outputPrefix);
+    highName += ::std::string("HighLabels");
+    DebugOutputImage(highName.c_str(), labels, width, height, HighLabelDistance);
+
+    ::std::string lowName = ::std::string(outputPrefix);
+    lowName += ::std::string("LowLabels");
+    DebugOutputImage(lowName.c_str(), labels, width, height, LowLabelDistance);
   }
 #endif
 
