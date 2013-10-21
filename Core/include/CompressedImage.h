@@ -49,6 +49,7 @@
 enum ECompressionFormat {
   eCompressionFormat_DXT1,
   eCompressionFormat_DXT5,
+  eCompressionFormat_ETC1,
   eCompressionFormat_BPTC,
   eCompressionFormat_PVRTC,
 

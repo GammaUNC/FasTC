@@ -60,7 +60,7 @@
 void PrintUsage() {
   fprintf(stderr, "Usage: tc [OPTIONS] imagefile\n");
   fprintf(stderr, "\n");
-  fprintf(stderr, "\t-f\t\tFormat to use. Either \"BPTC\" or \"PVRTC\". Default: BPTC\n");
+  fprintf(stderr, "\t-f\t\tFormat to use. Either \"ETC1\", \"BPTC\" or \"PVRTC\". Default: BPTC\n");
   fprintf(stderr, "\t-l\t\tSave an output log.\n");
   fprintf(stderr, "\t-q <quality>\tSet compression quality level. Default: 50\n");
   fprintf(stderr, "\t-n <num>\tCompress the image num times and give the average time and PSNR. Default: 1\n");
@@ -137,6 +137,8 @@ int _tmain(int argc, _TCHAR* argv[])
         } else if(!strcmp(argv[fileArg], "PVRTCLib")) {
           format = eCompressionFormat_PVRTC;
           bUsePVRTexLib = true;
+        } else if(!strcmp(argv[fileArg], "ETC1")) {
+          format = eCompressionFormat_ETC1;
         }
       }
 
@@ -275,6 +277,8 @@ int _tmain(int argc, _TCHAR* argv[])
     strcat_s(basename, "-bc7.png");
   } else if(format == eCompressionFormat_PVRTC) {
     strcat_s(basename, "-pvrtc.png");
+  } else if(format == eCompressionFormat_ETC1) {
+    strcat_s(basename, "-etc1.png");
   }
 
   ImageFile cImgFile (basename, eFileFormat_PNG, *ci);

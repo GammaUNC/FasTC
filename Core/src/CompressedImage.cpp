@@ -54,6 +54,7 @@
 #include "BC7Compressor.h"
 #include "PVRTCCompressor.h"
 #include "DXTCompressor.h"
+#include "ETCCompressor.h"
 
 CompressedImage::CompressedImage( const CompressedImage &other )
   : Image(other)
@@ -116,6 +117,10 @@ bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBuf
       DXTC::DecompressDXT1(dj);
       break;
 
+    case eCompressionFormat_ETC1:
+      ETCC::Decompress(dj);
+      break;
+
     case eCompressionFormat_PVRTC:
     {
 #ifndef NDEBUG
@@ -168,6 +173,7 @@ uint32 CompressedImage::GetCompressedSize(uint32 uncompressedSize, ECompressionF
   default:
     assert(!"Not implemented!");
     // Fall through V
+  case eCompressionFormat_ETC1:
   case eCompressionFormat_DXT1:
   case eCompressionFormat_PVRTC:
     cmpDataSzNeeded = uncompressedSize / 8;

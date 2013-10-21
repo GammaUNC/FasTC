@@ -50,6 +50,7 @@
 #include <cassert>
 #include <iostream>
 
+#include "ETCCompressor.h"
 #include "DXTCompressor.h"
 #include "BC7Compressor.h"
 #include "CompressionFuncs.h"
@@ -102,7 +103,8 @@ static  CompressionFuncWithStats ChooseFuncFromSettingsWithStats(const SCompress
        return BC7C::CompressWithStats;
     }
     break;
-
+    
+    case eCompressionFormat_ETC1:
     case eCompressionFormat_DXT1:
     case eCompressionFormat_DXT5:
     case eCompressionFormat_PVRTC:
@@ -148,6 +150,9 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
         return CompressPVRTC;
       }
     }
+
+    case eCompressionFormat_ETC1:
+      return ETCC::Compress_RG;
 
     default:
     {
