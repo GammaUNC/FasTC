@@ -56,7 +56,7 @@
 void PrintUsage() {
   fprintf(stderr, "Usage: tc [OPTIONS] imagefile\n");
   fprintf(stderr, "\n");
-  fprintf(stderr, "\t-f\t\tFormat to use. Either \"BPTC\", \"DXT1\", \"DXT5\", or \"PVRTC\". Default: BPTC\n");
+  fprintf(stderr, "\t-f\t\tFormat to use. Either \"BPTC\", \"ETC1\", \"DXT1\", \"DXT5\", or \"PVRTC\". Default: BPTC\n");
   fprintf(stderr, "\t-l\t\tSave an output log.\n");
   fprintf(stderr, "\t-q <quality>\tSet compression quality level. Default: 50\n");
   fprintf(stderr, "\t-n <num>\tCompress the image num times and give the average time and PSNR. Default: 1\n");
@@ -133,6 +133,8 @@ int main(int argc, char **argv) {
         } else if(!strcmp(argv[fileArg], "PVRTCLib")) {
           format = eCompressionFormat_PVRTC;
           bUsePVRTexLib = true;
+        } else if(!strcmp(argv[fileArg], "ETC1")) {
+          format = eCompressionFormat_ETC1;
         } else if(!strcmp(argv[fileArg], "DXT1")) {
           format = eCompressionFormat_DXT1;
         } else if(!strcmp(argv[fileArg], "DXT5")) {
@@ -280,6 +282,8 @@ int main(int argc, char **argv) {
     strcat(basename, "-pvrtc.png");
   } else if(format == eCompressionFormat_DXT1) {
     strcat(basename, "-dxt1.png");
+  } else if(format == eCompressionFormat_ETC1) {
+    strcat(basename, "-etc1.png");
   }
 
   ImageFile cImgFile (basename, eFileFormat_PNG, *ci);
