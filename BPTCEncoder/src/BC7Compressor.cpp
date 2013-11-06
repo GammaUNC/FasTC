@@ -503,19 +503,6 @@ static inline uint32 fastrand() {
   return (g_seed>>16) & RAND_MAX;
 }
 
-static const int kNumStepDirections = 8;
-static const RGBADir kStepDirections[kNumStepDirections] = {
-  // For pBit changes, we have 8 possible directions.
-  RGBADir(RGBAVector(1.0f, 1.0f, 1.0f, 0.0f)),
-  RGBADir(RGBAVector(-1.0f, 1.0f, 1.0f, 0.0f)),
-  RGBADir(RGBAVector(1.0f, -1.0f, 1.0f, 0.0f)),
-  RGBADir(RGBAVector(-1.0f, -1.0f, 1.0f, 0.0f)),
-  RGBADir(RGBAVector(1.0f, 1.0f, -1.0f, 0.0f)),
-  RGBADir(RGBAVector(-1.0f, 1.0f, -1.0f, 0.0f)),
-  RGBADir(RGBAVector(1.0f, -1.0f, -1.0f, 0.0f)),
-  RGBADir(RGBAVector(-1.0f, -1.0f, -1.0f, 0.0f))
-};
-
 static void ChangePointForDirWithoutPbitChange(
   RGBAVector &v, uint32 dir, const float step[kNumColorChannels]
 ) {
@@ -1641,26 +1628,33 @@ namespace BC7C {
   // large enough to store the compressed image. This implementation has an 4:1
   // compression ratio.
   void Compress(const CompressionJob &cj) {
-    const unsigned char *inBuf = cj.inBuf;
+    const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.inBuf);
     unsigned char *outBuf = cj.outBuf;
     for(uint32 j = 0; j < cj.height; j += 4) {
       for(uint32 i = 0; i < cj.width; i += 4) {
 
-        CompressBC7Block((const uint32 *)inBuf, outBuf);
+        uint32 block[16];
+        memcpy(block, inPixels + j*cj.width + i, 4 * sizeof(uint32));
+        memcpy(block + 4, inPixels + (j+1)*cj.width + i, 4 * sizeof(uint32));
+        memcpy(block + 8, inPixels + (j+2)*cj.width + i, 4 * sizeof(uint32));
+        memcpy(block + 12, inPixels + (j+3)*cj.width + i, 4 * sizeof(uint32));
+
+        CompressBC7Block(block, outBuf);
 
 #ifndef NDEBUG
-        uint8 *block = reinterpret_cast<uint8 *>(outBuf);
+        const uint8 *inBlock = reinterpret_cast<const uint8 *>(block);
+        const uint8 *cmpblock = reinterpret_cast<const uint8 *>(outBuf);
         uint32 unComp[16];
-        DecompressBC7Block(block, unComp);
-        uint8* unCompData = reinterpret_cast<uint8 *>(unComp);
+        DecompressBC7Block(cmpblock, unComp);
+        const uint8* unCompData = reinterpret_cast<const uint8 *>(unComp);
 
         double diffSum = 0.0;
         for(int k = 0; k < 64; k+=4) {
-          double rdiff = sad(unCompData[k], inBuf[k]);
-          double gdiff = sad(unCompData[k+1], inBuf[k+1]);
-          double bdiff = sad(unCompData[k+2], inBuf[k+2]);
-          double adiff = sad(unCompData[k+3], inBuf[k+3]);
-          const double asrc = static_cast<double>(inBuf[k+3]);
+          double rdiff = sad(unCompData[k], inBlock[k]);
+          double gdiff = sad(unCompData[k+1], inBlock[k+1]);
+          double bdiff = sad(unCompData[k+2], inBlock[k+2]);
+          double adiff = sad(unCompData[k+3], inBlock[k+3]);
+          const double asrc = static_cast<double>(inBlock[k+3]);
           const double adst = static_cast<double>(unCompData[k+3]);
           double avga = ((asrc + adst)*0.5)/255.0;
           diffSum += (rdiff + gdiff + bdiff + adiff) * avga;
@@ -1673,7 +1667,6 @@ namespace BC7C {
 #endif
 
         outBuf += 16;
-        inBuf += 64;
       }
     }
   }
@@ -1730,29 +1723,35 @@ namespace BC7C {
 #endif  // HAS_ATOMICS
 
   void CompressWithStats(const CompressionJob &cj, std::ostream *logStream) {
-    const unsigned char *inBuf = cj.inBuf;
+    const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.inBuf);
     unsigned char *outBuf = cj.outBuf;
 
     for(uint32 j = 0; j < cj.height; j += 4) {
       for(uint32 i = 0; i < cj.width; i += 4) {
 
-        const uint32 *pixelBuf = reinterpret_cast<const uint32 *>(inBuf);
+        uint32 block[16];
+        memcpy(block, inPixels + j*cj.width + i, 4 * sizeof(uint32));
+        memcpy(block + 4, inPixels + (j+1)*cj.width + i, 4 * sizeof(uint32));
+        memcpy(block + 8, inPixels + (j+2)*cj.width + i, 4 * sizeof(uint32));
+        memcpy(block + 12, inPixels + (j+3)*cj.width + i, 4 * sizeof(uint32));
+
         if(logStream) {
-          uint64 blockIdx = reinterpret_cast<uint64>(pixelBuf);
-          CompressBC7Block(pixelBuf, outBuf, BlockLogger(blockIdx, *logStream));
+          uint64 blockIdx = reinterpret_cast<uint64>(inPixels + j*cj.width + i);
+          CompressBC7Block(block, outBuf, BlockLogger(blockIdx, *logStream));
         } else {
-          CompressBC7Block(pixelBuf, outBuf);
+          CompressBC7Block(block, outBuf);
         }
 
 #ifndef NDEBUG
-        uint8 *block = outBuf;
+        const uint8 *inBlock = reinterpret_cast<const uint8 *>(block);
+        const uint8 *cmpData = outBuf;
         uint32 unComp[16];
-        DecompressBC7Block(block, unComp);
-        uint8* unCompData = reinterpret_cast<uint8 *>(unComp);
+        DecompressBC7Block(cmpData, unComp);
+        const uint8* unCompData = reinterpret_cast<uint8 *>(unComp);
 
         int diffSum = 0;
         for(int i = 0; i < 64; i++) {
-          diffSum += sad(unCompData[i], inBuf[i]);
+          diffSum += sad(unCompData[i], inBlock[i]);
         }
         double blockError = static_cast<double>(diffSum) / 64.0;
         if(blockError > 50.0) {
@@ -1762,7 +1761,6 @@ namespace BC7C {
 #endif
 
         outBuf += 16;
-        inBuf += 64;
       }
     }
   }
@@ -2759,17 +2757,21 @@ namespace BC7C {
   // Convert the image from a BC7 buffer to a RGBA8 buffer
   void Decompress(const DecompressionJob &dj) {
 
-    unsigned char *outBuf = dj.outBuf;
-    unsigned int blockIdx = 0;
+    const uint8 *inBuf = dj.inBuf;
+    uint32 *outBuf = reinterpret_cast<uint32 *>(dj.outBuf);
 
     for(unsigned int j = 0; j < dj.height; j += 4) {
       for(unsigned int i = 0; i < dj.width; i += 4) {
 
         uint32 pixels[16];
-        DecompressBC7Block(dj.inBuf + (16*(blockIdx++)), pixels);
+        DecompressBC7Block(inBuf, pixels);
 
-        memcpy(outBuf, pixels, sizeof(pixels));
-        outBuf += 64;
+        memcpy(outBuf + j*dj.width + i, pixels, 4 * sizeof(pixels[0]));
+        memcpy(outBuf + (j+1)*dj.width + i, pixels+4, 4 * sizeof(pixels[0]));
+        memcpy(outBuf + (j+2)*dj.width + i, pixels+8, 4 * sizeof(pixels[0]));
+        memcpy(outBuf + (j+3)*dj.width + i, pixels+12, 4 * sizeof(pixels[0]));
+
+        inBuf += 16;
       }
     }
   }

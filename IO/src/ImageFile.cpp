@@ -207,7 +207,7 @@ FasTC::Image<> *ImageFile::LoadImage(const unsigned char *rawImageData) const {
   }
 
   uint32 *pixels = reinterpret_cast<uint32 *>(pixelData);
-  FasTC::Image<> *i = new FasTC::Image<>(loader->GetWidth(), loader->GetHeight(), pixels, true);
+  FasTC::Image<> *i = new FasTC::Image<>(loader->GetWidth(), loader->GetHeight(), pixels);
 
   // Cleanup
   delete loader;

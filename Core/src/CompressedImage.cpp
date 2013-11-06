@@ -74,9 +74,7 @@ CompressedImage::CompressedImage(
   const ECompressionFormat format,
   const unsigned char *data
 )
-  : FasTC::Image<>(width, height,
-                   reinterpret_cast<uint32 *>(NULL),
-                   format == eCompressionFormat_BPTC)
+  : FasTC::Image<>(width, height, reinterpret_cast<uint32 *>(NULL))
   , m_Format(format)
   , m_CompressedData(0)
 {

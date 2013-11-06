@@ -85,9 +85,6 @@ int main(int argc, char **argv) {
   FasTC::Image<> img1(*img1f.GetImage());
   FasTC::Image<> img2(*img2f.GetImage());
 
-  img1.SetBlockStreamOrder(false);
-  img2.SetBlockStreamOrder(false);
-
   double PSNR = img1.ComputePSNR(&img2);
   if(PSNR > 0.0) {
     fprintf(stdout, "PSNR: %.3f\n", PSNR);

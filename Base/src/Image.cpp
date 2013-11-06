@@ -70,17 +70,14 @@ template<typename PixelType>
 Image<PixelType>::Image(uint32 width, uint32 height)
   : m_Width(width)
   , m_Height(height)
-  , m_bBlockStreamOrder(false)
   , m_Pixels(new PixelType[GetNumPixels()])
 { }
 
 template<typename PixelType>
 Image<PixelType>::Image(uint32 width, uint32 height,
-                        const PixelType *pixels,
-                        bool bBlockStreamOrder)
+                        const PixelType *pixels)
   : m_Width(width)
   , m_Height(height)
-  , m_bBlockStreamOrder(false)
 {
   if(pixels) {
     m_Pixels = new PixelType[GetNumPixels()];
@@ -94,7 +91,6 @@ template<typename PixelType>
 Image<PixelType>::Image(const Image<PixelType> &other)
   : m_Width(other.m_Width)
   , m_Height(other.m_Height)
-  , m_bBlockStreamOrder(other.GetBlockStreamOrder())
   , m_Pixels(new PixelType[GetNumPixels()])
 {
   memcpy(m_Pixels, other.m_Pixels, GetNumPixels() * sizeof(PixelType));
@@ -112,10 +108,9 @@ bool Image<PixelType>::ReadPixels(const uint32 *rgba) {
 }
 
 template<typename PixelType>
-Image<PixelType>::Image(uint32 width, uint32 height, const uint32 *pixels, bool bBlockStreamOrder)
+Image<PixelType>::Image(uint32 width, uint32 height, const uint32 *pixels)
   : m_Width(width)
   , m_Height(height)
-  , m_bBlockStreamOrder(bBlockStreamOrder)
 {
   if(pixels) {
     m_Pixels = new PixelType[GetNumPixels()];
@@ -138,7 +133,6 @@ Image<PixelType> &Image<PixelType>::operator=(const Image &other) {
   
   m_Width = other.m_Width;
   m_Height = other.m_Height;
-  m_bBlockStreamOrder = other.GetBlockStreamOrder();
   
   if(m_Pixels) {
     delete [] m_Pixels;
@@ -465,59 +459,6 @@ double Image<PixelType>::ComputeEntropy() {
     }
   }
   return -ret;
-}
-
-// !FIXME! These won't work for non-RGBA8 data.
-template<typename PixelType>
-void Image<PixelType>::ConvertToBlockStreamOrder() {
-  if(m_bBlockStreamOrder || !m_Pixels)
-    return;
-
-  PixelType *newPixelData = new PixelType[GetWidth() * GetHeight()];
-  for(uint32 j = 0; j < GetHeight(); j+=4) {
-    for(uint32 i = 0; i < GetWidth(); i+=4) {
-      uint32 blockX = i / 4;
-      uint32 blockY = j / 4;
-      uint32 blockIdx = blockY * (GetWidth() / 4) + blockX;
-
-      uint32 offset = blockIdx * 4 * 4;
-      for(uint32 t = 0; t < 16; t++) {
-        uint32 x = i + t % 4;
-        uint32 y = j + t / 4;
-        newPixelData[offset + t] = m_Pixels[y*GetWidth() + x];
-      }
-    }
-  }
-
-  delete m_Pixels;
-  m_Pixels = newPixelData;
-  m_bBlockStreamOrder = true;
-}
-
-template<typename PixelType>
-void Image<PixelType>::ConvertFromBlockStreamOrder() {
-  if(!m_bBlockStreamOrder || !m_Pixels)
-    return;
-
-  PixelType *newPixelData = new PixelType[GetWidth() * GetHeight()];
-  for(uint32 j = 0; j < GetHeight(); j+=4) {
-    for(uint32 i = 0; i < GetWidth(); i+=4) {
-      uint32 blockX = i / 4;
-      uint32 blockY = j / 4;
-      uint32 blockIdx = blockY * (GetWidth() / 4) + blockX;
-
-      uint32 offset = blockIdx * 4 * 4;
-      for(uint32 t = 0; t < 16; t++) {
-        uint32 x = i + t % 4;
-        uint32 y = j + t / 4;
-        newPixelData[y*GetWidth() + x] = m_Pixels[offset + t];
-      }
-    }
-  }
-
-  delete m_Pixels;
-  m_Pixels = newPixelData;
-  m_bBlockStreamOrder = false;
 }
 
 template<typename PixelType>

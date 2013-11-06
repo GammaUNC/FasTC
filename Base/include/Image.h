@@ -62,11 +62,9 @@ namespace FasTC {
     Image() : m_Width(0), m_Height(0), m_Pixels(0) { }
     Image(uint32 width, uint32 height);
     Image(uint32 width, uint32 height,
-          const PixelType *pixels,
-          bool bBlockStreamOrder = false);
+          const PixelType *pixels);
     Image(uint32 width, uint32 height,
-          const uint32 *pixels,
-          bool bBlockStreamOrder = false);
+          const uint32 *pixels);
     Image(const Image<PixelType> &);
     Image &operator=(const Image<PixelType> &);
     virtual ~Image();
@@ -86,15 +84,6 @@ namespace FasTC {
     uint32 GetWidth() const { return m_Width; }
     uint32 GetHeight() const { return m_Height; }
     uint32 GetNumPixels() const { return GetWidth() * GetHeight(); }
-
-    void SetBlockStreamOrder(bool flag) {
-      if(flag) {
-        ConvertToBlockStreamOrder();
-      } else {
-        ConvertFromBlockStreamOrder();
-      }
-    }
-    bool GetBlockStreamOrder() const { return m_bBlockStreamOrder; }
 
     template<typename OtherPixelType>
     void ConvertTo(Image<OtherPixelType> &other) const {
@@ -127,16 +116,11 @@ namespace FasTC {
     uint32 m_Width;
     uint32 m_Height;
 
-    bool m_bBlockStreamOrder;
-
     PixelType *m_Pixels;
 
    protected:
 
     void SetImageData(uint32 width, uint32 height, PixelType *data);
-
-    void ConvertToBlockStreamOrder();
-    void ConvertFromBlockStreamOrder();
   };
 
   extern void GenerateGaussianKernel(Image<IPixel> &out, uint32 size, float sigma);

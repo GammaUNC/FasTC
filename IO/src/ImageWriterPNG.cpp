@@ -87,7 +87,6 @@ public:
 
 ImageWriterPNG::ImageWriterPNG(FasTC::Image<> &im)
   : ImageWriter(im.GetWidth(), im.GetHeight(), im.GetPixels())
-  , m_bBlockStreamOrder(im.GetBlockStreamOrder())
   , m_StreamPosition(0)
 {
   im.ComputePixels();
@@ -132,13 +131,7 @@ bool ImageWriterPNG::WriteImage() {
     row_pointers[y] = row;
 
     for (uint32 x = 0; x < m_Width; ++x) {
-      if(m_bBlockStreamOrder) {
-        for(uint32 ch = 0; ch < 4; ch++) {
-          *row++ = GetChannelForPixel(x, y, ch);
-        }
-      } else {
-        reinterpret_cast<uint32 *>(row)[x] = m_Pixels[y * m_Width + x].Pack();
-      }
+      reinterpret_cast<uint32 *>(row)[x] = m_Pixels[y * m_Width + x].Pack();
     }
   }
     

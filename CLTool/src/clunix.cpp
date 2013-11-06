@@ -56,6 +56,7 @@
 void PrintUsage() {
   fprintf(stderr, "Usage: tc [OPTIONS] imagefile\n");
   fprintf(stderr, "\n");
+  fprintf(stderr, "\t-v\t\tVerbose mode: prints out Entropy, Mean Local Entropy, and MSSIM");
   fprintf(stderr, "\t-f\t\tFormat to use. Either \"BPTC\", \"ETC1\", \"DXT1\", \"DXT5\", or \"PVRTC\". Default: BPTC\n");
   fprintf(stderr, "\t-l\t\tSave an output log.\n");
   fprintf(stderr, "\t-q <quality>\tSet compression quality level. Default: 50\n");
@@ -102,6 +103,7 @@ int main(int argc, char **argv) {
   bool bSaveLog = false;
   bool bUseAtomics = false;
   bool bUsePVRTexLib = false;
+  bool bVerbose = false;
   ECompressionFormat format = eCompressionFormat_BPTC;
 
   bool knowArg = false;
@@ -150,6 +152,13 @@ int main(int argc, char **argv) {
     if(strcmp(argv[fileArg], "-l") == 0) {
       fileArg++;
       bSaveLog = true;
+      knowArg = true;
+      continue;
+    }
+    
+    if(strcmp(argv[fileArg], "-v") == 0) {
+      fileArg++;
+      bVerbose = true;
       knowArg = true;
       continue;
     }
@@ -224,12 +233,11 @@ int main(int argc, char **argv) {
   }
 
   FasTC::Image<> img(*file.GetImage());
-  if(format != eCompressionFormat_BPTC) {
-    img.SetBlockStreamOrder(false);
-  }
 
-  fprintf(stdout, "Entropy: %.5f\n", img.ComputeEntropy());
-  fprintf(stdout, "Mean Local Entropy: %.5f\n", img.ComputeMeanLocalEntropy());
+  if(bVerbose) {
+    fprintf(stdout, "Entropy: %.5f\n", img.ComputeEntropy());
+    fprintf(stdout, "Mean Local Entropy: %.5f\n", img.ComputeMeanLocalEntropy());
+  }
 
   std::ofstream logFile;
   ThreadSafeStreambuf streamBuf(logFile);
@@ -269,11 +277,13 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Error computing PSNR\n");
   }
 
-  double SSIM = img.ComputeSSIM(ci);
-  if(SSIM > 0.0) {
-    fprintf(stdout, "SSIM: %.9f\n", SSIM);
-  } else {
-    fprintf(stderr, "Error computing MSSIM\n");
+  if(bVerbose) {
+    double SSIM = img.ComputeSSIM(ci);
+    if(SSIM > 0.0) {
+      fprintf(stdout, "SSIM: %.9f\n", SSIM);
+    } else {
+      fprintf(stderr, "Error computing SSIM\n");
+    }
   }
 
   if(format == eCompressionFormat_BPTC) {
