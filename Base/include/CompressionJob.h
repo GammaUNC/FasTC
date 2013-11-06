@@ -61,40 +61,70 @@
 //    inBuf - (width * height * 4) bytes
 //    outBuf - (width * height) bytes
 struct CompressionJob {
-  const unsigned char *inBuf;
-  unsigned char *outBuf;
-  const uint32 width;
-  const uint32 height;
+ private:
+  const uint8 *m_InBuf;
+  uint8 *m_OutBuf;
+  const uint32 m_Width;
+  const uint32 m_Height;
+  const uint32 m_RowBytes;
+
+ public:
+  const uint8 *InBuf() const { return m_InBuf; }
+  uint8 *OutBuf() const { return m_OutBuf; }
+  uint32 Width() const { return m_Width; }
+  uint32 Height() const { return m_Height; }
+  uint32 RowBytes() const { return m_RowBytes; }
 
   CompressionJob(
-    const unsigned char *_inBuf,
+    const uint8 *_inBuf,
     unsigned char *_outBuf,
     const uint32 _width,
     const uint32 _height)
-  : inBuf(_inBuf)
-  , outBuf(_outBuf)
-  , width(_width)
-  , height(_height)
+  : m_InBuf(_inBuf)
+  , m_OutBuf(_outBuf)
+  , m_Width(_width)
+  , m_Height(_height)
+  , m_RowBytes(_width)
+  { }
+
+  CompressionJob(
+    const uint8 *_inBuf,
+    unsigned char *_outBuf,
+    const uint32 _width,
+    const uint32 _height,
+    const uint32 _rowbytes)
+  : m_InBuf(_inBuf)
+  , m_OutBuf(_outBuf)
+  , m_Width(_width)
+  , m_Height(_height)
+  , m_RowBytes(_rowbytes)
   { }
 };
   
 // This struct mirrors that for a compression job, but is used to decompress a BC7 stream. Here, inBuf
 // is a buffer of BC7 data, and outBuf is the destination where we will copy the decompressed R8G8B8A8 data
 struct DecompressionJob {
-  const unsigned char *const inBuf;
-  unsigned char *const outBuf;
-  const uint32 width;
-  const uint32 height;
+ private:
+  const uint8 *m_InBuf;
+  uint8 *m_OutBuf;
+  const uint32 m_Width;
+  const uint32 m_Height;
+
+ public:
+  const uint8 *InBuf() const { return m_InBuf; }
+  uint8 *OutBuf() const { return m_OutBuf; }
+  uint32 Width() const { return m_Width; }
+  uint32 Height() const { return m_Height; }
 
   DecompressionJob(
-    const unsigned char *_inBuf,
+    const uint8 *_inBuf,
     unsigned char *_outBuf,
     const uint32 _width,
     const uint32 _height)
-  : inBuf(_inBuf)
-  , outBuf(_outBuf)
-  , width(_width)
-  , height(_height)
+  : m_InBuf(_inBuf)
+  , m_OutBuf(_outBuf)
+  , m_Width(_width)
+  , m_Height(_height)
   { }
 };
 

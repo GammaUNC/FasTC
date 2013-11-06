@@ -277,8 +277,8 @@ namespace PVRTCC {
                   const bool bTwoBitMode,
                   const EWrapMode wrapMode,
                   bool bDebugImages) {
-    const uint32 w = dcj.width;
-    const uint32 h = dcj.height;
+    const uint32 w = dcj.Width();
+    const uint32 h = dcj.Height();
 
     assert(w > 0);
     assert(h > 0);
@@ -301,7 +301,7 @@ namespace PVRTCC {
         uint32 idx = Interleave(j, i);
 
         uint32 offset = idx * kBlockSize;
-        blocks.push_back( Block(dcj.inBuf + offset) );
+        blocks.push_back( Block(dcj.InBuf() + offset) );
       }
     }
 
@@ -381,9 +381,9 @@ namespace PVRTCC {
     }
 
     if(bTwoBitMode) {
-      Decompress2BPP(imgA, imgB, blocks, dcj.outBuf, bDebugImages);
+      Decompress2BPP(imgA, imgB, blocks, dcj.OutBuf(), bDebugImages);
     } else {
-      Decompress4BPP(imgA, imgB, blocks, dcj.outBuf, bDebugImages);
+      Decompress4BPP(imgA, imgB, blocks, dcj.OutBuf(), bDebugImages);
     }
   }
 

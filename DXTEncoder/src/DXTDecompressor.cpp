@@ -92,26 +92,26 @@ namespace DXTC
 
   void DecompressDXT1(const DecompressionJob &dcj)
   {
-    assert(!(dcj.height & 3));
-    assert(!(dcj.width & 3));
+    assert(!(dcj.Height() & 3));
+    assert(!(dcj.Width() & 3));
 
-    uint32 blockW = dcj.width >> 2;
-    uint32 blockH = dcj.height >> 2;
+    uint32 blockW = dcj.Width() >> 2;
+    uint32 blockH = dcj.Height() >> 2;
 
     const uint32 blockSz = 8;
 
-    uint32 *outPixels = reinterpret_cast<uint32 *>(dcj.outBuf);
+    uint32 *outPixels = reinterpret_cast<uint32 *>(dcj.OutBuf());
 
     uint32 outBlock[16];
     for(int j = 0; j < blockH; j++) {
       for(int i = 0; i < blockW; i++) {
 
         uint32 offset = (j * blockW + i) * blockSz;
-        DecompressDXT1Block(dcj.inBuf + offset, outBlock);
+        DecompressDXT1Block(dcj.InBuf() + offset, outBlock);
 
         for(uint32 y = 0; y < 4; y++)
         for(uint32 x = 0; x < 4; x++) {
-          offset = (j*4 + y)*dcj.width + ((i*4)+x);
+          offset = (j*4 + y)*dcj.Width() + ((i*4)+x);
           outPixels[offset] = outBlock[y*4 + x];
         }
       }

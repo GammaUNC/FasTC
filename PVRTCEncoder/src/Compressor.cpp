@@ -918,8 +918,8 @@ namespace PVRTCC {
 #endif
 
   void Compress(const CompressionJob &cj, bool bTwoBit, EWrapMode wrapMode) {
-    const uint32 width = cj.width;
-    const uint32 height = cj.height;
+    const uint32 width = cj.Width();
+    const uint32 height = cj.Height();
 
     // Make sure that width and height are a power of two.
     assert((width & (width - 1)) == 0);
@@ -929,10 +929,10 @@ namespace PVRTCC {
       (CompressionLabel *)calloc(width * height, sizeof(CompressionLabel));
 
     // First traverse forward...
-    LabelImageForward(labels, cj.inBuf, width, height);
+    LabelImageForward(labels, cj.InBuf(), width, height);
 
 #ifndef NDEBUG
-    gDbgPixels = reinterpret_cast<const uint32 *>(cj.inBuf);
+    gDbgPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
 
     Image original(width, height);
     for(uint32 j = 0; j < height; j++)
@@ -961,10 +961,10 @@ namespace PVRTCC {
 #endif
 
     // Then combine everything...
-    GenerateLowHighImages(labels, cj.inBuf, cj.outBuf, width, height);
+    GenerateLowHighImages(labels, cj.InBuf(), cj.OutBuf(), width, height);
 
     // Then compute modulation values
-    GenerateModulationValues(cj.outBuf, cj.inBuf, width, height);
+    GenerateModulationValues(cj.OutBuf(), cj.InBuf(), width, height);
 
     // Cleanup
     free(labels);

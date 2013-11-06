@@ -57,18 +57,18 @@ namespace ETCC {
 
   void Decompress(const DecompressionJob &cj) {
 
-    uint32 blocksX = cj.width / 4;
-    uint32 blocksY = cj.width / 4;
+    uint32 blocksX = cj.Width() / 4;
+    uint32 blocksY = cj.Height() / 4;
 
     for(uint32 j = 0; j < blocksX; j++) {
       for(uint32 i = 0; i < blocksY; i++) {
         uint32 pixels[16];
         uint32 blockIdx = j*blocksX + i;
-        rg_etc1::unpack_etc1_block(cj.inBuf + blockIdx * 8, pixels);
+        rg_etc1::unpack_etc1_block(cj.InBuf() + blockIdx * 8, pixels);
         for(uint32 y = 0; y < 4; y++)
         for(uint32 x = 0; x < 4; x++) {
-          uint32 *out = reinterpret_cast<uint32 *>(cj.outBuf);
-          out[(j*4 + y)*cj.width + (i*4 + x)] = pixels[y*4 + x];
+          uint32 *out = reinterpret_cast<uint32 *>(cj.OutBuf());
+          out[(j*4 + y)*cj.Width() + (i*4 + x)] = pixels[y*4 + x];
         }
       }
     }

@@ -40,13 +40,13 @@ namespace DXTC
     uint8 minColor[4];
     uint8 maxColor[4];
 
-    uint8 *outBuf = cj.outBuf;
-    const uint8 *inBuf = cj.inBuf;
-    for(int j = 0; j < cj.height; j += 4, inBuf += cj.width * 4 * 4)
+    uint8 *outBuf = cj.OutBuf();
+    const uint8 *inBuf = cj.InBuf();
+    for(int j = 0; j < cj.Height(); j += 4, inBuf += cj.Width() * 4 * 4)
     {
-      for(int i = 0; i < cj.width; i += 4)
+      for(int i = 0; i < cj.Width(); i += 4)
       {
-        ExtractBlock(inBuf + i * 4, cj.width, block);
+        ExtractBlock(inBuf + i * 4, cj.Width(), block);
         GetMinMaxColors(block, minColor, maxColor);
         EmitWord(outBuf, ColorTo565(maxColor));
         EmitWord(outBuf, ColorTo565(minColor));
@@ -64,13 +64,13 @@ namespace DXTC
     uint8 minColor[4];
     uint8 maxColor[4];
 
-    uint8 *outBuf = cj.outBuf;
-    const uint8 *inBuf = cj.inBuf;
-    for(int j = 0; j < cj.height; j += 4, inBuf += cj.width * 4 * 4)
+    uint8 *outBuf = cj.OutBuf();
+    const uint8 *inBuf = cj.InBuf();
+    for(int j = 0; j < cj.Height(); j += 4, inBuf += cj.Width() * 4 * 4)
     {
-      for(int i = 0; i < cj.width; i += 4)
+      for(int i = 0; i < cj.Width(); i += 4)
       {
-        ExtractBlock(inBuf + i * 4, cj.width, block);
+        ExtractBlock(inBuf + i * 4, cj.Width(), block);
         GetMinMaxColorsWithAlpha(block, minColor, maxColor);
         EmitByte(outBuf, maxColor[3]);
         EmitByte(outBuf, minColor[3]);

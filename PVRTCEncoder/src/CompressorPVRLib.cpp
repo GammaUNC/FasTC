@@ -65,12 +65,12 @@ namespace PVRTCC {
                   const EWrapMode) {
     pvrtexture::CPVRTextureHeader pvrTexHdr;
     pvrTexHdr.setPixelFormat(pvrtexture::PVRStandard8PixelType);
-    pvrTexHdr.setWidth(cj.width);
-    pvrTexHdr.setHeight(cj.height);
+    pvrTexHdr.setWidth(cj.Width());
+    pvrTexHdr.setHeight(cj.Height());
     pvrTexHdr.setIsFileCompressed(false);
     pvrTexHdr.setIsPreMultiplied(false);
 
-    pvrtexture::CPVRTexture pvrTex = pvrtexture::CPVRTexture(pvrTexHdr, cj.inBuf);
+    pvrtexture::CPVRTexture pvrTex = pvrtexture::CPVRTexture(pvrTexHdr, cj.InBuf());
     bool result = pvrtexture::Transcode(pvrTex,
                                         ePVRTPF_PVRTCI_4bpp_RGBA,
                                         ePVRTVarTypeUnsignedByte,
@@ -79,7 +79,7 @@ namespace PVRTCC {
     assert(result);
     (void)result;
 
-    memcpy(cj.outBuf, static_cast<uint8 *>(pvrTex.getDataPtr()), cj.width * cj.height / 2);
+    memcpy(cj.OutBuf(), static_cast<uint8 *>(pvrTex.getDataPtr()), cj.Width() * cj.Height() / 2);
   }
 
 }  // namespace PVRTCC

@@ -62,8 +62,8 @@ namespace ETCC {
     rg_etc1::pack_etc1_block_init();
 
     // Assume block-stream order
-    uint32 blockSizeX = cj.width / 4;
-    uint32 blockSizeY = cj.height / 4;
+    uint32 blockSizeX = cj.Width() / 4;
+    uint32 blockSizeY = cj.Height() / 4;
 
     for(uint32 j = 0; j < blockSizeY; j++)
     for(uint32 i = 0; i < blockSizeX; i++) {
@@ -72,12 +72,12 @@ namespace ETCC {
 
       for(uint32 y = 0; y < 4; y++) {
         for(uint32 x = 0; x < 4; x++) {
-          const uint32 *in = reinterpret_cast<const uint32 *>(cj.inBuf);
-          pixels[y*4 + x] = in[(j*4 + y)*cj.width + (i*4 + x)];
+          const uint32 *in = reinterpret_cast<const uint32 *>(cj.InBuf());
+          pixels[y*4 + x] = in[(j*4 + y)*cj.Width() + (i*4 + x)];
         }
       }
 
-      pack_etc1_block(cj.outBuf + blockIdx * 8, pixels, params);
+      pack_etc1_block(cj.OutBuf() + blockIdx * 8, pixels, params);
     }
   }
 }  // namespace PVRTCC

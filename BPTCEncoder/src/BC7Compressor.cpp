@@ -1628,16 +1628,16 @@ namespace BC7C {
   // large enough to store the compressed image. This implementation has an 4:1
   // compression ratio.
   void Compress(const CompressionJob &cj) {
-    const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.inBuf);
-    unsigned char *outBuf = cj.outBuf;
-    for(uint32 j = 0; j < cj.height; j += 4) {
-      for(uint32 i = 0; i < cj.width; i += 4) {
+    const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
+    unsigned char *outBuf = cj.OutBuf();
+    for(uint32 j = 0; j < cj.Height(); j += 4) {
+      for(uint32 i = 0; i < cj.Width(); i += 4) {
 
         uint32 block[16];
-        memcpy(block, inPixels + j*cj.width + i, 4 * sizeof(uint32));
-        memcpy(block + 4, inPixels + (j+1)*cj.width + i, 4 * sizeof(uint32));
-        memcpy(block + 8, inPixels + (j+2)*cj.width + i, 4 * sizeof(uint32));
-        memcpy(block + 12, inPixels + (j+3)*cj.width + i, 4 * sizeof(uint32));
+        memcpy(block, inPixels + j*cj.RowBytes() + i, 4 * sizeof(uint32));
+        memcpy(block + 4, inPixels + (j+1)*cj.RowBytes() + i, 4 * sizeof(uint32));
+        memcpy(block + 8, inPixels + (j+2)*cj.RowBytes() + i, 4 * sizeof(uint32));
+        memcpy(block + 12, inPixels + (j+3)*cj.RowBytes() + i, 4 * sizeof(uint32));
 
         CompressBC7Block(block, outBuf);
 
@@ -1723,20 +1723,20 @@ namespace BC7C {
 #endif  // HAS_ATOMICS
 
   void CompressWithStats(const CompressionJob &cj, std::ostream *logStream) {
-    const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.inBuf);
-    unsigned char *outBuf = cj.outBuf;
+    const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
+    unsigned char *outBuf = cj.OutBuf();
 
-    for(uint32 j = 0; j < cj.height; j += 4) {
-      for(uint32 i = 0; i < cj.width; i += 4) {
+    for(uint32 j = 0; j < cj.Height(); j += 4) {
+      for(uint32 i = 0; i < cj.Width(); i += 4) {
 
         uint32 block[16];
-        memcpy(block, inPixels + j*cj.width + i, 4 * sizeof(uint32));
-        memcpy(block + 4, inPixels + (j+1)*cj.width + i, 4 * sizeof(uint32));
-        memcpy(block + 8, inPixels + (j+2)*cj.width + i, 4 * sizeof(uint32));
-        memcpy(block + 12, inPixels + (j+3)*cj.width + i, 4 * sizeof(uint32));
+        memcpy(block, inPixels + j*cj.RowBytes() + i, 4 * sizeof(uint32));
+        memcpy(block + 4, inPixels + (j+1)*cj.RowBytes() + i, 4 * sizeof(uint32));
+        memcpy(block + 8, inPixels + (j+2)*cj.RowBytes() + i, 4 * sizeof(uint32));
+        memcpy(block + 12, inPixels + (j+3)*cj.RowBytes() + i, 4 * sizeof(uint32));
 
         if(logStream) {
-          uint64 blockIdx = reinterpret_cast<uint64>(inPixels + j*cj.width + i);
+          uint64 blockIdx = reinterpret_cast<uint64>(inPixels + j*cj.Width() + i);
           CompressBC7Block(block, outBuf, BlockLogger(blockIdx, *logStream));
         } else {
           CompressBC7Block(block, outBuf);
@@ -2757,19 +2757,19 @@ namespace BC7C {
   // Convert the image from a BC7 buffer to a RGBA8 buffer
   void Decompress(const DecompressionJob &dj) {
 
-    const uint8 *inBuf = dj.inBuf;
-    uint32 *outBuf = reinterpret_cast<uint32 *>(dj.outBuf);
+    const uint8 *inBuf = dj.InBuf();
+    uint32 *outBuf = reinterpret_cast<uint32 *>(dj.OutBuf());
 
-    for(unsigned int j = 0; j < dj.height; j += 4) {
-      for(unsigned int i = 0; i < dj.width; i += 4) {
+    for(unsigned int j = 0; j < dj.Height(); j += 4) {
+      for(unsigned int i = 0; i < dj.Width(); i += 4) {
 
         uint32 pixels[16];
         DecompressBC7Block(inBuf, pixels);
 
-        memcpy(outBuf + j*dj.width + i, pixels, 4 * sizeof(pixels[0]));
-        memcpy(outBuf + (j+1)*dj.width + i, pixels+4, 4 * sizeof(pixels[0]));
-        memcpy(outBuf + (j+2)*dj.width + i, pixels+8, 4 * sizeof(pixels[0]));
-        memcpy(outBuf + (j+3)*dj.width + i, pixels+12, 4 * sizeof(pixels[0]));
+        memcpy(outBuf + j*dj.Width() + i, pixels, 4 * sizeof(pixels[0]));
+        memcpy(outBuf + (j+1)*dj.Width() + i, pixels+4, 4 * sizeof(pixels[0]));
+        memcpy(outBuf + (j+2)*dj.Width() + i, pixels+8, 4 * sizeof(pixels[0]));
+        memcpy(outBuf + (j+3)*dj.Width() + i, pixels+12, 4 * sizeof(pixels[0]));
 
         inBuf += 16;
       }
