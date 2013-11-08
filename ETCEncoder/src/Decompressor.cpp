@@ -55,7 +55,7 @@
 
 namespace ETCC {
 
-  void Decompress(const DecompressionJob &cj) {
+  void Decompress(const FasTC::DecompressionJob &cj) {
 
     uint32 blocksX = cj.Width() / 4;
     uint32 blocksY = cj.Height() / 4;

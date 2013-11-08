@@ -62,6 +62,10 @@
 #include "ThreadGroup.h"
 #include "WorkerQueue.h"
 
+using FasTC::CompressionJob;
+using FasTC::CompressionJobList;
+using FasTC::ECompressionFormat;
+
 template <typename T>
 static void clamp(T &x, const T &minX, const T &maxX) {
   x = std::max(std::min(maxX, x), minX);
@@ -86,7 +90,7 @@ static void CompressPVRTCLib(const CompressionJob &cj) {
 }
 
 SCompressionSettings:: SCompressionSettings()
-  : format(eCompressionFormat_BPTC)
+  : format(FasTC::eCompressionFormat_BPTC)
   , bUseSIMD(false)
   , iNumThreads(1)
   , iQuality(50)
@@ -98,16 +102,16 @@ SCompressionSettings:: SCompressionSettings()
 static  CompressionFuncWithStats ChooseFuncFromSettingsWithStats(const SCompressionSettings &s) {
   switch(s.format) {
 
-    case eCompressionFormat_BPTC:
+    case FasTC::eCompressionFormat_BPTC:
     {
        return BC7C::CompressWithStats;
     }
     break;
     
-    case eCompressionFormat_ETC1:
-    case eCompressionFormat_DXT1:
-    case eCompressionFormat_DXT5:
-    case eCompressionFormat_PVRTC:
+    case FasTC::eCompressionFormat_ETC1:
+    case FasTC::eCompressionFormat_DXT1:
+    case FasTC::eCompressionFormat_DXT5:
+    case FasTC::eCompressionFormat_PVRTC:
     {
       // !FIXME! actually implement one of these methods...
       return NULL;
@@ -124,7 +128,7 @@ static  CompressionFuncWithStats ChooseFuncFromSettingsWithStats(const SCompress
 
 static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
   switch(s.format) {
-    case eCompressionFormat_BPTC:
+    case FasTC::eCompressionFormat_BPTC:
     {
       BC7C::SetQualityLevel(s.iQuality);
 #ifdef HAS_SSE_41
@@ -136,13 +140,13 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
     }
     break;
 
-    case eCompressionFormat_DXT1:
+    case FasTC::eCompressionFormat_DXT1:
       return DXTC::CompressImageDXT1;
 
-    case eCompressionFormat_DXT5:
+    case FasTC::eCompressionFormat_DXT5:
       return DXTC::CompressImageDXT5;
 
-    case eCompressionFormat_PVRTC:
+    case FasTC::eCompressionFormat_PVRTC:
     {
       if(s.bUsePVRTexLib) {
         return CompressPVRTCLib;
@@ -151,7 +155,7 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
       }
     }
 
-    case eCompressionFormat_ETC1:
+    case FasTC::eCompressionFormat_ETC1:
       return ETCC::Compress_RG;
 
     default:
@@ -168,11 +172,8 @@ static void ReportError(const char *msg) {
 }
 
 static double CompressImageInSerial(
-  const uint8 *imgData,
-  const uint32 imgWidth,
-  const uint32 imgHeight,
-  const SCompressionSettings &settings,
-  unsigned char *outBuf
+  const CompressionJob &job,
+  const SCompressionSettings &settings
 ) {
   CompressionFunc f = ChooseFuncFromSettings(settings);
   CompressionFuncWithStats fStats = ChooseFuncFromSettingsWithStats(settings);
@@ -185,11 +186,10 @@ static double CompressImageInSerial(
     stopWatch.Reset();
     stopWatch.Start();
 
-    CompressionJob cj (imgData, outBuf, imgWidth, imgHeight);
     if(fStats && settings.logStream) {
-      (*fStats)(cj, settings.logStream);
+      (*fStats)(job, settings.logStream);
     } else {
-      (*f)(cj);
+      (*f)(job);
     }
 
     stopWatch.Stop();
@@ -231,10 +231,8 @@ class AtomicThreadUnit : public TCCallable {
 };
 
 static double CompressImageWithAtomics(
-  const unsigned char *imgData,
-  const unsigned int width, const unsigned int height,
-  const SCompressionSettings &settings,
-  unsigned char *outBuf
+  const CompressionJob &cj,
+  const SCompressionSettings &settings
 ) {
   CompressionFunc f = ChooseFuncFromSettings(settings);
   
@@ -242,7 +240,7 @@ static double CompressImageWithAtomics(
   const int nTimes = settings.iNumCompressions;
   CompressionJobList cjl (nTimes);
   for(int i = 0; i < nTimes; i++) {
-    if(!cjl.AddJob(CompressionJob(imgData, outBuf, height, width))) {
+    if(!cjl.AddJob(cj)) {
       assert(!"Error adding compression job to job list!");
     }
   }
@@ -287,10 +285,8 @@ static double CompressImageWithAtomics(
 }
 #else  // HAS_ATOMICS
 static double CompressImageWithAtomics(
-  const unsigned char *imgData,
-  const unsigned int width, const unsigned int height,
-  const SCompressionSettings &settings,
-  unsigned char *outBuf
+  const CompressionJob &cj,
+  const SCompressionSettings &settings
 ) {
   fprintf(stderr, "Compiler does not support atomic operations!");
 }
@@ -314,15 +310,13 @@ static double CompressThreadGroup(ThreadGroup &tgrp, const SCompressionSettings 
     cmpTimeTotal += tgrp.GetStopWatch().TimeInMilliseconds();
   }
 
-  tgrp.CleanUpThreads();  
+  tgrp.CleanUpThreads();
   return cmpTimeTotal;
 }
 
 static double CompressImageWithThreads(
-  const unsigned char *imgData,
-  const unsigned int imgDataSz,
-  const SCompressionSettings &settings,
-  unsigned char *outBuf
+  const CompressionJob &job,                                     
+  const SCompressionSettings &settings
 ) {
 
   CompressionFunc f = ChooseFuncFromSettings(settings);
@@ -330,11 +324,11 @@ static double CompressImageWithThreads(
 
   double cmpTimeTotal = 0.0;
   if(fStats && settings.logStream) {
-    ThreadGroup tgrp (settings.iNumThreads, imgData, imgDataSz, fStats, settings.logStream, outBuf);
+    ThreadGroup tgrp (settings.iNumThreads, job, fStats, settings.logStream);
     cmpTimeTotal = CompressThreadGroup(tgrp, settings);
   }
   else {
-    ThreadGroup tgrp (settings.iNumThreads, imgData, imgDataSz, f, outBuf);
+    ThreadGroup tgrp (settings.iNumThreads, job, f);
     cmpTimeTotal = CompressThreadGroup(tgrp, settings);
   }
 
@@ -342,11 +336,14 @@ static double CompressImageWithThreads(
   return cmpTime;
 }
 
+static double RunWorkerQueue(WorkerQueue &wq) {
+  wq.Run();
+  return wq.GetStopWatch().TimeInMilliseconds();
+}
+
 static double CompressImageWithWorkerQueue(
-  const unsigned char *imgData,
-  const unsigned int imgDataSz,
-  const SCompressionSettings &settings,
-  unsigned char *outBuf
+  const CompressionJob &job,
+  const SCompressionSettings &settings
 ) {
   CompressionFunc f = ChooseFuncFromSettings(settings);
   CompressionFuncWithStats fStats = ChooseFuncFromSettingsWithStats(settings);
@@ -357,29 +354,21 @@ static double CompressImageWithWorkerQueue(
       settings.iNumCompressions,
       settings.iNumThreads,
       settings.iJobSize,
-      imgData,
-      imgDataSz,
+      job,
       fStats,
-      settings.logStream,
-      outBuf
+      settings.logStream
     );
-
-    wq.Run();
-    cmpTimeTotal = wq.GetStopWatch().TimeInMilliseconds();
+    cmpTimeTotal = RunWorkerQueue(wq);
   }
   else {
     WorkerQueue wq (
       settings.iNumCompressions,
       settings.iNumThreads,
       settings.iJobSize,
-      imgData,
-      imgDataSz,
-      f,
-      outBuf
+      job,
+      f
     );
-
-    wq.Run();
-    cmpTimeTotal = wq.GetStopWatch().TimeInMilliseconds();
+    cmpTimeTotal = RunWorkerQueue(wq);
   }
 
   return cmpTimeTotal / double(settings.iNumCompressions);
@@ -458,7 +447,7 @@ bool CompressImageData(
   }
 
   uint32 numThreads = settings.iNumThreads;
-  if(settings.format == eCompressionFormat_PVRTC &&
+  if(settings.format == FasTC::eCompressionFormat_PVRTC &&
      (settings.iNumThreads > 1 || settings.logStream)) {
     if(settings.iNumThreads > 1) {
       ReportError("WARNING - PVRTC compressor does not support multithreading.");
@@ -483,22 +472,22 @@ bool CompressImageData(
     return false;
   }
 
-  CompressionFunc f = ChooseFuncFromSettings(settings);
-  if(f) {
+  if(ChooseFuncFromSettings(settings)) {
+
+    CompressionJob cj(settings.format, data, compressedData, width, height);
 
     double cmpMSTime = 0.0;
-
     if(numThreads > 1) {
       if(settings.bUseAtomics) {
-        cmpMSTime = CompressImageWithAtomics(data, width, height, settings, compressedData);
+        cmpMSTime = CompressImageWithAtomics(cj, settings);
       } else if(settings.iJobSize > 0) {
-        cmpMSTime = CompressImageWithWorkerQueue(data, dataSz, settings, compressedData);
+        cmpMSTime = CompressImageWithWorkerQueue(cj, settings);
       } else {
-        cmpMSTime = CompressImageWithThreads(data, dataSz, settings, compressedData);
+        cmpMSTime = CompressImageWithThreads(cj, settings);
       }
     }
     else {
-      cmpMSTime = CompressImageInSerial(data, width, height, settings, compressedData);
+      cmpMSTime = CompressImageInSerial(cj, settings);
     }
 
     // Report compression time

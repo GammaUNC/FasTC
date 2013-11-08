@@ -69,7 +69,7 @@ namespace PVRTCC {
   // Takes a stream of compressed PVRTC data and decompresses it into R8G8B8A8
   // format. The width and height must be specified in order to properly
   // decompress the data.
-  void Decompress(const DecompressionJob &,
+  void Decompress(const FasTC::DecompressionJob &,
                   bool bTwoBitMode = false,
                   const EWrapMode wrapMode = eWrapMode_Wrap,
                   bool bDebugImages = false);
@@ -77,12 +77,12 @@ namespace PVRTCC {
   // Takes a stream of uncompressed RGBA8 data and compresses it into PVRTC
   // version one. The width and height must be specified in order to properly
   // decompress the data.
-  void Compress(const CompressionJob &,
+  void Compress(const FasTC::CompressionJob &,
                 bool bTwoBitMode = false,
                 const EWrapMode wrapMode = eWrapMode_Wrap);
 
 #ifdef PVRTEXLIB_FOUND
-  void CompressPVRLib(const CompressionJob &,
+  void CompressPVRLib(const FasTC::CompressionJob &,
                       bool bTwoBitMode = false,
                       const EWrapMode wrapMode = eWrapMode_Wrap);
 #endif

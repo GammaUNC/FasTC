@@ -60,12 +60,12 @@
 // returns the compressed image data into outData. It is assumed that there is
 // enough space allocated for outData to store the compressed data. Allocation
 // is dependent on the compression format.
-typedef void (* CompressionFunc)(const CompressionJob &);
+typedef void (* CompressionFunc)(const FasTC::CompressionJob &);
 
 // A compression function format. It takes the raw data and image dimensions and 
 // returns the compressed image data into outData. It is assumed that there is
 // enough space allocated for outData to store the compressed data. Allocation
 // is dependent on the compression format.
-typedef void (* CompressionFuncWithStats)(const CompressionJob &, std::ostream *logStream);
+typedef void (* CompressionFuncWithStats)(const FasTC::CompressionJob &, std::ostream *logStream);
 
 #endif  // CORE_SRC_COMPRESSIONFUNCS_H_

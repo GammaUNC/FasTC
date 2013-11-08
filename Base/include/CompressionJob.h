@@ -45,6 +45,7 @@
 #define __COMPRESSION_JOBS_H__
 
 #include "TexCompTypes.h"
+#include "CompressionFormat.h"
 
 #ifdef _MSC_VER
 #   define ALIGN(x) __declspec( align(x) )
@@ -53,84 +54,149 @@
 #endif
 #define ALIGN_SSE ALIGN(16)
 
-// This structure defines a compression job. Here, width and height are the dimensions
-// of the image in pixels. inBuf contains the R8G8B8A8 data that is to be compressed, and
-// outBuf will contain the compressed BC7 data.
-//
-// Implicit sizes:
-//    inBuf - (width * height * 4) bytes
-//    outBuf - (width * height) bytes
-struct CompressionJob {
- private:
-  const uint8 *m_InBuf;
-  uint8 *m_OutBuf;
-  const uint32 m_Width;
-  const uint32 m_Height;
-  const uint32 m_RowBytes;
+namespace FasTC {
 
- public:
-  const uint8 *InBuf() const { return m_InBuf; }
-  uint8 *OutBuf() const { return m_OutBuf; }
-  uint32 Width() const { return m_Width; }
-  uint32 Height() const { return m_Height; }
-  uint32 RowBytes() const { return m_RowBytes; }
+  // This structure defines a compression job. Here, width and height are the dimensions
+  // of the image in pixels. inBuf contains the R8G8B8A8 data that is to be compressed, and
+  // outBuf will contain the compressed BC7 data.
+  //
+  // Implicit sizes:
+  //    inBuf - (width * height * 4) bytes
+  //    outBuf - (width * height) bytes
+  class CompressionJob {
+   private:
+    ECompressionFormat m_Format;
+    const uint8 *m_InBuf;
+    uint8 *m_OutBuf;
+    uint32 m_Width;
+    uint32 m_Height;
+    uint32 m_XStart, m_XEnd;
+    uint32 m_YStart, m_YEnd;
 
-  CompressionJob(
-    const uint8 *_inBuf,
-    unsigned char *_outBuf,
-    const uint32 _width,
-    const uint32 _height)
-  : m_InBuf(_inBuf)
-  , m_OutBuf(_outBuf)
-  , m_Width(_width)
-  , m_Height(_height)
-  , m_RowBytes(_width)
-  { }
+   public:
+    ECompressionFormat Format() const { return m_Format; }
+    const uint8 *InBuf() const { return m_InBuf; }
+    uint8 *OutBuf() const { return m_OutBuf; }
+    uint32 Width() const { return m_Width; }
+    uint32 Height() const { return m_Height; }
+    uint32 XStart() const { return m_XStart; }
+    uint32 XEnd() const { return m_XEnd; }
+    uint32 YStart() const { return m_YStart; }
+    uint32 YEnd() const { return m_YEnd; }
 
-  CompressionJob(
-    const uint8 *_inBuf,
-    unsigned char *_outBuf,
-    const uint32 _width,
-    const uint32 _height,
-    const uint32 _rowbytes)
-  : m_InBuf(_inBuf)
-  , m_OutBuf(_outBuf)
-  , m_Width(_width)
-  , m_Height(_height)
-  , m_RowBytes(_rowbytes)
-  { }
-};
+    CompressionJob(
+      ECompressionFormat _fmt,
+      const uint8 *_inBuf,
+      unsigned char *_outBuf,
+      const uint32 _width,
+      const uint32 _height)
+      : m_Format(_fmt)
+      , m_InBuf(_inBuf)
+      , m_OutBuf(_outBuf)
+      , m_Width(_width)
+      , m_Height(_height)
+      , m_XStart(0), m_XEnd(_width)
+      , m_YStart(0), m_YEnd(_height)
+    { }
+
+    CompressionJob(
+      ECompressionFormat _fmt,
+      const uint8 *_inBuf,
+      unsigned char *_outBuf,
+      const uint32 _width,
+      const uint32 _height,
+      const uint32 _xOffset,
+      const uint32 _yOffset)
+      : m_Format(_fmt)
+      , m_InBuf(_inBuf)
+      , m_OutBuf(_outBuf)
+      , m_Width(_width)
+      , m_Height(_height)
+      , m_XStart(_xOffset), m_XEnd(_width)
+      , m_YStart(_yOffset), m_YEnd(_height)
+    { }
+
+    CompressionJob(
+      ECompressionFormat _fmt,
+      const uint8 *_inBuf,
+      unsigned char *_outBuf,
+      const uint32 _width,
+      const uint32 _height,
+      const uint32 _xOffset,
+      const uint32 _yOffset,
+      const uint32 _xEndpoint,
+      const uint32 _yEndpoint)
+      : m_Format(_fmt)
+      , m_InBuf(_inBuf)
+      , m_OutBuf(_outBuf)
+      , m_Width(_width)
+      , m_Height(_height)
+      , m_XStart(_xOffset), m_XEnd(_xEndpoint)
+      , m_YStart(_yOffset), m_YEnd(_yEndpoint)
+    { }
+
+    // Returns the x and y coordinates of the pixels that corresponds to the block
+    // index for the given format.
+    void BlockIdxToCoords(uint32 blockIdx, uint32 (&out)[2]) const {
+      uint32 blockDim[2];
+      GetBlockDimensions(Format(), blockDim);
+
+      const uint32 kNumBlocksX = Width() / blockDim[0];
+
+      const uint32 blockX = blockIdx % kNumBlocksX;
+      const uint32 blockY = blockIdx / kNumBlocksX;
+
+      out[0] = blockX * blockDim[0];
+      out[1] = blockY * blockDim[1];
+    }
+
+    // Returns the x and y coordinates of the pixels that corresponds to the block
+    // index for the given format.
+    uint32 CoordsToBlockIdx(uint32 x, uint32 y) const {
+      uint32 blockDim[2];
+      GetBlockDimensions(Format(), blockDim);
+
+      const uint32 kNumBlocksX = Width() / blockDim[0];
+
+      const uint32 blockX = x / blockDim[0];
+      const uint32 blockY = y / blockDim[1];
+
+      return blockY * kNumBlocksX + blockX;
+    }
+  };
   
-// This struct mirrors that for a compression job, but is used to decompress a BC7 stream. Here, inBuf
-// is a buffer of BC7 data, and outBuf is the destination where we will copy the decompressed R8G8B8A8 data
-struct DecompressionJob {
- private:
-  const uint8 *m_InBuf;
-  uint8 *m_OutBuf;
-  const uint32 m_Width;
-  const uint32 m_Height;
+  // This struct mirrors that for a compression job, but is used to decompress a BC7 stream. Here, inBuf
+  // is a buffer of BC7 data, and outBuf is the destination where we will copy the decompressed R8G8B8A8 data
+  class DecompressionJob {
+   private:
+    const ECompressionFormat m_Format;
+    const uint8 *m_InBuf;
+    uint8 *m_OutBuf;
+    const uint32 m_Width;
+    const uint32 m_Height;
 
- public:
-  const uint8 *InBuf() const { return m_InBuf; }
-  uint8 *OutBuf() const { return m_OutBuf; }
-  uint32 Width() const { return m_Width; }
-  uint32 Height() const { return m_Height; }
+   public:
+    const uint8 *InBuf() const { return m_InBuf; }
+    uint8 *OutBuf() const { return m_OutBuf; }
+    uint32 Width() const { return m_Width; }
+    uint32 Height() const { return m_Height; }
+    uint32 Format() const { return m_Format; }
 
-  DecompressionJob(
-    const uint8 *_inBuf,
-    unsigned char *_outBuf,
-    const uint32 _width,
-    const uint32 _height)
-  : m_InBuf(_inBuf)
-  , m_OutBuf(_outBuf)
-  , m_Width(_width)
-  , m_Height(_height)
-  { }
-};
+    DecompressionJob(
+      ECompressionFormat _fmt,
+      const uint8 *_inBuf, uint8 *_outBuf,
+      uint32 _width, uint32 _height)
+      : m_Format(_fmt)
+      , m_InBuf(_inBuf)
+      , m_OutBuf(_outBuf)
+      , m_Width(_width)
+      , m_Height(_height)
+      { }
+  };
 
-// A structure for maintaining a list of textures to compress.
-struct CompressionJobList {
-  public:
+  // A structure for maintaining a list of textures to compress.
+  class CompressionJobList {
+   public:
 
     // Initialize the list by specifying the total number of jobs that it will contain.
     // This constructor allocates the necessary memory to hold the array.
@@ -154,7 +220,7 @@ struct CompressionJobList {
     const CompressionJob *GetJob(uint32 idx) const;
     uint32 *GetFinishedFlag(uint32 idx) const;
     
-  private:
+   private:
     CompressionJob *m_Jobs;
     uint32 m_NumJobs;
     const uint32 m_TotalNumJobs;
@@ -163,9 +229,10 @@ struct CompressionJobList {
       ALIGN(32) uint32 m_flag;
     } *m_FinishedFlags;
 
-  public:
+   public:
     ALIGN(32) uint32 m_CurrentJobIndex;
     ALIGN(32) uint32 m_CurrentBlockIndex;
-};
+  };
 
+}  // namespace FasTC
 #endif // __COMPRESSION_JOBS_H__

@@ -61,13 +61,13 @@ namespace ETCC {
   // Takes a stream of compressed ETC1 data and decompresses it into R8G8B8A8
   // format. The width and height must be specified in order to properly
   // decompress the data.
-  void Decompress(const DecompressionJob &);
+  void Decompress(const FasTC::DecompressionJob &);
 
   // Takes a stream of uncompressed RGBA8 data and compresses it into ETC1
   // version one. The width and height must be specified in order to properly
   // decompress the data. This uses the library created by Rich Geldreich found here:
   // https://code.google.com/p/rg-etc1
-  void Compress_RG(const CompressionJob &);
+  void Compress_RG(const FasTC::CompressionJob &);
 
 }  // namespace PVRTCC
 

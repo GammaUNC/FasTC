@@ -56,7 +56,7 @@
 void PrintUsage() {
   fprintf(stderr, "Usage: tc [OPTIONS] imagefile\n");
   fprintf(stderr, "\n");
-  fprintf(stderr, "\t-v\t\tVerbose mode: prints out Entropy, Mean Local Entropy, and MSSIM");
+  fprintf(stderr, "\t-v\t\tVerbose mode: prints out Entropy, Mean Local Entropy, and MSSIM\n");
   fprintf(stderr, "\t-f\t\tFormat to use. Either \"BPTC\", \"ETC1\", \"DXT1\", \"DXT5\", or \"PVRTC\". Default: BPTC\n");
   fprintf(stderr, "\t-l\t\tSave an output log.\n");
   fprintf(stderr, "\t-q <quality>\tSet compression quality level. Default: 50\n");
@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
   bool bUseAtomics = false;
   bool bUsePVRTexLib = false;
   bool bVerbose = false;
-  ECompressionFormat format = eCompressionFormat_BPTC;
+  FasTC::ECompressionFormat format = FasTC::eCompressionFormat_BPTC;
 
   bool knowArg = false;
   do {
@@ -131,16 +131,16 @@ int main(int argc, char **argv) {
         exit(1);
       } else {
         if(!strcmp(argv[fileArg], "PVRTC")) {
-          format = eCompressionFormat_PVRTC;
+          format = FasTC::eCompressionFormat_PVRTC;
         } else if(!strcmp(argv[fileArg], "PVRTCLib")) {
-          format = eCompressionFormat_PVRTC;
+          format = FasTC::eCompressionFormat_PVRTC;
           bUsePVRTexLib = true;
         } else if(!strcmp(argv[fileArg], "ETC1")) {
-          format = eCompressionFormat_ETC1;
+          format = FasTC::eCompressionFormat_ETC1;
         } else if(!strcmp(argv[fileArg], "DXT1")) {
-          format = eCompressionFormat_DXT1;
+          format = FasTC::eCompressionFormat_DXT1;
         } else if(!strcmp(argv[fileArg], "DXT5")) {
-          format = eCompressionFormat_DXT5;
+          format = FasTC::eCompressionFormat_DXT5;
         }
       }
 
@@ -286,13 +286,13 @@ int main(int argc, char **argv) {
     }
   }
 
-  if(format == eCompressionFormat_BPTC) {
+  if(format == FasTC::eCompressionFormat_BPTC) {
     strcat(basename, "-bc7.png");
-  } else if(format == eCompressionFormat_PVRTC) {
+  } else if(format == FasTC::eCompressionFormat_PVRTC) {
     strcat(basename, "-pvrtc.png");
-  } else if(format == eCompressionFormat_DXT1) {
+  } else if(format == FasTC::eCompressionFormat_DXT1) {
     strcat(basename, "-dxt1.png");
-  } else if(format == eCompressionFormat_ETC1) {
+  } else if(format == FasTC::eCompressionFormat_ETC1) {
     strcat(basename, "-etc1.png");
   }
 

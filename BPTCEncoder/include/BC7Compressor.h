@@ -114,13 +114,13 @@ namespace BC7C {
 
   // Compress the image given as RGBA data to BC7 format. Width and Height are
   // the dimensions of the image in pixels.
-  void Compress(const CompressionJob &);
+  void Compress(const FasTC::CompressionJob &);
 
   // Perform a compression while recording all of the choices the compressor
   // made into a list of statistics. We can use this to see whether or not
   // certain heuristics are working, such as whether or not certain modes are
   // being chosen more often than others, etc.
-  void CompressWithStats(const CompressionJob &, std::ostream *logStream);
+  void CompressWithStats(const FasTC::CompressionJob &, std::ostream *logStream);
 
 #ifdef HAS_SSE_41
   // Compress the image given as RGBA data to BC7 format using an algorithm
@@ -135,12 +135,12 @@ namespace BC7C {
   // to compress a list of textures. If this function is called with the same
   // argument from multiple threads, they will work together to compress all of
   // the images in the list.
-  void CompressAtomic(CompressionJobList &);
+  void CompressAtomic(FasTC::CompressionJobList &);
 #endif
 
   // Decompress the image given as BC7 data to R8G8B8A8 format. Width and Height
   // are the dimensions of the image in pixels.
-  void Decompress(const DecompressionJob &);
+  void Decompress(const FasTC::DecompressionJob &);
 }  // namespace BC7C
 
 #endif  // BPTCENCODER_INCLUDE_BC7COMPRESSOR_H_

@@ -273,7 +273,7 @@ namespace PVRTCC {
     }
   }
 
-  void Decompress(const DecompressionJob &dcj,
+  void Decompress(const FasTC::DecompressionJob &dcj,
                   const bool bTwoBitMode,
                   const EWrapMode wrapMode,
                   bool bDebugImages) {

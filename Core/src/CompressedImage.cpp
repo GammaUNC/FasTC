@@ -56,6 +56,10 @@
 #include "DXTCompressor.h"
 #include "ETCCompressor.h"
 
+using FasTC::CompressionJob;
+using FasTC::DecompressionJob;
+using FasTC::ECompressionFormat;
+
 CompressedImage::CompressedImage( const CompressedImage &other )
   : Image(other)
   , m_Format(other.m_Format)
@@ -109,17 +113,17 @@ bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBuf
   assert(outBufSz == GetUncompressedSize());
 
   uint8 *byteData = reinterpret_cast<uint8 *>(m_CompressedData);
-  DecompressionJob dj (byteData, outBuf, GetWidth(), GetHeight());
+  DecompressionJob dj (m_Format, byteData, outBuf, GetWidth(), GetHeight());
   switch(m_Format) {
-    case eCompressionFormat_DXT1:
+    case FasTC::eCompressionFormat_DXT1:
       DXTC::DecompressDXT1(dj);
       break;
 
-    case eCompressionFormat_ETC1:
+    case FasTC::eCompressionFormat_ETC1:
       ETCC::Decompress(dj);
       break;
 
-    case eCompressionFormat_PVRTC:
+    case FasTC::eCompressionFormat_PVRTC:
     {
 #ifndef NDEBUG
       PVRTCC::Decompress(dj, false, PVRTCC::eWrapMode_Wrap, true);
@@ -129,7 +133,7 @@ bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBuf
     }
     break;
 
-    case eCompressionFormat_BPTC: 
+    case FasTC::eCompressionFormat_BPTC: 
     { 
       BC7C::Decompress(dj);
     }
@@ -164,24 +168,15 @@ void CompressedImage::ComputePixels() {
 }
 
 uint32 CompressedImage::GetCompressedSize(uint32 uncompressedSize, ECompressionFormat format) {
-  assert(uncompressedSize % 8 == 0);
+  uint32 blockDim[2];
+  GetBlockDimensions(format, blockDim);
 
-  uint32 cmpDataSzNeeded = 0;
-  switch(format) {
-  default:
-    assert(!"Not implemented!");
-    // Fall through V
-  case eCompressionFormat_ETC1:
-  case eCompressionFormat_DXT1:
-  case eCompressionFormat_PVRTC:
-    cmpDataSzNeeded = uncompressedSize / 8;
-    break;
+  const uint32 uncompBlockSz = blockDim[0] * blockDim[1] * sizeof(uint32);
+  const uint32 blockSz = GetBlockSize(format);
 
-  case eCompressionFormat_DXT5:
-  case eCompressionFormat_BPTC:
-    cmpDataSzNeeded = uncompressedSize / 4;
-    break;
-  }
+  assert(uncompBlockSz % blockSz == 0);
+  const uint32 scale = uncompBlockSz / blockSz;
 
-  return cmpDataSzNeeded;
+  assert(uncompressedSize % blockSz == 0);
+  return uncompressedSize / scale;
 }

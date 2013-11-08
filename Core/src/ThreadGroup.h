@@ -54,25 +54,18 @@ struct CmpThread : public TCCallable {
   friend class ThreadGroup;  
 
 private:
-  TCBarrier *m_StartBarrier;
-
-  int *m_ParentCounter;
+  uint32 *m_ParentCounter;
   
+  TCBarrier *m_StartBarrier;
   TCMutex *m_ParentCounterLock;
   TCConditionVariable *m_FinishCV;
 
-  int m_Width;
-  int m_Height;
+  bool *m_ParentExitFlag;
 
+  FasTC::CompressionJob m_Job;
   CompressionFunc m_CmpFunc;
-
   CompressionFuncWithStats m_CmpFuncWithStats;
   std::ostream *m_LogStream;
-
-  unsigned char *m_OutBuf;
-  const unsigned char *m_InBuf;
-
-  bool *m_ParentExitFlag;
 
   CmpThread();
 
@@ -83,21 +76,17 @@ public:
 
 class ThreadGroup {
  public:
-  ThreadGroup( 
-    int numThreads, 
-    const unsigned char *inBuf, 
-    unsigned int inBufSz, 
-    CompressionFunc func, 
-    unsigned char *outBuf
+  ThreadGroup(
+    uint32 numThreads,
+    const FasTC::CompressionJob &cj,
+    CompressionFunc func
   );
 
-  ThreadGroup( 
-    int numThreads, 
-    const unsigned char *inBuf, 
-    unsigned int inBufSz, 
-    CompressionFuncWithStats func, 
-    std::ostream *logStream,
-    unsigned char *outBuf
+  ThreadGroup(
+    uint32 numThreads,
+    const FasTC::CompressionJob &cj,
+    CompressionFuncWithStats func,
+    std::ostream *logStream
   );
 
   ~ThreadGroup();
@@ -121,19 +110,16 @@ class ThreadGroup {
   TCMutex *const m_FinishMutex;
   TCConditionVariable *const m_FinishCV;
 
-  static const int kMaxNumThreads = 256;
+  static const uint32 kMaxNumThreads = 256;
   const int m_NumThreads;
 
-  int m_ActiveThreads;
-  int m_ThreadsFinished;
+  uint32 m_ActiveThreads;
+  uint32 m_ThreadsFinished;
 
   CmpThread m_Threads[kMaxNumThreads];
   TCThread *m_ThreadHandles[kMaxNumThreads];
 
-  // State variables.
-  const unsigned int m_ImageDataSz;
-  const unsigned char *const m_ImageData;
-  unsigned char *m_OutBuf;
+  FasTC::CompressionJob m_Job;
 
   StopWatch m_StopWatch;
 
@@ -141,9 +127,6 @@ class ThreadGroup {
   bool m_ExitFlag;
 
   std::ostream *m_LogStream;
-
-  const unsigned int m_CompressedBlockSize;
-  const unsigned int m_UncompressedBlockSize;
 };
 
 #endif // _THREAD_GROUP_H_

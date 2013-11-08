@@ -45,22 +45,12 @@
 #define _COMPRESSED_IMAGE_H_
 
 #include "TexCompTypes.h"
-
-enum ECompressionFormat {
-  eCompressionFormat_DXT1,
-  eCompressionFormat_DXT5,
-  eCompressionFormat_ETC1,
-  eCompressionFormat_BPTC,
-  eCompressionFormat_PVRTC,
-
-  kNumCompressionFormats
-};
-
+#include "CompressionFormat.h"
 #include "Image.h"
 
 class CompressedImage : public FasTC::Image<FasTC::Pixel> {
  private:
-  ECompressionFormat m_Format;
+  FasTC::ECompressionFormat m_Format;
   uint8 *m_CompressedData;
 
  public:
@@ -73,7 +63,7 @@ class CompressedImage : public FasTC::Image<FasTC::Pixel> {
   CompressedImage(
     const uint32 width,
     const uint32 height,
-    const ECompressionFormat format,
+    const FasTC::ECompressionFormat format,
     const uint8 *data
   );
 
@@ -85,8 +75,8 @@ class CompressedImage : public FasTC::Image<FasTC::Pixel> {
 
   virtual void ComputePixels();
 
-  static uint32 GetCompressedSize(uint32 uncompressedSize, ECompressionFormat format);
-  static uint32 GetUncompressedSize(uint32 compressedSize, ECompressionFormat format) {
+  static uint32 GetCompressedSize(uint32 uncompressedSize, FasTC::ECompressionFormat format);
+  static uint32 GetUncompressedSize(uint32 compressedSize, FasTC::ECompressionFormat format) {
     uint32 cmp = GetCompressedSize(compressedSize, format);
     return compressedSize * (compressedSize / cmp);
   }
@@ -104,7 +94,7 @@ class CompressedImage : public FasTC::Image<FasTC::Pixel> {
   // size for a given compressed image.
   bool DecompressImage(uint8 *outBuf, uint32 outBufSz) const;
 
-  ECompressionFormat GetFormat() const { return m_Format; }
+  FasTC::ECompressionFormat GetFormat() const { return m_Format; }
 };
 
 #endif // _COMPRESSED_IMAGE_H_

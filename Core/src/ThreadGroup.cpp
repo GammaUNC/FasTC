@@ -49,23 +49,22 @@
 #include <cassert>
 #include <iostream>
 
+using FasTC::CompressionJob;
+
 CmpThread::CmpThread() 
-  : m_StartBarrier(NULL)
-  , m_ParentCounter(NULL)
+  : m_ParentCounter(NULL)
+  , m_StartBarrier(NULL)
   , m_ParentCounterLock(NULL)
   , m_FinishCV(NULL)
-  , m_Width(0)
-  , m_Height(0)
+  , m_ParentExitFlag(NULL)
+  , m_Job(CompressionJob(FasTC::kNumCompressionFormats, NULL, NULL, 0, 0))
   , m_CmpFunc(NULL)
   , m_CmpFuncWithStats(NULL)
   , m_LogStream(NULL)
-  , m_OutBuf(NULL)
-  , m_InBuf(NULL)
-  , m_ParentExitFlag(NULL)
 { }
 
 void CmpThread::operator()() {
-  if(!m_OutBuf || !m_InBuf 
+  if(!m_Job.OutBuf() || !m_Job.InBuf() 
      || !m_ParentCounter || !m_ParentCounterLock || !m_FinishCV
      || !m_StartBarrier
      || !m_ParentExitFlag
@@ -87,11 +86,10 @@ void CmpThread::operator()() {
       return;
     }
 
-    CompressionJob cj (m_InBuf, m_OutBuf, m_Width, m_Height);
     if(m_CmpFunc)
-      (*m_CmpFunc)(cj);
+      (*m_CmpFunc)(m_Job);
     else
-      (*m_CmpFuncWithStats)(cj, m_LogStream);
+      (*m_CmpFuncWithStats)(m_Job, m_LogStream);
 
     {
       TCLock lock(*m_ParentCounterLock);
@@ -102,39 +100,19 @@ void CmpThread::operator()() {
   }
 }
 
-ThreadGroup::ThreadGroup( int numThreads, const unsigned char *inBuf, unsigned int inBufSz, CompressionFunc func, unsigned char *outBuf )
+ThreadGroup::ThreadGroup(uint32 numThreads,
+                         const CompressionJob &job,
+                         CompressionFunc func)
   : m_StartBarrier(new TCBarrier(numThreads + 1))
   , m_FinishMutex(new TCMutex())
   , m_FinishCV(new TCConditionVariable())
   , m_NumThreads(numThreads)
   , m_ActiveThreads(0)
-  , m_ImageDataSz(inBufSz)
-  , m_ImageData(inBuf)
-  , m_OutBuf(outBuf)
+  , m_Job(job)
   , m_ThreadState(eThreadState_Done)
   , m_ExitFlag(false)
-  , m_CompressedBlockSize(
-       (func == BC7C::Compress 
-#ifdef HAS_SSE_41
-  || func == BC7C::CompressImageBC7SIMD
-#endif
-       )? 
-         16 
-       : 
-         0
-  )
-  , m_UncompressedBlockSize(
-       (func == BC7C::Compress 
-#ifdef HAS_SSE_41
-  || func == BC7C::CompressImageBC7SIMD
-#endif
-       )? 
-         64 
-       : 
-         0
-  )
 { 
-  for(int i = 0; i < kMaxNumThreads; i++) {
+  for(uint32 i = 0; i < kMaxNumThreads; i++) {
     // Thread synchronization primitives
     m_Threads[i].m_ParentCounterLock = m_FinishMutex;
     m_Threads[i].m_FinishCV = m_FinishCV;
@@ -146,37 +124,21 @@ ThreadGroup::ThreadGroup( int numThreads, const unsigned char *inBuf, unsigned i
 }
 
 ThreadGroup::ThreadGroup( 
-  int numThreads, 
-  const unsigned char *inBuf, 
-  unsigned int inBufSz, 
+  uint32 numThreads, 
+  const CompressionJob &job,
   CompressionFuncWithStats func, 
-  std::ostream *logStream,
-  unsigned char *outBuf 
+  std::ostream *logStream
 )
   : m_StartBarrier(new TCBarrier(numThreads + 1))
   , m_FinishMutex(new TCMutex())
   , m_FinishCV(new TCConditionVariable())
   , m_NumThreads(numThreads)
   , m_ActiveThreads(0)
-  , m_ImageDataSz(inBufSz)
-  , m_ImageData(inBuf)
-  , m_OutBuf(outBuf)
+  , m_Job(job)
   , m_ThreadState(eThreadState_Done)
   , m_ExitFlag(false)
-  , m_CompressedBlockSize(
-       (func == BC7C::CompressWithStats)? 
-         16 
-       : 
-         0
-  )
-  , m_UncompressedBlockSize(
-       (func == BC7C::CompressWithStats)? 
-         64 
-       : 
-         0
-  )
 { 
-  for(int i = 0; i < kMaxNumThreads; i++) {
+  for(uint32 i = 0; i < kMaxNumThreads; i++) {
     // Thread synchronization primitives
     m_Threads[i].m_ParentCounterLock = m_FinishMutex;
     m_Threads[i].m_FinishCV = m_FinishCV;
@@ -209,10 +171,11 @@ bool ThreadGroup::PrepareThreads() {
 
   // We can assume that the image data is in block stream order
   // so, the size of the data given to each thread will be (nb*4)x4
-  int numBlocks = m_ImageDataSz / 64;
-
-  int blocksProcessed = 0;
-  int blocksPerThread = (numBlocks/m_NumThreads) + ((numBlocks % m_NumThreads)? 1 : 0);
+  uint32 blockDim[2];
+  GetBlockDimensions(m_Job.Format(), blockDim);
+  uint32 numBlocks = (m_Job.Width() * m_Job.Height()) / (blockDim[0] * blockDim[1]);
+  uint32 blocksProcessed = 0;
+  uint32 blocksPerThread = (numBlocks/m_NumThreads) + ((numBlocks % m_NumThreads)? 1 : 0);
 
   // Currently no threads are finished...
   m_ThreadsFinished = 0;
@@ -226,11 +189,22 @@ bool ThreadGroup::PrepareThreads() {
       numBlocksThisThread = numBlocks - blocksProcessed;
     }
 
+    uint32 start[2], end[2];
+    m_Job.BlockIdxToCoords(blocksProcessed, start);
+    m_Job.BlockIdxToCoords(blocksProcessed + numBlocksThisThread, end);
+
+    // !TODO! This should be moved to a unit test...
+    assert(m_Job.CoordsToBlockIdx(start[0], start[1]) == blocksProcessed);
+    assert(m_Job.CoordsToBlockIdx(end[0], end[1]) == blocksProcessed + numBlocksThisThread);
+
+    CompressionJob cj(m_Job.Format(),
+                      m_Job.InBuf(), m_Job.OutBuf(),
+                      m_Job.Width(), m_Job.Height(),
+                      start[0], start[1],
+                      end[0], end[1]);
+
     CmpThread &t = m_Threads[m_ActiveThreads];
-    t.m_Height = 4;
-    t.m_Width = numBlocksThisThread * 4;
-    t.m_OutBuf = m_OutBuf + (blocksProcessed * m_CompressedBlockSize);
-    t.m_InBuf = m_ImageData + (blocksProcessed * m_UncompressedBlockSize);
+    t.m_Job = cj;
 
     blocksProcessed += numBlocksThisThread;
     
@@ -280,7 +254,7 @@ bool ThreadGroup::CleanUpThreads() {
   m_StartBarrier->Wait();
 
   // Clean up.
-  for(int i = 0; i < m_ActiveThreads; i++) {
+  for(uint32 i = 0; i < m_ActiveThreads; i++) {
     m_ThreadHandles[i]->Join();
     delete m_ThreadHandles[i];
   }

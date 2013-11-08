@@ -917,13 +917,18 @@ namespace PVRTCC {
   }
 #endif
 
-  void Compress(const CompressionJob &cj, bool bTwoBit, EWrapMode wrapMode) {
+  void Compress(const FasTC::CompressionJob &cj, bool bTwoBit, EWrapMode wrapMode) {
     const uint32 width = cj.Width();
     const uint32 height = cj.Height();
 
     // Make sure that width and height are a power of two.
     assert((width & (width - 1)) == 0);
     assert((height & (height - 1)) == 0);
+
+    // Make sure that we aren't doing any shenanigans with threading or otherwise
+    // assuming that we're not ending at the end of the texture...
+    assert(cj.XStart() == 0 && cj.YStart() == 0);
+    assert(cj.XEnd() == cj.Width() && cj.YEnd() == cj.Width());
 
     CompressionLabel *labels =
       (CompressionLabel *)calloc(width * height, sizeof(CompressionLabel));

@@ -50,36 +50,54 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-// Our library include...
-#include "PVRTCCompressor.h"
+#ifndef _BASE_INCLUDE_COMPRESSIONFORMAT_H_
+#define _BASE_INCLUDE_COMPRESSIONFORMAT_H_
 
-// PVRLib library include...
-#include "PVRTextureUtilities.h"
+#include "TexCompTypes.h"
 
-#include <cassert>
+namespace FasTC {
 
-namespace PVRTCC {
+  // The different supported compression formats
+  enum ECompressionFormat {
+    eCompressionFormat_DXT1,
+    eCompressionFormat_DXT5,
+    eCompressionFormat_ETC1,
+    eCompressionFormat_BPTC,
+    eCompressionFormat_PVRTC,
 
-  void CompressPVRLib(const FasTC::CompressionJob &cj,
-                      bool bTwoBitMode,
-                      const EWrapMode) {
-    pvrtexture::CPVRTextureHeader pvrTexHdr;
-    pvrTexHdr.setPixelFormat(pvrtexture::PVRStandard8PixelType);
-    pvrTexHdr.setWidth(cj.Width());
-    pvrTexHdr.setHeight(cj.Height());
-    pvrTexHdr.setIsFileCompressed(false);
-    pvrTexHdr.setIsPreMultiplied(false);
+    kNumCompressionFormats
+  };
 
-    pvrtexture::CPVRTexture pvrTex = pvrtexture::CPVRTexture(pvrTexHdr, cj.InBuf());
-    bool result = pvrtexture::Transcode(pvrTex,
-                                        ePVRTPF_PVRTCI_4bpp_RGBA,
-                                        ePVRTVarTypeUnsignedByte,
-                                        ePVRTCSpacelRGB,
-                                        pvrtexture::ePVRTCFast);
-    assert(result);
-    (void)result;
-
-    memcpy(cj.OutBuf(), static_cast<uint8 *>(pvrTex.getDataPtr()), cj.Width() * cj.Height() / 2);
+  // Returns the dimensions of the blocks for the given format.
+  inline static void GetBlockDimensions(ECompressionFormat fmt, uint32 (&outSz)[2]) {
+    switch(fmt) {
+      default:
+      case eCompressionFormat_DXT1:
+      case eCompressionFormat_DXT5:
+      case eCompressionFormat_BPTC:
+      case eCompressionFormat_PVRTC:
+      case eCompressionFormat_ETC1:
+        outSz[0] = 4;
+        outSz[1] = 4;
+        break;
+    }
   }
 
-}  // namespace PVRTCC
+  // Returns the size of the compressed block in bytes for the given format.
+  inline static uint32 GetBlockSize(ECompressionFormat fmt) {
+    switch(fmt) {
+      default:
+      case eCompressionFormat_DXT1:
+      case eCompressionFormat_PVRTC:
+      case eCompressionFormat_ETC1:
+        return 8;
+        break;
+
+      case eCompressionFormat_DXT5:
+      case eCompressionFormat_BPTC:
+        return 16;
+    }
+  }
+}  // namespace FasTC
+
+#endif // _BASE_INCLUDE_COMPRESSIONFORMAT_H_

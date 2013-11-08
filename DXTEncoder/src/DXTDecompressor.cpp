@@ -90,7 +90,7 @@ namespace DXTC
     }
   }
 
-  void DecompressDXT1(const DecompressionJob &dcj)
+  void DecompressDXT1(const FasTC::DecompressionJob &dcj)
   {
     assert(!(dcj.Height() & 3));
     assert(!(dcj.Width() & 3));
@@ -98,13 +98,13 @@ namespace DXTC
     uint32 blockW = dcj.Width() >> 2;
     uint32 blockH = dcj.Height() >> 2;
 
-    const uint32 blockSz = 8;
+    const uint32 blockSz = GetBlockSize(FasTC::eCompressionFormat_DXT1);
 
     uint32 *outPixels = reinterpret_cast<uint32 *>(dcj.OutBuf());
 
     uint32 outBlock[16];
-    for(int j = 0; j < blockH; j++) {
-      for(int i = 0; i < blockW; i++) {
+    for(uint32 j = 0; j < blockH; j++) {
+      for(uint32 i = 0; i < blockW; i++) {
 
         uint32 offset = (j * blockW + i) * blockSz;
         DecompressDXT1Block(dcj.InBuf() + offset, outBlock);

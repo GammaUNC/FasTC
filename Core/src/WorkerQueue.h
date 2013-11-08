@@ -81,23 +81,19 @@ class WorkerQueue {
  public:
   WorkerQueue(
     uint32 numCompressions,
-    uint32 numThreads, 
+    uint32 numThreads,
     uint32 jobSize,
-    const uint8 *inBuf, 
-    uint32 inBufSz, 
-    CompressionFunc func, 
-    uint8 *outBuf
+    const FasTC::CompressionJob &job,
+    CompressionFunc func
   );
 
   WorkerQueue(
     uint32 numCompressions,
     uint32 numThreads, 
     uint32 jobSize,
-    const uint8 *inBuf, 
-    uint32 inBufSz, 
+    const FasTC::CompressionJob &job,
     CompressionFuncWithStats func, 
-    std::ostream *logStream,
-    uint8 *outBuf
+    std::ostream *logStream
   );
 
   ~WorkerQueue() { }
@@ -113,9 +109,7 @@ class WorkerQueue {
   uint32 m_WaitingThreads;
   uint32 m_ActiveThreads;
   uint32 m_JobSize;
-  uint32 m_InBufSz;
-  const uint8 *m_InBuf;
-  uint8 *m_OutBuf;
+  FasTC::CompressionJob m_Job;
 
   TCConditionVariable m_CV;
   TCMutex m_Mutex;
@@ -129,9 +123,9 @@ class WorkerQueue {
   WorkerThread *m_Workers[kMaxNumWorkerThreads];
   TCThread *m_ThreadHandles[kMaxNumWorkerThreads];
 
-  const uint8 *GetSrcForThread(const int threadIdx) const;
-  uint8 *GetDstForThread(const int threadIdx) const;
-  uint32 GetNumBlocksForThread(const int threadIdx) const;
+  const FasTC::CompressionJob &GetCompressionJob() const { return m_Job; }
+  void GetStartForThread(const uint32 threadIdx, uint32 (&start)[2]);
+  void GetEndForThread(const uint32 threadIdx, uint32 (&start)[2]);
   
   const CompressionFunc m_CompressionFunc;
   CompressionFunc GetCompressionFunc() const { return m_CompressionFunc; }

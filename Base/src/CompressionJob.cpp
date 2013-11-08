@@ -48,6 +48,8 @@
 #include <cstring>
 #include <cassert>
 
+namespace FasTC {
+
 // Initialize the list by specifying the total number of jobs that it will contain.
 // This constructor allocates the necessary memory to hold the array.
 CompressionJobList::CompressionJobList(const uint32 nJobs) 
@@ -128,3 +130,5 @@ uint32 *CompressionJobList::GetFinishedFlag(uint32 idx) const {
 
   return &(m_FinishedFlags[idx].m_flag);
 }
+
+}  // namespace FasTC

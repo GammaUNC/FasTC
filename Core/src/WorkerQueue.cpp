@@ -51,6 +51,8 @@
 
 #include "BC7Compressor.h"
 
+using FasTC::CompressionJob;
+
 template <typename T>
 static inline void clamp(T &x, const T &min, const T &max) {
   if(x < min) x = min;
@@ -98,10 +100,19 @@ void WorkerThread::operator()() {
 
       case eAction_DoWork:
       {
-        const uint8 *src = m_Parent->GetSrcForThread(m_ThreadIdx);
-        uint8 *dst = m_Parent->GetDstForThread(m_ThreadIdx);
+        const CompressionJob &job = m_Parent->GetCompressionJob();
 
-        CompressionJob cj (src, dst, 4 * m_Parent->GetNumBlocksForThread(m_ThreadIdx), 4);
+        uint32 start[2];
+        m_Parent->GetStartForThread(m_ThreadIdx, start);
+
+        uint32 end[2];
+        m_Parent->GetEndForThread(m_ThreadIdx, end);
+
+        CompressionJob cj (job.Format(),
+                           job.InBuf(), job.OutBuf(),
+                           job.Width(), job.Height(),
+                           start[0], start[1],
+                           end[0], end[1]);
         if(f)
           (*f)(cj);
         else
@@ -128,10 +139,8 @@ WorkerQueue::WorkerQueue(
   uint32 numCompressions,
   uint32 numThreads,
   uint32 jobSize,
-  const uint8 *inBuf,
-  uint32 inBufSz,
-  CompressionFunc func,
-  uint8 *outBuf
+  const CompressionJob &job,
+  CompressionFunc func
 )
   : m_NumCompressions(0)
   , m_TotalNumCompressions(std::max(uint32(1), numCompressions))
@@ -139,32 +148,22 @@ WorkerQueue::WorkerQueue(
   , m_WaitingThreads(0)
   , m_ActiveThreads(0)
   , m_JobSize(std::max(uint32(1), jobSize))
-  , m_InBufSz(inBufSz)
-  , m_InBuf(inBuf)
-  , m_OutBuf(outBuf)
+  , m_Job(job)
   , m_NextBlock(0)
   , m_CompressionFunc(func)
   , m_CompressionFuncWithStats(NULL)
   , m_LogStream(NULL)
 {
   clamp(m_NumThreads, uint32(1), uint32(kMaxNumWorkerThreads));
-
-#ifndef NDEBUG
-  if(m_InBufSz % 64) {
-    fprintf(stderr, "WorkerQueue.cpp -- WARNING: InBufSz not a multiple of 64. Are you sure that your image dimensions are correct?\n");
-  }
-#endif
 }
 
 WorkerQueue::WorkerQueue(
   uint32 numCompressions,
   uint32 numThreads, 
   uint32 jobSize,
-  const uint8 *inBuf, 
-  uint32 inBufSz, 
+  const CompressionJob &job,
   CompressionFuncWithStats func, 
-  std::ostream *logStream,
-  uint8 *outBuf
+  std::ostream *logStream
 )
   : m_NumCompressions(0)
   , m_TotalNumCompressions(std::max(uint32(1), numCompressions))
@@ -172,21 +171,13 @@ WorkerQueue::WorkerQueue(
   , m_WaitingThreads(0)
   , m_ActiveThreads(0)
   , m_JobSize(std::max(uint32(1), jobSize))
-  , m_InBufSz(inBufSz)
-  , m_InBuf(inBuf)
-  , m_OutBuf(outBuf)
+  , m_Job(job)
   , m_NextBlock(0)
   , m_CompressionFunc(NULL)
   , m_CompressionFuncWithStats(func)
   , m_LogStream(logStream)
 {
   clamp(m_NumThreads, uint32(1), uint32(kMaxNumWorkerThreads));
-
-#ifndef NDEBUG
-  if(m_InBufSz % 64) {
-    fprintf(stderr, "WorkerQueue.cpp -- WARNING: InBufSz not a multiple of 64. Are you sure that your image dimensions are correct?\n");
-  }
-#endif
 }
 
 void WorkerQueue::Run() {
@@ -234,7 +225,9 @@ WorkerThread::EAction WorkerQueue::AcceptThreadData(uint32 threadIdx) {
   }
 
   // How many blocks total do we have?
-  const uint32 totalBlocks = m_InBufSz / 64;
+  uint32 blockDim[2];
+  GetBlockDimensions(m_Job.Format(), blockDim);
+  const uint32 totalBlocks = (m_Job.Width() * m_Job.Height()) / (blockDim[0] * blockDim[1]);
   
   // Make sure we have exclusive access...
   TCLock lock(m_Mutex);
@@ -273,28 +266,21 @@ WorkerThread::EAction WorkerQueue::AcceptThreadData(uint32 threadIdx) {
   return WorkerThread::eAction_DoWork;
 }
 
-const uint8 *WorkerQueue::GetSrcForThread(const int threadIdx) const {
-  assert(m_Offsets[threadIdx] >= 0);
+void WorkerQueue::GetStartForThread(const uint32 threadIdx, uint32 (&start)[2]) {
   assert(threadIdx >= 0);
   assert(threadIdx < int(m_NumThreads));
+  assert(m_Offsets[threadIdx] >= 0);
 
-  const uint32 inBufBlockSz = 16 * 4;
-  return m_InBuf + m_Offsets[threadIdx] * inBufBlockSz;
+  const uint32 blockIdx = m_Offsets[threadIdx];
+  m_Job.BlockIdxToCoords(blockIdx, start);
 }
 
-uint8 *WorkerQueue::GetDstForThread(const int threadIdx) const {
-  assert(m_Offsets[threadIdx] >= 0);
+void WorkerQueue::GetEndForThread(const uint32 threadIdx, uint32 (&end)[2]) {
   assert(threadIdx >= 0);
   assert(threadIdx < int(m_NumThreads));
-
-  const uint32 outBufBlockSz = 16;
-  return m_OutBuf + m_Offsets[threadIdx] * outBufBlockSz;
-}
-
-uint32 WorkerQueue::GetNumBlocksForThread(const int threadIdx) const {
   assert(m_Offsets[threadIdx] >= 0);
-  assert(threadIdx >= 0);
-  assert(threadIdx < int(m_NumThreads));
+  assert(m_NumBlocks[threadIdx] >= 0);
 
-  return m_NumBlocks[threadIdx];
+  const uint32 blockIdx = m_Offsets[threadIdx] + m_NumBlocks[threadIdx];
+  m_Job.BlockIdxToCoords(blockIdx, end);
 }

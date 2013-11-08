@@ -16,10 +16,10 @@
 namespace DXTC
 {
   // DXT compressor (scalar version).
-  void CompressImageDXT1(const CompressionJob &);
-  void CompressImageDXT5(const CompressionJob &);
+  void CompressImageDXT1(const FasTC::CompressionJob &);
+  void CompressImageDXT5(const FasTC::CompressionJob &);
 
-  void DecompressDXT1(const DecompressionJob &);
+  void DecompressDXT1(const FasTC::DecompressionJob &);
 
   uint16 ColorTo565(const uint8* color);
   void EmitByte(uint8*& dest, uint8 b);

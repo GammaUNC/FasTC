@@ -56,6 +56,8 @@
 
 #include "PVRTCCompressor.h"
 
+static const FasTC::ECompressionFormat kFmt = FasTC::eCompressionFormat_PVRTC;
+
 TEST(Decompressor, DecompressWhite) {
   const uint32 kWidth = 32;
   const uint32 kHeight = 32;
@@ -69,7 +71,7 @@ TEST(Decompressor, DecompressWhite) {
 
   uint8 outData[4 * kWidth * kHeight];
 
-  DecompressionJob dcj (pvrData, outData, kWidth, kHeight);
+  FasTC::DecompressionJob dcj (kFmt, pvrData, outData, kWidth, kHeight);
   PVRTCC::Decompress(dcj);
 
   for(uint32 i = 0; i < kWidth; i++) {
@@ -94,7 +96,7 @@ TEST(Decompressor, DecompressGray) {
 
   uint8 outData[4 * kWidth * kHeight];
 
-  DecompressionJob dcj (pvrData, outData, kWidth, kHeight);
+  FasTC::DecompressionJob dcj (kFmt, pvrData, outData, kWidth, kHeight);
   PVRTCC::Decompress(dcj);
 
   for(uint32 i = 0; i < kWidth; i++) {

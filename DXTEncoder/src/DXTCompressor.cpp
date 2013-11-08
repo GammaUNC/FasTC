@@ -25,7 +25,7 @@
 namespace DXTC
 {
   // Function prototypes
-  void ExtractBlock(const uint8* inPtr, uint32 width, uint8* colorBlock);
+  void ExtractBlock(const uint32* inPtr, uint32 width, uint8* colorBlock);
   void GetMinMaxColors(const uint8* colorBlock, uint8* minColor, uint8* maxColor);
   void GetMinMaxColorsWithAlpha(const uint8* colorBlock, uint8* minColor, uint8* maxColor);
   void EmitColorIndices(const uint8* colorBlock, uint8*& outBuf, const uint8* minColor, const uint8* maxColor);
@@ -35,23 +35,30 @@ namespace DXTC
   // 4-byte RGBA format. The width and height parameters specify the size of the image in pixels.
   // The buffer pointed to by outBuf should be large enough to store the compressed image. This
   // implementation has an 8:1 compression ratio.
-  void CompressImageDXT1(const CompressionJob &cj) {
+  void CompressImageDXT1(const FasTC::CompressionJob &cj) {
     uint8 block[64];
     uint8 minColor[4];
     uint8 maxColor[4];
 
-    uint8 *outBuf = cj.OutBuf();
-    const uint8 *inBuf = cj.InBuf();
-    for(int j = 0; j < cj.Height(); j += 4, inBuf += cj.Width() * 4 * 4)
-    {
-      for(int i = 0; i < cj.Width(); i += 4)
-      {
-        ExtractBlock(inBuf + i * 4, cj.Width(), block);
+    const uint32 kBlockSz = GetBlockSize(FasTC::eCompressionFormat_DXT1);
+    const uint32 startBlock = cj.CoordsToBlockIdx(cj.XStart(), cj.YStart());
+    uint8 *outBuf = cj.OutBuf() + startBlock * kBlockSz;
+
+    const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
+    uint32 startX = cj.XStart();
+    bool done = false;
+    for(uint32 j = cj.YStart(); !done; j += 4) {
+      for(uint32 i = startX; !done && i < cj.Width(); i += 4) {
+
+        const uint32 kOffset = j*cj.Width() + i;
+        ExtractBlock(inPixels + kOffset, cj.Width(), block);
         GetMinMaxColors(block, minColor, maxColor);
         EmitWord(outBuf, ColorTo565(maxColor));
         EmitWord(outBuf, ColorTo565(minColor));
         EmitColorIndices(block, outBuf, minColor, maxColor);
+        done = i+4 >= cj.XEnd() && j+(i+4 == cj.Width()? 4 : 0) >= cj.YEnd();
       }
+      startX = 0;
     }
   }
 
@@ -59,18 +66,23 @@ namespace DXTC
   // 4-byte RGBA format. The width and height parameters specify the size of the image in pixels.
   // The buffer pointed to by outBuf should be large enough to store the compressed image. This
   // implementation has an 4:1 compression ratio.
-  void CompressImageDXT5(const CompressionJob &cj) {
+  void CompressImageDXT5(const FasTC::CompressionJob &cj) {
     uint8 block[64];
     uint8 minColor[4];
     uint8 maxColor[4];
 
-    uint8 *outBuf = cj.OutBuf();
-    const uint8 *inBuf = cj.InBuf();
-    for(int j = 0; j < cj.Height(); j += 4, inBuf += cj.Width() * 4 * 4)
-    {
-      for(int i = 0; i < cj.Width(); i += 4)
-      {
-        ExtractBlock(inBuf + i * 4, cj.Width(), block);
+    const uint32 kBlockSz = GetBlockSize(FasTC::eCompressionFormat_DXT5);
+    const uint32 startBlock = cj.CoordsToBlockIdx(cj.XStart(), cj.YStart());
+    uint8 *outBuf = cj.OutBuf() + startBlock * kBlockSz;
+    
+    const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
+    uint32 startX = cj.XStart();
+    bool done = false;
+    for(uint32 j = cj.YStart(); !done; j += 4) {
+      for(uint32 i = startX; !done && i < cj.Width(); i += 4) {
+
+        const uint32 kOffset = j*cj.Width() + i;
+        ExtractBlock(inPixels + kOffset, cj.Width(), block);
         GetMinMaxColorsWithAlpha(block, minColor, maxColor);
         EmitByte(outBuf, maxColor[3]);
         EmitByte(outBuf, minColor[3]);
@@ -78,6 +90,7 @@ namespace DXTC
         EmitWord(outBuf, ColorTo565(maxColor));
         EmitWord(outBuf, ColorTo565(minColor));
         EmitColorIndices(block, outBuf, minColor, maxColor);
+        done = i+4 >= cj.XEnd() && j+(i+4 == cj.Width()? 4 : 0) >= cj.YEnd();
       }
     }
   }
@@ -115,12 +128,12 @@ namespace DXTC
 
   // Extract a 4 by 4 block of pixels from inPtr and store it in colorBlock. The width parameter
   // specifies the size of the image in pixels.
-  void ExtractBlock(const uint8* inPtr, uint32 width, uint8* colorBlock)
+  void ExtractBlock(const uint32* inPtr, uint32 width, uint8* colorBlock)
   {
     for(int j = 0; j < 4; j++)
     {
       memcpy(&colorBlock[j * 4 * 4], inPtr, 4 * 4);
-      inPtr += width * 4;
+      inPtr += width;
     }
   }
 
@@ -129,7 +142,7 @@ namespace DXTC
   // channel.
   void GetMinMaxColors(const uint8* colorBlock, uint8* minColor, uint8* maxColor)
   {
-    int32 i;
+    uint32 i;
     uint8 inset[3];
 
     minColor[0] = minColor[1] = minColor[2] = 255;
@@ -177,7 +190,7 @@ namespace DXTC
   // the extents of the bounding box of the color space. This function includes the alpha channel.
   void GetMinMaxColorsWithAlpha(const uint8* colorBlock, uint8* minColor, uint8* maxColor)
   {
-    int32 i;
+    uint32 i;
     uint8 inset[4];
 
     minColor[0] = minColor[1] = minColor[2] = minColor[3] = 255;
@@ -299,7 +312,7 @@ namespace DXTC
 
     colorBlock += 3;
 
-    for(int i = 0; i < 16; i++) {
+    for(uint32 i = 0; i < 16; i++) {
       uint8 a = colorBlock[i * 4];
       int32 b1 = (a <= ab1);
       int32 b2 = (a <= ab2);

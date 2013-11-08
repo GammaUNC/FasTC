@@ -52,32 +52,37 @@
 
 #include "rg_etc1.h"
 #include "ETCCompressor.h"
+#include <cstring>
 
 namespace ETCC {
 
-  void Compress_RG(const CompressionJob &cj) {
+  void Compress_RG(const FasTC::CompressionJob &cj) {
 
     rg_etc1::etc1_pack_params params;
     params.m_quality = rg_etc1::cLowQuality;
     rg_etc1::pack_etc1_block_init();
 
-    // Assume block-stream order
-    uint32 blockSizeX = cj.Width() / 4;
-    uint32 blockSizeY = cj.Height() / 4;
+    const uint32 kBlockSz = GetBlockSize(FasTC::eCompressionFormat_ETC1);
+    const uint32 startBlock = cj.CoordsToBlockIdx(cj.XStart(), cj.YStart());
+    uint8 *outBuf = cj.OutBuf() + startBlock * kBlockSz;
+    uint32 startX = cj.XStart();
+    bool done = false;
+    for(uint32 j = cj.YStart(); !done; j += 4) {
+      for(uint32 i = startX; !done && i < cj.Width(); i += 4) {
 
-    for(uint32 j = 0; j < blockSizeY; j++)
-    for(uint32 i = 0; i < blockSizeX; i++) {
-      uint32 pixels[16];
-      uint32 blockIdx = j*blockSizeX + i;
+        uint32 pixels[16];
+        const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
+        memcpy(pixels, inPixels + j*cj.Width() + i, 4 * sizeof(uint32));
+        memcpy(pixels + 4, inPixels + (j+1)*cj.Width() + i, 4 * sizeof(uint32));
+        memcpy(pixels + 8, inPixels + (j+2)*cj.Width() + i, 4 * sizeof(uint32));
+        memcpy(pixels + 12, inPixels + (j+3)*cj.Width() + i, 4 * sizeof(uint32));
 
-      for(uint32 y = 0; y < 4; y++) {
-        for(uint32 x = 0; x < 4; x++) {
-          const uint32 *in = reinterpret_cast<const uint32 *>(cj.InBuf());
-          pixels[y*4 + x] = in[(j*4 + y)*cj.Width() + (i*4 + x)];
-        }
+        pack_etc1_block(outBuf, pixels, params);
+
+        outBuf += kBlockSz;
+        done = i+4 >= cj.XEnd() && j+(i+4 == cj.Width()? 4 : 0) >= cj.YEnd();
       }
-
-      pack_etc1_block(cj.OutBuf() + blockIdx * 8, pixels, params);
+      startX = 0;
     }
   }
 }  // namespace PVRTCC

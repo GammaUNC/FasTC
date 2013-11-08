@@ -1622,23 +1622,32 @@ namespace BC7C {
 
   static void DecompressBC7Block(const uint8 block[16], uint32 outBuf[16]);
 
+  void GetBlock(const uint32 x, const uint32 y, const uint32 pixelsWide,
+                const uint32 *inPixels, uint32 block[16]) {
+    memcpy(block, inPixels + y*pixelsWide + x, 4 * sizeof(uint32));
+    memcpy(block + 4, inPixels + (y+1)*pixelsWide + x, 4 * sizeof(uint32));
+    memcpy(block + 8, inPixels + (y+2)*pixelsWide + x, 4 * sizeof(uint32));
+    memcpy(block + 12, inPixels + (y+3)*pixelsWide + x, 4 * sizeof(uint32));
+  }
+
   // Compress an image using BC7 compression. Use the inBuf parameter to point
   // to an image in 4-byte RGBA format. The width and height parameters specify
   // the size of the image in pixels. The buffer pointed to by outBuf should be
   // large enough to store the compressed image. This implementation has an 4:1
   // compression ratio.
-  void Compress(const CompressionJob &cj) {
+  void Compress(const FasTC::CompressionJob &cj) {
     const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
-    unsigned char *outBuf = cj.OutBuf();
-    for(uint32 j = 0; j < cj.Height(); j += 4) {
-      for(uint32 i = 0; i < cj.Width(); i += 4) {
+    const uint32 kBlockSz = GetBlockSize(FasTC::eCompressionFormat_BPTC);
+    uint8 *outBuf = cj.OutBuf() + cj.CoordsToBlockIdx(cj.XStart(), cj.YStart()) * kBlockSz;
+
+    uint32 startX = cj.XStart();
+    bool done = false;
+
+    for(uint32 j = cj.YStart(); !done; j += 4) {
+      for(uint32 i = startX; !done && i < cj.Width(); i += 4) {
 
         uint32 block[16];
-        memcpy(block, inPixels + j*cj.RowBytes() + i, 4 * sizeof(uint32));
-        memcpy(block + 4, inPixels + (j+1)*cj.RowBytes() + i, 4 * sizeof(uint32));
-        memcpy(block + 8, inPixels + (j+2)*cj.RowBytes() + i, 4 * sizeof(uint32));
-        memcpy(block + 12, inPixels + (j+3)*cj.RowBytes() + i, 4 * sizeof(uint32));
-
+        GetBlock(i, j, cj.Width(), inPixels, block);
         CompressBC7Block(block, outBuf);
 
 #ifndef NDEBUG
@@ -1666,8 +1675,10 @@ namespace BC7C {
         }
 #endif
 
-        outBuf += 16;
+        outBuf += kBlockSz;
+        done = i+4 >= cj.XEnd() && j+(i+4 == cj.Width()? 4 : 0) >= cj.YEnd();
       }
+      startX = 0;
     }
   }
 
@@ -1691,24 +1702,28 @@ namespace BC7C {
 #endif
 
   // Variables used for synchronization in threadsafe implementation.
-  void CompressAtomic(CompressionJobList &cjl) {
+  void CompressAtomic(FasTC::CompressionJobList &cjl) {
     uint32 jobIdx;
     while((jobIdx = cjl.m_CurrentJobIndex) < cjl.GetNumJobs()) {
       // !HACK! ... Microsoft has this defined
       #undef GetJob
 
-      const CompressionJob *cj = cjl.GetJob(jobIdx);
-      const uint32 nBlocks = (cj->height * cj->width) / 16;
+      const FasTC::CompressionJob *cj = cjl.GetJob(jobIdx);
+      const uint32 nBlocks = (cj->Height() * cj->Width()) / 16;
 
       // Help finish whatever texture we're compressing before we start again on
       // my work...
       uint32 blockIdx;
       while((blockIdx = FetchAndAdd(&(cjl.m_CurrentBlockIndex))) < nBlocks &&
             *(cjl.GetFinishedFlag(jobIdx)) == 0) {
-        unsigned char *out = cj->outBuf + (16 * blockIdx);
-        const unsigned char *in = cj->inBuf + (64 * blockIdx);
+        unsigned char *out = cj->OutBuf() + (16 * blockIdx);
 
-        CompressBC7Block((const uint32 *)in, out);
+        uint32 block[16];
+        uint32 x = cj->XStart() + 4 * (blockIdx % (cj->Width() / 4));
+        uint32 y = cj->YStart() + 4 * (blockIdx / (cj->Width() / 4));
+        const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj->InBuf());
+        GetBlock(x, y, cj->Width(), inPixels, block);
+        CompressBC7Block(block, out);
       }
 
       if(TestAndSet(cjl.GetFinishedFlag(jobIdx)) == 0) {
@@ -1722,21 +1737,21 @@ namespace BC7C {
   }
 #endif  // HAS_ATOMICS
 
-  void CompressWithStats(const CompressionJob &cj, std::ostream *logStream) {
+  void CompressWithStats(const FasTC::CompressionJob &cj, std::ostream *logStream) {
     const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
-    unsigned char *outBuf = cj.OutBuf();
+    const uint32 kBlockSz = GetBlockSize(FasTC::eCompressionFormat_BPTC);
+    uint8 *outBuf = cj.OutBuf() + cj.CoordsToBlockIdx(cj.XStart(), cj.YStart()) * kBlockSz;
 
-    for(uint32 j = 0; j < cj.Height(); j += 4) {
-      for(uint32 i = 0; i < cj.Width(); i += 4) {
+    uint32 startX = cj.XStart();
+    bool done = false;
+    for(uint32 j = cj.YStart(); !done; j += 4) {
+      for(uint32 i = startX; !done && i < cj.Width(); i += 4) {
 
         uint32 block[16];
-        memcpy(block, inPixels + j*cj.RowBytes() + i, 4 * sizeof(uint32));
-        memcpy(block + 4, inPixels + (j+1)*cj.RowBytes() + i, 4 * sizeof(uint32));
-        memcpy(block + 8, inPixels + (j+2)*cj.RowBytes() + i, 4 * sizeof(uint32));
-        memcpy(block + 12, inPixels + (j+3)*cj.RowBytes() + i, 4 * sizeof(uint32));
+        GetBlock(i, j, cj.Width(), inPixels, block);
 
         if(logStream) {
-          uint64 blockIdx = reinterpret_cast<uint64>(inPixels + j*cj.Width() + i);
+          uint64 blockIdx = cj.CoordsToBlockIdx(i, j);
           CompressBC7Block(block, outBuf, BlockLogger(blockIdx, *logStream));
         } else {
           CompressBC7Block(block, outBuf);
@@ -1749,9 +1764,9 @@ namespace BC7C {
         DecompressBC7Block(cmpData, unComp);
         const uint8* unCompData = reinterpret_cast<uint8 *>(unComp);
 
-        int diffSum = 0;
-        for(int i = 0; i < 64; i++) {
-          diffSum += sad(unCompData[i], inBlock[i]);
+        uint32 diffSum = 0;
+        for(uint32 k = 0; k < 64; k++) {
+          diffSum += sad(unCompData[k], inBlock[k]);
         }
         double blockError = static_cast<double>(diffSum) / 64.0;
         if(blockError > 50.0) {
@@ -1761,7 +1776,10 @@ namespace BC7C {
 #endif
 
         outBuf += 16;
+        done = i+4 >= cj.XEnd() && j+(i+4 == cj.Width()? 4 : 0) >= cj.YEnd();
       }
+
+      startX = 0;
     }
   }
 
@@ -2755,7 +2773,7 @@ namespace BC7C {
   }
 
   // Convert the image from a BC7 buffer to a RGBA8 buffer
-  void Decompress(const DecompressionJob &dj) {
+  void Decompress(const FasTC::DecompressionJob &dj) {
 
     const uint8 *inBuf = dj.InBuf();
     uint32 *outBuf = reinterpret_cast<uint32 *>(dj.OutBuf());

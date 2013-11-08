@@ -57,7 +57,7 @@ struct SCompressionSettings {
   SCompressionSettings(); // defaults
 
   // The compression format for the image.
-  ECompressionFormat format; 
+  FasTC::ECompressionFormat format; 
 
   // The flag that requests us to use SIMD, if it is available
   bool bUseSIMD;
