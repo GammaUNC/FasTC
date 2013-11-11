@@ -1,30 +1,39 @@
 /* FasTC
- * Copyright (c) 2012 University of North Carolina at Chapel Hill. All rights reserved.
+ * Copyright (c) 2013 University of North Carolina at Chapel Hill.
+ * All rights reserved.
  *
- * Permission to use, copy, modify, and distribute this software and its documentation for educational, 
- * research, and non-profit purposes, without fee, and without a written agreement is hereby granted, 
- * provided that the above copyright notice, this paragraph, and the following four paragraphs appear 
- * in all copies.
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for educational, research, and non-profit purposes, without
+ * fee, and without a written agreement is hereby granted, provided that the
+ * above copyright notice, this paragraph, and the following four paragraphs
+ * appear in all copies.
  *
- * Permission to incorporate this software into commercial products may be obtained by contacting the 
- * authors or the Office of Technology Development at the University of North Carolina at Chapel Hill <otd@unc.edu>.
+ * Permission to incorporate this software into commercial products may be
+ * obtained by contacting the authors or the Office of Technology Development
+ * at the University of North Carolina at Chapel Hill <otd@unc.edu>.
  *
- * This software program and documentation are copyrighted by the University of North Carolina at Chapel Hill. 
- * The software program and documentation are supplied "as is," without any accompanying services from the 
- * University of North Carolina at Chapel Hill or the authors. The University of North Carolina at Chapel Hill 
- * and the authors do not warrant that the operation of the program will be uninterrupted or error-free. The 
- * end-user understands that the program was developed for research purposes and is advised not to rely 
- * exclusively on the program for any reason.
+ * This software program and documentation are copyrighted by the University of
+ * North Carolina at Chapel Hill. The software program and documentation are
+ * supplied "as is," without any accompanying services from the University of
+ * North Carolina at Chapel Hill or the authors. The University of North
+ * Carolina at Chapel Hill and the authors do not warrant that the operation of
+ * the program will be uninterrupted or error-free. The end-user understands
+ * that the program was developed for research purposes and is advised not to
+ * rely exclusively on the program for any reason.
  *
- * IN NO EVENT SHALL THE UNIVERSITY OF NORTH CAROLINA AT CHAPEL HILL OR THE AUTHORS BE LIABLE TO ANY PARTY FOR 
- * DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF THE 
- * USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF NORTH CAROLINA AT CHAPEL HILL OR THE 
- * AUTHORS HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * IN NO EVENT SHALL THE UNIVERSITY OF NORTH CAROLINA AT CHAPEL HILL OR THE
+ * AUTHORS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL,
+ * OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF THE USE OF
+ * THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF NORTH CAROLINA
+ * AT CHAPEL HILL OR THE AUTHORS HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH
+ * DAMAGE.
  *
- * THE UNIVERSITY OF NORTH CAROLINA AT CHAPEL HILL AND THE AUTHORS SPECIFICALLY DISCLAIM ANY WARRANTIES, INCLUDING, 
- * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE AND ANY 
- * STATUTORY WARRANTY OF NON-INFRINGEMENT. THE SOFTWARE PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THE UNIVERSITY 
- * OF NORTH CAROLINA AT CHAPEL HILL AND THE AUTHORS HAVE NO OBLIGATIONS TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, 
+ * THE UNIVERSITY OF NORTH CAROLINA AT CHAPEL HILL AND THE AUTHORS SPECIFICALLY
+ * DISCLAIM ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE AND ANY 
+ * STATUTORY WARRANTY OF NON-INFRINGEMENT. THE SOFTWARE PROVIDED HEREUNDER IS ON
+ * AN "AS IS" BASIS, AND THE UNIVERSITY  OF NORTH CAROLINA AT CHAPEL HILL AND
+ * THE AUTHORS HAVE NO OBLIGATIONS TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, 
  * ENHANCEMENTS, OR MODIFICATIONS.
  *
  * Please send all BUG REPORTS to <pavel@cs.unc.edu>.
@@ -42,25 +51,31 @@
  */
 
 #define _CRT_SECURE_NO_WARNINGS
+#define WIN32_LEAN_AND_MEAN
 
-#include <algorithm>
+#include <cassert>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
-#include <fstream>
 #include <iostream>
-#include <SDKDDKVer.h>
-#include <Windows.h>
+#include <fstream>
+#ifdef _MSC_VER
+#  include <SDKDDKVer.h>
+#  include <Windows.h>
+#  undef min
+#  undef max
+#endif
 
-#include "ThreadSafeStreambuf.h"
-#include "TexComp.h"
-#include "ImageFile.h"
 #include "Image.h"
+#include "ImageFile.h"
+#include "TexComp.h"
+#include "ThreadSafeStreambuf.h"
 
 void PrintUsage() {
   fprintf(stderr, "Usage: tc [OPTIONS] imagefile\n");
   fprintf(stderr, "\n");
-  fprintf(stderr, "\t-f\t\tFormat to use. Either \"ETC1\", \"BPTC\" or \"PVRTC\". Default: BPTC\n");
+  fprintf(stderr, "\t-v\t\tVerbose mode: prints out Entropy, Mean Local Entropy, and MSSIM\n");
+  fprintf(stderr, "\t-f\t\tFormat to use. Either \"BPTC\", \"ETC1\", \"DXT1\", \"DXT5\", or \"PVRTC\". Default: BPTC\n");
   fprintf(stderr, "\t-l\t\tSave an output log.\n");
   fprintf(stderr, "\t-q <quality>\tSet compression quality level. Default: 50\n");
   fprintf(stderr, "\t-n <num>\tCompress the image num times and give the average time and PSNR. Default: 1\n");
@@ -83,15 +98,15 @@ void ExtractBasename(const char *filename, char *buf, size_t bufSz) {
     }
   }
 
-  size_t numChars = ext - base + 1;
-  size_t toCopy = (::std::min)(numChars, bufSz);
+  uint64 numChars = ext - base + 1;
+  size_t toCopy = ::std::min(numChars, bufSz);
   memcpy(buf, base, toCopy);
   buf[toCopy - 1] = '\0';
   return;
 }
 
-int _tmain(int argc, _TCHAR* argv[])
-{
+int main(int argc, char **argv) {
+
   int fileArg = 1;
   if(fileArg == argc) {
     PrintUsage();
@@ -106,7 +121,8 @@ int _tmain(int argc, _TCHAR* argv[])
   bool bSaveLog = false;
   bool bUseAtomics = false;
   bool bUsePVRTexLib = false;
-  ECompressionFormat format = eCompressionFormat_BPTC;
+  bool bVerbose = false;
+  FasTC::ECompressionFormat format = FasTC::eCompressionFormat_BPTC;
 
   bool knowArg = false;
   do {
@@ -133,12 +149,16 @@ int _tmain(int argc, _TCHAR* argv[])
         exit(1);
       } else {
         if(!strcmp(argv[fileArg], "PVRTC")) {
-          format = eCompressionFormat_PVRTC;
+          format = FasTC::eCompressionFormat_PVRTC;
         } else if(!strcmp(argv[fileArg], "PVRTCLib")) {
-          format = eCompressionFormat_PVRTC;
+          format = FasTC::eCompressionFormat_PVRTC;
           bUsePVRTexLib = true;
         } else if(!strcmp(argv[fileArg], "ETC1")) {
-          format = eCompressionFormat_ETC1;
+          format = FasTC::eCompressionFormat_ETC1;
+        } else if(!strcmp(argv[fileArg], "DXT1")) {
+          format = FasTC::eCompressionFormat_DXT1;
+        } else if(!strcmp(argv[fileArg], "DXT5")) {
+          format = FasTC::eCompressionFormat_DXT5;
         }
       }
 
@@ -150,6 +170,13 @@ int _tmain(int argc, _TCHAR* argv[])
     if(strcmp(argv[fileArg], "-l") == 0) {
       fileArg++;
       bSaveLog = true;
+      knowArg = true;
+      continue;
+    }
+    
+    if(strcmp(argv[fileArg], "-v") == 0) {
+      fileArg++;
+      bVerbose = true;
       knowArg = true;
       continue;
     }
@@ -223,9 +250,11 @@ int _tmain(int argc, _TCHAR* argv[])
     return 1;
   }
 
-  FasTC::Image<> img (*file.GetImage());
-  if(format == eCompressionFormat_PVRTC) {
-    img.SetBlockStreamOrder(false);
+  FasTC::Image<> img(*file.GetImage());
+
+  if(bVerbose) {
+    fprintf(stdout, "Entropy: %.5f\n", img.ComputeEntropy());
+    fprintf(stdout, "Mean Local Entropy: %.5f\n", img.ComputeMeanLocalEntropy());
   }
 
   std::ofstream logFile;
@@ -266,19 +295,23 @@ int _tmain(int argc, _TCHAR* argv[])
     fprintf(stderr, "Error computing PSNR\n");
   }
 
-  double SSIM = img.ComputeSSIM(ci);
-  if(SSIM > 0.0) {
-    fprintf(stdout, "SSIM: %.9f\n", SSIM);
-  } else {
-    fprintf(stderr, "Error computing MSSIM\n");
+  if(bVerbose) {
+    double SSIM = img.ComputeSSIM(ci);
+    if(SSIM > 0.0) {
+      fprintf(stdout, "SSIM: %.9f\n", SSIM);
+    } else {
+      fprintf(stderr, "Error computing SSIM\n");
+    }
   }
 
-  if(format == eCompressionFormat_BPTC) {
-    strcat_s(basename, "-bc7.png");
-  } else if(format == eCompressionFormat_PVRTC) {
-    strcat_s(basename, "-pvrtc.png");
-  } else if(format == eCompressionFormat_ETC1) {
-    strcat_s(basename, "-etc1.png");
+  if(format == FasTC::eCompressionFormat_BPTC) {
+    strcat(basename, "-bc7.png");
+  } else if(format == FasTC::eCompressionFormat_PVRTC) {
+    strcat(basename, "-pvrtc.png");
+  } else if(format == FasTC::eCompressionFormat_DXT1) {
+    strcat(basename, "-dxt1.png");
+  } else if(format == FasTC::eCompressionFormat_ETC1) {
+    strcat(basename, "-etc1.png");
   }
 
   ImageFile cImgFile (basename, eFileFormat_PNG, *ci);

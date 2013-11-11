@@ -40,19 +40,13 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
-IF( MSVC )
-	SET( SOURCES "src/clwin32.cpp" )
-ELSE()
-	SET( SOURCES "src/clunix.cpp" )
-ENDIF()
-
 INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Base/include )
 INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Core/include )
 INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/IO/include )
 
 ADD_EXECUTABLE(
   tc
-  ${SOURCES}
+  "src/tc.cpp"
 )
 
 ADD_EXECUTABLE(
@@ -60,14 +54,13 @@ ADD_EXECUTABLE(
   "src/compare.cpp"
 )
 
-# Add flag for link time code generation. This was used to build the libpng libraries, so we should
-# probably also include it for this project as well...
+# Add flag for link time code generation. This was used to build the libpng
+# libraries, so we should probably also include it for this project as well...
 IF( MSVC )
   SET_TARGET_PROPERTIES(tc PROPERTIES LINK_FLAGS "/LTCG")
   SET_TARGET_PROPERTIES(compare PROPERTIES LINK_FLAGS "/LTCG")
 ENDIF()
 
-TARGET_LINK_LIBRARIES( tc BPTCEncoder )
 TARGET_LINK_LIBRARIES( tc FasTCBase )
 TARGET_LINK_LIBRARIES( tc FasTCIO )
 TARGET_LINK_LIBRARIES( tc FasTCCore )
