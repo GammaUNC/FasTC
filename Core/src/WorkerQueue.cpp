@@ -268,7 +268,7 @@ WorkerThread::EAction WorkerQueue::AcceptThreadData(uint32 threadIdx) {
 
 void WorkerQueue::GetStartForThread(const uint32 threadIdx, uint32 (&start)[2]) {
   assert(threadIdx >= 0);
-  assert(threadIdx < int(m_NumThreads));
+  assert(threadIdx < m_NumThreads);
   assert(m_Offsets[threadIdx] >= 0);
 
   const uint32 blockIdx = m_Offsets[threadIdx];
@@ -277,7 +277,7 @@ void WorkerQueue::GetStartForThread(const uint32 threadIdx, uint32 (&start)[2]) 
 
 void WorkerQueue::GetEndForThread(const uint32 threadIdx, uint32 (&end)[2]) {
   assert(threadIdx >= 0);
-  assert(threadIdx < int(m_NumThreads));
+  assert(threadIdx < m_NumThreads);
   assert(m_Offsets[threadIdx] >= 0);
   assert(m_NumBlocks[threadIdx] >= 0);
 

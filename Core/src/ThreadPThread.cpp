@@ -123,8 +123,11 @@ void TCThread::Join() {
   ((TCThreadImpl *)m_Impl)->Join();
 }
 
+#ifdef WIN32
+#undef Yield
+#endif
 void TCThread::Yield() {
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__MINGW32__)
   int result = sched_yield();
 #else
   int result = pthread_yield();
@@ -135,7 +138,11 @@ void TCThread::Yield() {
 }
 
 uint64 TCThread::ThreadID() {
+#ifdef __MINGW32__
+  return static_cast<uint64>(pthread_self().x);
+#else
   return static_cast<uint64>(pthread_self());
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////

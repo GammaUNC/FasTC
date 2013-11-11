@@ -52,13 +52,16 @@
 
 #include "FileStream.h"
 
+#define _CRT_SECURE_NO_WARNINGS
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#include <strsafe.h>
 
-#include <stdio.h>
-#include <assert.h>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
-void ErrorExit(LPTSTR lpszFunction) 
+void ErrorExit(LPCSTR lpszFunction) 
 { 
     // Retrieve the system error message for the last-error code
 
@@ -80,10 +83,10 @@ void ErrorExit(LPTSTR lpszFunction)
 
     lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
         (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR)); 
-    StringCchPrintf((LPTSTR)lpDisplayBuf, 
-        LocalSize(lpDisplayBuf) / sizeof(TCHAR),
-        TEXT("%s failed with error %d: %s"), 
-        lpszFunction, dw, lpMsgBuf); 
+    snprintf((LPTSTR)lpDisplayBuf, 
+        LocalSize(lpDisplayBuf) / sizeof(CHAR),
+        "%s failed with error %lu: %s", 
+        lpszFunction, dw, (LPCSTR)lpMsgBuf); 
     MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
 
     LocalFree(lpMsgBuf);
@@ -150,7 +153,7 @@ FileStream::FileStream(const CHAR *filename, EFileMode mode)
   : m_Impl(new FileStreamImpl(filename, mode))
   , m_Mode(mode)
 {
-  strncpy_s(m_Filename, filename, kMaxFilenameSz);
+  strncpy(m_Filename, filename, kMaxFilenameSz);
   m_Filename[kMaxFilenameSz - 1] = CHAR('\0');
 }
     
@@ -159,7 +162,7 @@ FileStream::FileStream(const FileStream &other)
   , m_Mode(other.m_Mode)
 {
   m_Impl->IncreaseReferenceCount();
-  strncpy_s(m_Filename, other.m_Filename, kMaxFilenameSz);
+  strncpy(m_Filename, other.m_Filename, kMaxFilenameSz);
 }
 
 FileStream &FileStream::operator=(const FileStream &other) {
@@ -178,7 +181,7 @@ FileStream &FileStream::operator=(const FileStream &other) {
   m_Impl->IncreaseReferenceCount();
 
   m_Mode = other.m_Mode;
-  strncpy_s(m_Filename, other.m_Filename, kMaxFilenameSz); 
+  strncpy(m_Filename, other.m_Filename, kMaxFilenameSz); 
 
   return *this;
 }
@@ -203,8 +206,8 @@ int32 FileStream::Read(uint8 *buf, uint32 bufSz) {
      m_Mode == eFileMode_WriteBinaryAppend
   ) {
     CHAR errStr[256];
-  _sntprintf_s(errStr, 256, "Cannot read from file '%s': File opened for reading.", m_Filename);
-  OutputDebugString(errStr);
+    snprintf(errStr, 256, "Cannot read from file '%s': File opened for reading.", m_Filename);
+    OutputDebugString(errStr);
     return -2;
   }
 
@@ -215,7 +218,7 @@ int32 FileStream::Read(uint8 *buf, uint32 bufSz) {
   DWORD oldPosition = SetFilePointer(fp, 0, NULL, FILE_CURRENT);
   if(INVALID_SET_FILE_POINTER == oldPosition) {
     CHAR errStr[256];
-    _sntprintf_s(errStr, 256, "Error querying the file position before reading from file '%s'(0x%x).", m_Filename, GetLastError());
+    snprintf(errStr, 256, "Error querying the file position before reading from file '%s'(0x%lx).", m_Filename, GetLastError());
     OutputDebugString(errStr);
     return -1;
   }
@@ -224,7 +227,7 @@ int32 FileStream::Read(uint8 *buf, uint32 bufSz) {
   BOOL success = ReadFile(fp, buf, bufSz, &amtRead, NULL);
   if(!success) {
     CHAR errStr[256];
-    _sntprintf_s(errStr, 256, "Error reading from file '%s'.", m_Filename);
+    snprintf(errStr, 256, "Error reading from file '%s'.", m_Filename);
     OutputDebugString(errStr);
     return -1;
   }
@@ -232,7 +235,7 @@ int32 FileStream::Read(uint8 *buf, uint32 bufSz) {
   DWORD newPosition = SetFilePointer(fp, 0, NULL, FILE_CURRENT);
   if(INVALID_SET_FILE_POINTER == newPosition) {
     CHAR errStr[256];
-    _sntprintf_s(errStr, 256, "Error querying the file position after reading from file '%s'(0x%x).", m_Filename, GetLastError());
+    snprintf(errStr, 256, "Error querying the file position after reading from file '%s'(0x%lx).", m_Filename, GetLastError());
     OutputDebugString(errStr);
     return -1;
   }
@@ -246,7 +249,7 @@ int32 FileStream::Write(const uint8 *buf, uint32 bufSz) {
      m_Mode == eFileMode_ReadBinary
   ) {
   CHAR errStr[256];
-  _sntprintf_s(errStr, 256, "Cannot write to file '%s': File opened for writing.", m_Filename);
+  snprintf(errStr, 256, "Cannot write to file '%s': File opened for writing.", m_Filename);
   OutputDebugString(errStr);
     return -2;
   }
@@ -265,7 +268,7 @@ int32 FileStream::Write(const uint8 *buf, uint32 bufSz) {
 
   if(INVALID_SET_FILE_POINTER == dwPos) {
   CHAR errStr[256];
-  _sntprintf_s(errStr, 256, "Error querying the file position before reading to file '%s'(0x%x).", m_Filename, GetLastError());
+  snprintf(errStr, 256, "Error querying the file position before reading to file '%s'(0x%lx).", m_Filename, GetLastError());
   OutputDebugString(errStr);
   return -1;
   }
@@ -279,7 +282,7 @@ int32 FileStream::Write(const uint8 *buf, uint32 bufSz) {
 
   if(!success) {
   CHAR errStr[256];
-  _sntprintf_s(errStr, 256, "Error writing to file '%s'.", m_Filename);
+  snprintf(errStr, 256, "Error writing to file '%s'.", m_Filename);
   OutputDebugString(errStr);
     return -1;
   }
@@ -296,7 +299,7 @@ int32 FileStream::Tell() {
   DWORD pos =  SetFilePointer(fp, 0, NULL, FILE_CURRENT);
   if(INVALID_SET_FILE_POINTER == pos) {
     CHAR errStr[256];
-    _sntprintf_s(errStr, 256, "Error querying the file position before reading to file '%s'(0x%x).", m_Filename, GetLastError());
+    snprintf(errStr, 256, "Error querying the file position before reading to file '%s'(0x%lx).", m_Filename, GetLastError());
     OutputDebugString(errStr);
     return -1;
   }
