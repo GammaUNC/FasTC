@@ -91,70 +91,27 @@ INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/IO/include )
 
 INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Core/include )
 
-SET( THREAD_API )
-SET( THREAD_APIS_AVAILABLE "None" )
-
-###### Find Boost...
-
+###### Find Threads....
 IF( MSVC )
-	SET(ENV{BOOSTLIBDIR} "${MSVC_LIB_DIR}")
-	SET(ENV{BOOSTINCLUDEDIR} "${MSVC_INSTALL_PATH}/include")
-ENDIF( MSVC )
-
-SET( Boost_USE_STATIC_LIBS ON )
-FIND_PACKAGE( Boost COMPONENTS thread system date_time chrono ) 
-IF( Boost_FOUND )
-
-    SET( THREAD_APIS_AVAILABLE "Boost" ${THREAD_APIS_AVAILABLE} )
-    IF( "${THREAD_API}" STREQUAL "" )
-    	SET( THREAD_API "Boost" )
-    ENDIF()
-
-ENDIF()
-
-###### Find PThreads....
-
-FIND_PACKAGE( Threads )
-IF( CMAKE_USE_PTHREADS_INIT )
-    
-    SET( THREAD_APIS_AVAILABLE "PThread" ${THREAD_APIS_AVAILABLE} )
-    IF( "${THREAD_API}" STREQUAL "" )
-        SET( THREAD_API "PThread" )
-    ENDIF()
-    
-ENDIF()
-
-IF( "${THREAD_API}" STREQUAL "" )
-    SET( THREAD_API "None" )
-ENDIF()
-
-SET( THREAD_API_DESC "API used to implement threading operations")
-SET( THREAD_API ${THREAD_API} CACHE STRING ${THREAD_API_DESC} FORCE )
-SET_PROPERTY( CACHE THREAD_API PROPERTY STRINGS ${THREAD_APIS_AVAILABLE} )
-
-IF( THREAD_API MATCHES "Boost")
-	INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
-	SET( SOURCES ${SOURCES} "src/ThreadBoost.cpp" )
-	LINK_DIRECTORIES( ${Boost_LIBRARY_DIRS} )
-ENDIF()
-
-IF( THREAD_API MATCHES "PThread" )
-	SET( SOURCES ${SOURCES} "src/ThreadPThread.cpp" )
-ENDIF()
-
-IF( THREAD_API MATCHES "None")
-  MESSAGE( FATAL_ERROR "Could not find suitable threading library." )
+	SET( SOURCES ${SOURCES} "src/ThreadWin32.cpp" )
 ELSE()
-	SET( SOURCES ${SOURCES} "src/Thread.cpp" )
-    SET( HEADERS ${HEADERS} "src/ThreadSafeStreambuf.cpp" )
-	SET( SOURCES ${SOURCES} "src/ThreadGroup.cpp" )
-	SET( SOURCES ${SOURCES} "src/WorkerQueue.cpp" )
-
-	SET( HEADERS ${HEADERS} "src/Thread.h" )
-	SET( HEADERS ${HEADERS} "include/ThreadSafeStreambuf.h" )
-	SET( HEADERS ${HEADERS} "src/ThreadGroup.h" )
-	SET( HEADERS ${HEADERS} "src/WorkerQueue.h" )
+	FIND_PACKAGE( Threads )
+	IF( CMAKE_USE_PTHREADS_INIT )
+		SET( SOURCES ${SOURCES} "src/ThreadPThread.cpp" )
+	ELSE()
+		MESSAGE( FATAL_ERROR "Could not find suitable threading library." )
+	ENDIF()
 ENDIF()
+
+SET( HEADERS ${HEADERS} "src/Thread.h" )
+SET( HEADERS ${HEADERS} "include/ThreadSafeStreambuf.h" )
+SET( HEADERS ${HEADERS} "src/ThreadGroup.h" )
+SET( HEADERS ${HEADERS} "src/WorkerQueue.h" )
+
+SET( SOURCES ${SOURCES} "src/ThreadSafeStreambuf.cpp" )
+SET( SOURCES ${SOURCES} "src/Thread.cpp" )
+SET( SOURCES ${SOURCES} "src/ThreadGroup.cpp" )
+SET( SOURCES ${SOURCES} "src/WorkerQueue.cpp" )
 
 ADD_LIBRARY( FasTCCore
 	${HEADERS}
@@ -168,11 +125,7 @@ TARGET_LINK_LIBRARIES( FasTCCore DXTEncoder )
 TARGET_LINK_LIBRARIES( FasTCCore BPTCEncoder )
 TARGET_LINK_LIBRARIES( FasTCCore PVRTCEncoder )
 
-IF( THREAD_API MATCHES "Boost" )
-	TARGET_LINK_LIBRARIES( FasTCCore ${Boost_LIBRARIES} )
-ENDIF()
-
-IF( THREAD_API MATCHES "PThread" )
+IF( CMAKE_USE_PTHREADS_INIT )
     TARGET_LINK_LIBRARIES( FasTCCore ${CMAKE_THREAD_LIBS_INIT} )
 ENDIF()
 
