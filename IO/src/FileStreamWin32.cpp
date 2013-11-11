@@ -61,6 +61,11 @@
 #include <cstdlib>
 #include <cstring>
 
+#ifdef _MSC_VER
+#define snprintf(out, outSz, fmt, ...) _snprintf_s(out, outSz, _TRUNCATE, fmt, __VA_ARGS__)
+#define strncpy(dst, src, dstSz) strncpy_s(dst, dstSz, src, _TRUNCATE)
+#endif
+
 void ErrorExit(LPCSTR lpszFunction) 
 { 
     // Retrieve the system error message for the last-error code
