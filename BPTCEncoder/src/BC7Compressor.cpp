@@ -1016,10 +1016,11 @@ double BC7CompressionMode::CompressCluster(
     a2 = std::min(255.0f, std::max(0.0f, a2));
 
     // Quantize
+    const int8 maskSeed = 0x80;
     const uint8 a1b = ::QuantizeChannel(
-      uint8(a1), (0x80 >> (GetAlphaChannelPrecision() - 1)));
+      uint8(a1), (maskSeed >> (GetAlphaChannelPrecision() - 1)));
     const uint8 a2b = ::QuantizeChannel(
-      uint8(a2), (0x80 >> (GetAlphaChannelPrecision() - 1)));
+      uint8(a2), (maskSeed >> (GetAlphaChannelPrecision() - 1)));
 
     // Compute error
     alphaError = 0.0;
