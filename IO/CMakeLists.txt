@@ -78,6 +78,11 @@ IF( PVRTEXLIB_FOUND )
   SET( HEADERS ${HEADERS} "src/ImageLoaderPVR.h" )
 ENDIF( PVRTEXLIB_FOUND )
 
+# Add third-party TGA library...
+SET( SOURCES ${SOURCES} "third_party/tga/targa.c" )
+SET( HEADERS ${HEADERS} "third_party/tga/targa.h" )
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/IO/third_party/tga )
+
 CONFIGURE_FILE(
 	"config/ImageLoader.h.in"
 	"include/ImageLoader.h"
