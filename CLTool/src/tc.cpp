@@ -98,7 +98,7 @@ void ExtractBasename(const char *filename, char *buf, size_t bufSz) {
     }
   }
 
-  uint64 numChars = ext - base + 1;
+  size_t numChars = ext - base + 1;
   size_t toCopy = ::std::min(numChars, bufSz);
   memcpy(buf, base, toCopy);
   buf[toCopy - 1] = '\0';
