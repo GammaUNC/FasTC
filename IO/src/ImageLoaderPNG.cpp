@@ -156,7 +156,13 @@ bool ImageLoaderPNG::ReadData() {
       png_colorp palette;
       int nPaletteEntries;
       png_uint_32 ret = png_get_PLTE(png_ptr, info_ptr, &palette, &nPaletteEntries);
-      assert(ret == PNG_INFO_PLTE);
+      if(ret != PNG_INFO_PLTE) {
+        memset(m_BlueData, 0, numPixels);
+        memset(m_RedData, 0, numPixels);
+        memset(m_GreenData, 0, numPixels);
+        assert(!"Couldn't find PLTE chunk");
+        break;
+      }
 
       for(uint32 i = 0; i < m_Height; i++) {
         png_read_row(png_ptr, rowData, NULL);
