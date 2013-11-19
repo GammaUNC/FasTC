@@ -61,10 +61,6 @@
 
 #include "targa.h"
 
-static void ReportError(const char *msg) {
-  fprintf(stderr, "ERROR: ImageLoaderTGA -- %s\n", msg);
-}
-
 ImageLoaderTGA::ImageLoaderTGA(const uint8 *rawData, const int32 rawDataSz)
   : ImageLoader(rawData, rawDataSz)
 { }
@@ -78,7 +74,7 @@ bool ImageLoaderTGA::ReadData() {
   m_Width = tga.width;
   m_Height = tga.height;
 
-  assert(tga.imagelength == m_Width * m_Height * 4);
+  assert(static_cast<uint32>(tga.imageLength) == m_Width * m_Height * 4);
 
   return LoadFromPixelBuffer(reinterpret_cast<uint32 *>(tga.image));
 }
