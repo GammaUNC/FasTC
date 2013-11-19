@@ -188,7 +188,7 @@ int targa_loadFromFile(Targa *targa, char *filename);
  *
  * @return	An integer where zero is pass, less than zero is failure.
  */
-int targa_loadFromData(Targa *targa, unsigned char *data, int dataLength);
+int targa_loadFromData(Targa *targa, const unsigned char *data, int dataLength);
 
 
 /**

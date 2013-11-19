@@ -254,7 +254,7 @@ int targa_loadFromFile(Targa *targa, char *filename)
 	return rc;
 }
 
-int targa_loadFromData(Targa *targa, unsigned char *data, int dataLength)
+int targa_loadFromData(Targa *targa, const unsigned char *data, int dataLength)
 {
 	short sNumber = 0;
 	int ii = 0;
@@ -268,7 +268,7 @@ int targa_loadFromData(Targa *targa, unsigned char *data, int dataLength)
 	int rleId = 0;
 	int pixel[4];
 	unsigned char *imageId = NULL;
-	unsigned char *ptr = NULL;
+	const unsigned char *ptr = NULL;
 
 	if((targa == NULL) || (data == NULL) || (dataLength < 18)) {
 		fprintf(stderr, "[%s():%i] error - invalid or missing argument(s).\n",
