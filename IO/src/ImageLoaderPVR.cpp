@@ -74,11 +74,6 @@ bool ImageLoaderPVR::ReadData() {
     return false;
   }
 
-  m_RedChannelPrecision = 8;
-  m_GreenChannelPrecision = 8;
-  m_BlueChannelPrecision = 8;
-  m_AlphaChannelPrecision = 8;
-
   const pvrtexture::CPVRTextureHeader &hdr = pvrTex.getHeader();
 
   m_Width = hdr.getWidth();
