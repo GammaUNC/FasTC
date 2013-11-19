@@ -138,6 +138,14 @@ namespace BC7C {
   void CompressAtomic(FasTC::CompressionJobList &);
 #endif
 
+#ifdef FOUND_NVTT_BC7_EXPORT
+  // These functions take the same arguments as Compress and CompressWithStats,
+  // but they use the NVTT compressor if it was supplied to CMake.
+  void CompressNVTT(const FasTC::CompressionJob &);
+  void CompressNVTTWithStats(const FasTC::CompressionJob &,
+                             std::ostream *logStream);
+#endif
+
   // Decompress the image given as BC7 data to R8G8B8A8 format. Width and Height
   // are the dimensions of the image in pixels.
   void Decompress(const FasTC::DecompressionJob &);

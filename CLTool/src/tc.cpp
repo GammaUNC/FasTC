@@ -121,6 +121,7 @@ int main(int argc, char **argv) {
   bool bSaveLog = false;
   bool bUseAtomics = false;
   bool bUsePVRTexLib = false;
+  bool bUseNVTT = false;
   bool bVerbose = false;
   FasTC::ECompressionFormat format = FasTC::eCompressionFormat_BPTC;
 
@@ -153,6 +154,9 @@ int main(int argc, char **argv) {
         } else if(!strcmp(argv[fileArg], "PVRTCLib")) {
           format = FasTC::eCompressionFormat_PVRTC;
           bUsePVRTexLib = true;
+        } else if(!strcmp(argv[fileArg], "BPTCLib")) {
+          format = FasTC::eCompressionFormat_BPTC;
+          bUseNVTT = true;
         } else if(!strcmp(argv[fileArg], "ETC1")) {
           format = FasTC::eCompressionFormat_ETC1;
         } else if(!strcmp(argv[fileArg], "DXT1")) {
@@ -275,6 +279,7 @@ int main(int argc, char **argv) {
   settings.iNumCompressions = numCompressions;
   settings.iJobSize = numJobs;
   settings.bUsePVRTexLib = bUsePVRTexLib;
+  settings.bUseNVTT = bUseNVTT;
   if(bSaveLog) {
     settings.logStream = &logStream;
   } else {
