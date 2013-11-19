@@ -65,6 +65,8 @@
 #  include "ImageLoaderPVR.h"
 #endif
 
+#include "ImageLoaderTGA.h"
+
 //////////////////////////////////////////////////////////////////////////////////////////
 //
 // Static helper functions
@@ -195,6 +197,10 @@ FasTC::Image<> *ImageFile::LoadImage() const {
       loader = new ImageLoaderPVR(m_FileData);
       break;
 #endif // PVRTEXLIB_FOUND
+
+    case eFileFormat_TGA:
+      loader = new ImageLoaderTGA(m_FileData, m_FileDataSz);
+      break;
 
     default:
       fprintf(stderr, "Unable to load image: unknown file format.\n");

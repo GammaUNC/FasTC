@@ -83,6 +83,10 @@ SET( SOURCES ${SOURCES} "third_party/tga/targa.c" )
 SET( HEADERS ${HEADERS} "third_party/tga/targa.h" )
 INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/IO/third_party/tga )
 
+# Add TGA loaders
+SET( SOURCES ${SOURCES} "src/ImageLoaderTGA.cpp" )
+SET( HEADERS ${HEADERS} "src/ImageLoaderTGA.h" )
+
 CONFIGURE_FILE(
 	"config/ImageLoader.h.in"
 	"include/ImageLoader.h"
