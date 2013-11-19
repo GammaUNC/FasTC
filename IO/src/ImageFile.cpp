@@ -262,6 +262,9 @@ EImageFileFormat ImageFile::DetectFileFormat(const CHAR *filename) {
   else if(strcmp(ext, ".pvr") == 0) {
     return eFileFormat_PVR;
   }
+  else if(strcmp(ext, ".tga") == 0) {
+    return eFileFormat_TGA;
+  }
 
   return kNumImageFileFormats;
 }
