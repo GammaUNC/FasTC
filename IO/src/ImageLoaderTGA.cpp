@@ -76,6 +76,6 @@ bool ImageLoaderTGA::ReadData() {
 
   assert(static_cast<uint32>(tga.imageLength) == m_Width * m_Height * 4);
 
-  return LoadFromPixelBuffer(reinterpret_cast<uint32 *>(tga.image));
+  return LoadFromPixelBuffer(reinterpret_cast<uint32 *>(tga.image), true);
 }
 

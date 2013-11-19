@@ -94,7 +94,7 @@ class ImageLoader {
 
   uint32 GetChannelForPixel(uint32 x, uint32 y, uint32 ch);
 
-  bool LoadFromPixelBuffer(uint32 *data);
+  bool LoadFromPixelBuffer(uint32 *data, bool flipY = false);
 
  public:
   virtual ~ImageLoader() {
