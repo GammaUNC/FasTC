@@ -74,7 +74,6 @@
 #define TARGA_COLOR_BLUE									3
 #define TARGA_COLOR_ALPHA									4
 
-
 // define targa public data types
 
 typedef struct _Targa {
@@ -84,6 +83,9 @@ typedef struct _Targa {
 	unsigned char *image;
 } Targa;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // declare targa public functions
 
@@ -222,6 +224,9 @@ int targa_applyRgbaMask(Targa *targa, int colorType, unsigned char value);
  */
 int targa_setRgbaChannel(Targa *targa, int colorType, unsigned char value);
 
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // _TARGA_H
 
