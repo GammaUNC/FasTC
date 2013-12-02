@@ -33,6 +33,11 @@
 
 // preprocessor directives
 
+#ifdef _MSC_VER
+#  define WIN32_LEAN_AND_MEAN
+#  define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
