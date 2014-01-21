@@ -73,8 +73,8 @@
 //
 //------------------------------------------------------------------------------
 
-#include "BC7Compressor.h"
-#include "BC7CompressionMode.h"
+#include "BPTCCompressor.h"
+#include "CompressionMode.h"
 
 #include "TexCompTypes.h"
 #include "BCLookupTables.h"
@@ -302,7 +302,9 @@ static void insert(T* buf, int bufSz, T newVal, int idx = 0) {
 template <typename T>
 static inline void swap(T &a, T &b) { T t = a; a = b; b = t; }
 
-const uint32 kBC7InterpolationValues[4][16][2] = {
+namespace BPTCC {
+
+const uint32 kInterpolationValues[4][16][2] = {
   { {64, 0}, {33, 31}, {0, 64}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
     {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
   { {64, 0}, {43, 21}, {21, 43}, {0, 64}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
@@ -313,44 +315,44 @@ const uint32 kBC7InterpolationValues[4][16][2] = {
     {30, 34}, {26, 38}, {21, 43}, {17, 47}, {13, 51}, {9, 55}, {4, 60}, {0, 64}}
 };
 
-int BC7CompressionMode::MaxAnnealingIterations = 50;  // This is a setting.
+int CompressionMode::MaxAnnealingIterations = 50;  // This is a setting.
 
-BC7CompressionMode::Attributes
-BC7CompressionMode::kModeAttributes[kNumModes] = {
+CompressionMode::Attributes
+CompressionMode::kModeAttributes[kNumModes] = {
   // Mode 0
   { 0, 4, 3, 3, 0, 4, 0,
-    false, false, BC7CompressionMode::ePBitType_NotShared },
+    false, false, CompressionMode::ePBitType_NotShared },
 
   // Mode 1
   { 1, 6, 2, 3, 0, 6, 0,
-    false, false, BC7CompressionMode::ePBitType_Shared },
+    false, false, CompressionMode::ePBitType_Shared },
 
   // Mode 2
   { 2, 6, 3, 2, 0, 5, 0,
-    false, false, BC7CompressionMode::ePBitType_None },
+    false, false, CompressionMode::ePBitType_None },
 
   // Mode 3
   { 3, 6, 2, 2, 0, 7, 0,
-    false, false, BC7CompressionMode::ePBitType_NotShared },
+    false, false, CompressionMode::ePBitType_NotShared },
 
   // Mode 4
   { 4, 0, 1, 2, 3, 5, 6,
-    true,  true,   BC7CompressionMode::ePBitType_None },
+    true,  true,   CompressionMode::ePBitType_None },
 
   // Mode 5
   { 5, 0, 1, 2, 2, 7, 8,
-    true,  false, BC7CompressionMode::ePBitType_None },
+    true,  false, CompressionMode::ePBitType_None },
 
   // Mode 6
   { 6, 0, 1, 4, 0, 7, 7,
-    false, false, BC7CompressionMode::ePBitType_NotShared },
+    false, false, CompressionMode::ePBitType_NotShared },
 
   // Mode 7
   { 7, 6, 2, 2, 0, 5, 5,
-    false, false, BC7CompressionMode::ePBitType_NotShared },
+    false, false, CompressionMode::ePBitType_NotShared },
 };
 
-void BC7CompressionMode::ClampEndpointsToGrid(
+void CompressionMode::ClampEndpointsToGrid(
   RGBAVector &p1, RGBAVector &p2, int &bestPBitCombo
 ) const {
   const int nPbitCombos = GetNumPbitCombos();
@@ -390,7 +392,7 @@ void BC7CompressionMode::ClampEndpointsToGrid(
   p2 = bp2;
 }
 
-double BC7CompressionMode::CompressSingleColor(
+double CompressionMode::CompressSingleColor(
   const RGBAVector &p, RGBAVector &p1, RGBAVector &p2,
   int &bestPbitCombo
 ) const {
@@ -449,8 +451,8 @@ double BC7CompressionMode::CompressSingleColor(
       }
 
       const uint32 bpi = GetNumberOfBitsPerIndex() - 1;
-      const uint32 interpVal0 = kBC7InterpolationValues[bpi][1][0];
-      const uint32 interpVal1 = kBC7InterpolationValues[bpi][1][1];
+      const uint32 interpVal0 = kInterpolationValues[bpi][1][0];
+      const uint32 interpVal1 = kInterpolationValues[bpi][1][1];
 
       // Find the closest interpolated val that to the given val...
       uint32 bestChannelDist = 0xFF;
@@ -473,7 +475,7 @@ double BC7CompressionMode::CompressSingleColor(
       dist[ci] = std::max(bestChannelDist, dist[ci]);
     }
 
-    const float *errorWeights = BC7C::GetErrorMetric();
+    const float *errorWeights = BPTCC::GetErrorMetric();
     float error = 0.0;
     for(uint32 i = 0; i < kNumColorChannels; i++) {
       float e = static_cast<float>(dist[i]) * errorWeights[i];
@@ -565,7 +567,7 @@ struct VisitedState {
   int pBitCombo;
 };
 
-void BC7CompressionMode::PickBestNeighboringEndpoints(
+void CompressionMode::PickBestNeighboringEndpoints(
   const RGBACluster &cluster,
   const RGBAVector &p1, const RGBAVector &p2, const int curPbitCombo,
   RGBAVector &np1, RGBAVector &np2, int &nPbitCombo,
@@ -645,9 +647,6 @@ void BC7CompressionMode::PickBestNeighboringEndpoints(
 // the bytes interpreted as a float. This prevents two things: 1, a
 // division, and 2, a cast from an integer to a float.
 
-#define COMPILE_ASSERT(x) extern int __compile_assert_[static_cast<int>(x)];
-COMPILE_ASSERT(RAND_MAX == 0x7FFF)
-
 static inline float frand() {
   // RAND_MAX is 0x7FFF, which offers 15 bits
   // of precision. Therefore, we move the bits
@@ -663,7 +662,10 @@ static inline float frand() {
   return fltUnion.flt - 1.0f;
 }
 
-bool BC7CompressionMode::AcceptNewEndpointError(
+#define COMPILE_ASSERT(x) extern int __compile_assert_[static_cast<int>(x)];
+COMPILE_ASSERT(RAND_MAX == 0x7FFF)
+
+bool CompressionMode::AcceptNewEndpointError(
   double newError, double oldError, float temp
 ) const {
   // Always accept better endpoints.
@@ -677,7 +679,7 @@ bool BC7CompressionMode::AcceptNewEndpointError(
   return r < p;
 }
 
-double BC7CompressionMode::OptimizeEndpointsForCluster(
+double CompressionMode::OptimizeEndpointsForCluster(
   const RGBACluster &cluster,
   RGBAVector &p1, RGBAVector &p2,
   int *bestIndices,
@@ -771,7 +773,7 @@ double BC7CompressionMode::OptimizeEndpointsForCluster(
   return bestError;
 }
 
-double BC7CompressionMode::CompressCluster(
+double CompressionMode::CompressCluster(
   const RGBACluster &cluster,
   RGBAVector &p1, RGBAVector &p2,
   int *bestIndices,
@@ -851,7 +853,7 @@ double BC7CompressionMode::CompressCluster(
   typedef tInterpPair tInterpLevel[16];
 
   const tInterpLevel *interpVals =
-    kBC7InterpolationValues + (GetNumberOfBitsPerAlpha() - 1);
+    kInterpolationValues + (GetNumberOfBitsPerAlpha() - 1);
 
   const float weight = GetErrorMetric().a;
 
@@ -1062,7 +1064,7 @@ double BC7CompressionMode::CompressCluster(
   return rgbError + alphaError;
 }
 
-double BC7CompressionMode::CompressCluster(
+double CompressionMode::CompressCluster(
   const RGBACluster &cluster,
   RGBAVector &p1, RGBAVector &p2,
   int *bestIndices,
@@ -1244,7 +1246,7 @@ double BC7CompressionMode::CompressCluster(
   );
 }
 
-double BC7CompressionMode::Compress(
+double CompressionMode::Compress(
   BitStream &stream, const int shapeIdx, const RGBACluster *clusters
 ) {
 
@@ -1519,873 +1521,935 @@ double BC7CompressionMode::Compress(
   return totalErr;
 }
 
-namespace BC7C {
-  static ErrorMetric gErrorMetric = eErrorMetric_Uniform;
-  void SetErrorMetric(ErrorMetric e) { gErrorMetric = e; }
+static ErrorMetric gErrorMetric = eErrorMetric_Uniform;
+void SetErrorMetric(ErrorMetric e) { gErrorMetric = e; }
 
-  ALIGN_SSE const float kErrorMetrics[kNumErrorMetrics][kNumColorChannels] = {
-    { 1.0f, 1.0f, 1.0f, 1.0f },
-    { sqrtf(0.3f), sqrtf(0.56f), sqrtf(0.11f), 1.0f }
-  };
+ALIGN_SSE const float kErrorMetrics[kNumErrorMetrics][kNumColorChannels] = {
+  { 1.0f, 1.0f, 1.0f, 1.0f },
+  { sqrtf(0.3f), sqrtf(0.56f), sqrtf(0.11f), 1.0f }
+};
 
-  const float *GetErrorMetric() { return kErrorMetrics[GetErrorMetricEnum()]; }
-  ErrorMetric GetErrorMetricEnum() { return gErrorMetric; }
+const float *GetErrorMetric() { return kErrorMetrics[GetErrorMetricEnum()]; }
+ErrorMetric GetErrorMetricEnum() { return gErrorMetric; }
 
-  class BlockLogger {
-   public:
-    BlockLogger(uint64 blockIdx, std::ostream &os)
-      : m_BlockIdx(blockIdx), m_Stream(os) { }
-
-    template<typename T>
-    friend std::ostream &operator<<(const BlockLogger &bl, const T &v);
-
-    uint64 m_BlockIdx;
-    std::ostream &m_Stream;
-  };
+class BlockLogger {
+  public:
+  BlockLogger(uint64 blockIdx, std::ostream &os)
+    : m_BlockIdx(blockIdx), m_Stream(os) { }
 
   template<typename T>
-  std::ostream &operator<<(const BlockLogger &bl, const T &v) {
-    std::stringstream ss;
-    ss << bl.m_BlockIdx << ": " << v;
-    return bl.m_Stream << ss.str();
+  friend std::ostream &operator<<(const BlockLogger &bl, const T &v);
+
+  uint64 m_BlockIdx;
+  std::ostream &m_Stream;
+};
+
+template<typename T>
+std::ostream &operator<<(const BlockLogger &bl, const T &v) {
+  std::stringstream ss;
+  ss << bl.m_BlockIdx << ": " << v;
+  return bl.m_Stream << ss.str();
+}
+
+// Function prototypes
+static void CompressBC7Block(const uint32 *block, uint8 *outBuf);
+static void CompressBC7Block(
+  const uint32 *block, uint8 *outBuf, const BlockLogger &logStream
+);
+
+static int gQualityLevel = 50;
+void SetQualityLevel(int q) {
+  gQualityLevel = std::max(0, q);
+  const int kMaxIters = CompressionMode::kMaxAnnealingIterations;
+  CompressionMode::MaxAnnealingIterations =
+    std::min(kMaxIters, GetQualityLevel());
+}
+int GetQualityLevel() { return gQualityLevel; }
+
+// Returns true if the entire block is a single color.
+static bool AllOneColor(const uint32 block[16]) {
+  const uint32 pixel = block[0];
+  for(int i = 1; i < 16; i++) {
+    if( block[i] != pixel )
+      return false;
   }
 
-  // Function prototypes
-  static void CompressBC7Block(const uint32 *block, uint8 *outBuf);
-  static void CompressBC7Block(
-    const uint32 *block, uint8 *outBuf, const BlockLogger &logStream
-  );
+  return true;
+}
 
-  static int gQualityLevel = 50;
-  void SetQualityLevel(int q) {
-    gQualityLevel = std::max(0, q);
-    const int kMaxIters = BC7CompressionMode::kMaxAnnealingIterations;
-    BC7CompressionMode::MaxAnnealingIterations =
-      std::min(kMaxIters, GetQualityLevel());
-  }
-  int GetQualityLevel() { return gQualityLevel; }
+// Write out a transparent block.
+static void WriteTransparentBlock(BitStream &stream) {
+  // Use mode 6
+  stream.WriteBits(1 << 6, 7);
+  stream.WriteBits(0, 128-7);
+  assert(stream.GetBitsWritten() == 128);
+}
 
-  // Returns true if the entire block is a single color.
-  static bool AllOneColor(const uint32 block[16]) {
-    const uint32 pixel = block[0];
-    for(int i = 1; i < 16; i++) {
-      if( block[i] != pixel )
-        return false;
-    }
+// Compresses a single color optimally and outputs the result.
+static void CompressOptimalColorBC7(uint32 pixel, BitStream &stream) {
 
-    return true;
-  }
+  stream.WriteBits(1 << 5, 6);  // Mode 5
+  stream.WriteBits(0, 2);  // No rotation bits.
 
-  // Write out a transparent block.
-  static void WriteTransparentBlock(BitStream &stream) {
-    // Use mode 6
-    stream.WriteBits(1 << 6, 7);
-    stream.WriteBits(0, 128-7);
-    assert(stream.GetBitsWritten() == 128);
-  }
+  uint8 r = pixel & 0xFF;
+  uint8 g = (pixel >> 8) & 0xFF;
+  uint8 b = (pixel >> 16) & 0xFF;
+  uint8 a = (pixel >> 24) & 0xFF;
 
-  // Compresses a single color optimally and outputs the result.
-  static void CompressOptimalColorBC7(uint32 pixel, BitStream &stream) {
+  // Red endpoints
+  stream.WriteBits(Optimal7CompressBC7Mode5[r][0], 7);
+  stream.WriteBits(Optimal7CompressBC7Mode5[r][1], 7);
 
-    stream.WriteBits(1 << 5, 6);  // Mode 5
-    stream.WriteBits(0, 2);  // No rotation bits.
+  // Green endpoints
+  stream.WriteBits(Optimal7CompressBC7Mode5[g][0], 7);
+  stream.WriteBits(Optimal7CompressBC7Mode5[g][1], 7);
 
-    uint8 r = pixel & 0xFF;
-    uint8 g = (pixel >> 8) & 0xFF;
-    uint8 b = (pixel >> 16) & 0xFF;
-    uint8 a = (pixel >> 24) & 0xFF;
+  // Blue endpoints
+  stream.WriteBits(Optimal7CompressBC7Mode5[b][0], 7);
+  stream.WriteBits(Optimal7CompressBC7Mode5[b][1], 7);
 
-    // Red endpoints
-    stream.WriteBits(Optimal7CompressBC7Mode5[r][0], 7);
-    stream.WriteBits(Optimal7CompressBC7Mode5[r][1], 7);
+  // Alpha endpoints... are just the same.
+  stream.WriteBits(a, 8);
+  stream.WriteBits(a, 8);
 
-    // Green endpoints
-    stream.WriteBits(Optimal7CompressBC7Mode5[g][0], 7);
-    stream.WriteBits(Optimal7CompressBC7Mode5[g][1], 7);
+  // Color indices are 1 for each pixel...
+  // Anchor index is 0, so 1 bit for the first pixel, then
+  // 01 for each following pixel giving the sequence of 31 bits:
+  // ...010101011
+  stream.WriteBits(0xaaaaaaab, 31);
 
-    // Blue endpoints
-    stream.WriteBits(Optimal7CompressBC7Mode5[b][0], 7);
-    stream.WriteBits(Optimal7CompressBC7Mode5[b][1], 7);
+  // Alpha indices...
+  stream.WriteBits(kWMValues[gWMVal = (gWMVal+1) % kNumWMVals], 31);
+}
 
-    // Alpha endpoints... are just the same.
-    stream.WriteBits(a, 8);
-    stream.WriteBits(a, 8);
+static void DecompressBC7Block(const uint8 block[16], uint32 outBuf[16]);
 
-    // Color indices are 1 for each pixel...
-    // Anchor index is 0, so 1 bit for the first pixel, then
-    // 01 for each following pixel giving the sequence of 31 bits:
-    // ...010101011
-    stream.WriteBits(0xaaaaaaab, 31);
+void GetBlock(const uint32 x, const uint32 y, const uint32 pixelsWide,
+              const uint32 *inPixels, uint32 block[16]) {
+  memcpy(block, inPixels + y*pixelsWide + x, 4 * sizeof(uint32));
+  memcpy(block + 4, inPixels + (y+1)*pixelsWide + x, 4 * sizeof(uint32));
+  memcpy(block + 8, inPixels + (y+2)*pixelsWide + x, 4 * sizeof(uint32));
+  memcpy(block + 12, inPixels + (y+3)*pixelsWide + x, 4 * sizeof(uint32));
+}
 
-    // Alpha indices...
-    stream.WriteBits(kWMValues[gWMVal = (gWMVal+1) % kNumWMVals], 31);
-  }
+// Compress an image using BC7 compression. Use the inBuf parameter to point
+// to an image in 4-byte RGBA format. The width and height parameters specify
+// the size of the image in pixels. The buffer pointed to by outBuf should be
+// large enough to store the compressed image. This implementation has an 4:1
+// compression ratio.
+void Compress(const FasTC::CompressionJob &cj) {
+  const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
+  const uint32 kBlockSz = GetBlockSize(FasTC::eCompressionFormat_BPTC);
+  uint8 *outBuf = cj.OutBuf() + cj.CoordsToBlockIdx(cj.XStart(), cj.YStart()) * kBlockSz;
 
-  static void DecompressBC7Block(const uint8 block[16], uint32 outBuf[16]);
+  uint32 startX = cj.XStart();
+  bool done = false;
 
-  void GetBlock(const uint32 x, const uint32 y, const uint32 pixelsWide,
-                const uint32 *inPixels, uint32 block[16]) {
-    memcpy(block, inPixels + y*pixelsWide + x, 4 * sizeof(uint32));
-    memcpy(block + 4, inPixels + (y+1)*pixelsWide + x, 4 * sizeof(uint32));
-    memcpy(block + 8, inPixels + (y+2)*pixelsWide + x, 4 * sizeof(uint32));
-    memcpy(block + 12, inPixels + (y+3)*pixelsWide + x, 4 * sizeof(uint32));
-  }
+  for(uint32 j = cj.YStart(); !done; j += 4) {
+    for(uint32 i = startX; !done && i < cj.Width(); i += 4) {
 
-  // Compress an image using BC7 compression. Use the inBuf parameter to point
-  // to an image in 4-byte RGBA format. The width and height parameters specify
-  // the size of the image in pixels. The buffer pointed to by outBuf should be
-  // large enough to store the compressed image. This implementation has an 4:1
-  // compression ratio.
-  void Compress(const FasTC::CompressionJob &cj) {
-    const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
-    const uint32 kBlockSz = GetBlockSize(FasTC::eCompressionFormat_BPTC);
-    uint8 *outBuf = cj.OutBuf() + cj.CoordsToBlockIdx(cj.XStart(), cj.YStart()) * kBlockSz;
-
-    uint32 startX = cj.XStart();
-    bool done = false;
-
-    for(uint32 j = cj.YStart(); !done; j += 4) {
-      for(uint32 i = startX; !done && i < cj.Width(); i += 4) {
-
-        uint32 block[16];
-        GetBlock(i, j, cj.Width(), inPixels, block);
-        CompressBC7Block(block, outBuf);
+      uint32 block[16];
+      GetBlock(i, j, cj.Width(), inPixels, block);
+      CompressBC7Block(block, outBuf);
 
 #ifndef NDEBUG
-        const uint8 *inBlock = reinterpret_cast<const uint8 *>(block);
-        const uint8 *cmpblock = reinterpret_cast<const uint8 *>(outBuf);
-        uint32 unComp[16];
-        DecompressBC7Block(cmpblock, unComp);
-        const uint8* unCompData = reinterpret_cast<const uint8 *>(unComp);
+      const uint8 *inBlock = reinterpret_cast<const uint8 *>(block);
+      const uint8 *cmpblock = reinterpret_cast<const uint8 *>(outBuf);
+      uint32 unComp[16];
+      DecompressBC7Block(cmpblock, unComp);
+      const uint8* unCompData = reinterpret_cast<const uint8 *>(unComp);
 
-        double diffSum = 0.0;
-        for(int k = 0; k < 64; k+=4) {
-          double rdiff = sad(unCompData[k], inBlock[k]);
-          double gdiff = sad(unCompData[k+1], inBlock[k+1]);
-          double bdiff = sad(unCompData[k+2], inBlock[k+2]);
-          double adiff = sad(unCompData[k+3], inBlock[k+3]);
-          const double asrc = static_cast<double>(inBlock[k+3]);
-          const double adst = static_cast<double>(unCompData[k+3]);
-          double avga = ((asrc + adst)*0.5)/255.0;
-          diffSum += (rdiff + gdiff + bdiff + adiff) * avga;
-        }
-        double blockError = static_cast<double>(diffSum) / 64.0;
-        if(blockError > 5.0) {
-          fprintf(stderr, "WARNING: Block error very high"
-                          " at <%d, %d>: (%.2f)\n", i, j, blockError);
-        }
+      double diffSum = 0.0;
+      for(int k = 0; k < 64; k+=4) {
+        double rdiff = sad(unCompData[k], inBlock[k]);
+        double gdiff = sad(unCompData[k+1], inBlock[k+1]);
+        double bdiff = sad(unCompData[k+2], inBlock[k+2]);
+        double adiff = sad(unCompData[k+3], inBlock[k+3]);
+        const double asrc = static_cast<double>(inBlock[k+3]);
+        const double adst = static_cast<double>(unCompData[k+3]);
+        double avga = ((asrc + adst)*0.5)/255.0;
+        diffSum += (rdiff + gdiff + bdiff + adiff) * avga;
+      }
+      double blockError = static_cast<double>(diffSum) / 64.0;
+      if(blockError > 5.0) {
+        fprintf(stderr, "WARNING: Block error very high"
+                        " at <%d, %d>: (%.2f)\n", i, j, blockError);
+      }
 #endif
 
-        outBuf += kBlockSz;
-        done = i+4 >= cj.XEnd() && j+(i+4 == cj.Width()? 4 : 0) >= cj.YEnd();
-      }
-      startX = 0;
+      outBuf += kBlockSz;
+      done = i+4 >= cj.XEnd() && j+(i+4 == cj.Width()? 4 : 0) >= cj.YEnd();
     }
+    startX = 0;
   }
+}
 
 #ifdef HAS_ATOMICS
 #ifdef HAS_MSVC_ATOMICS
-  static uint32 TestAndSet(uint32 *x) {
-    return InterlockedExchange(x, 1);
-  }
+static uint32 TestAndSet(uint32 *x) {
+  return InterlockedExchange(x, 1);
+}
 
-  static uint32 FetchAndAdd(uint32 *x) {
-    return InterlockedIncrement(x)-1;
-  }
+static uint32 FetchAndAdd(uint32 *x) {
+  return InterlockedIncrement(x)-1;
+}
 #elif defined HAS_GCC_ATOMICS
-  static uint32 TestAndSet(uint32 *x) {
-    return __sync_lock_test_and_set(x, 1);
-  }
+static uint32 TestAndSet(uint32 *x) {
+  return __sync_lock_test_and_set(x, 1);
+}
 
-  static uint32 FetchAndAdd(uint32 *x) {
-    return __sync_fetch_and_add(x, 1);
-  }
+static uint32 FetchAndAdd(uint32 *x) {
+  return __sync_fetch_and_add(x, 1);
+}
 #endif
 
-  // Variables used for synchronization in threadsafe implementation.
-  void CompressAtomic(FasTC::CompressionJobList &cjl) {
-    uint32 jobIdx;
-    while((jobIdx = cjl.m_CurrentJobIndex) < cjl.GetNumJobs()) {
-      // !HACK! ... Microsoft has this defined
-      #undef GetJob
+// Variables used for synchronization in threadsafe implementation.
+void CompressAtomic(FasTC::CompressionJobList &cjl) {
+  uint32 jobIdx;
+  while((jobIdx = cjl.m_CurrentJobIndex) < cjl.GetNumJobs()) {
+    // !HACK! ... Microsoft has this defined
+    #undef GetJob
 
-      const FasTC::CompressionJob *cj = cjl.GetJob(jobIdx);
-      const uint32 nBlocks = (cj->Height() * cj->Width()) / 16;
+    const FasTC::CompressionJob *cj = cjl.GetJob(jobIdx);
+    const uint32 nBlocks = (cj->Height() * cj->Width()) / 16;
 
-      // Help finish whatever texture we're compressing before we start again on
-      // my work...
-      uint32 blockIdx;
-      while((blockIdx = FetchAndAdd(&(cjl.m_CurrentBlockIndex))) < nBlocks &&
-            *(cjl.GetFinishedFlag(jobIdx)) == 0) {
-        unsigned char *out = cj->OutBuf() + (16 * blockIdx);
+    // Help finish whatever texture we're compressing before we start again on
+    // my work...
+    uint32 blockIdx;
+    while((blockIdx = FetchAndAdd(&(cjl.m_CurrentBlockIndex))) < nBlocks &&
+          *(cjl.GetFinishedFlag(jobIdx)) == 0) {
+      unsigned char *out = cj->OutBuf() + (16 * blockIdx);
 
-        uint32 block[16];
-        uint32 x = cj->XStart() + 4 * (blockIdx % (cj->Width() / 4));
-        uint32 y = cj->YStart() + 4 * (blockIdx / (cj->Width() / 4));
-        const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj->InBuf());
-        GetBlock(x, y, cj->Width(), inPixels, block);
-        CompressBC7Block(block, out);
-      }
-
-      if(TestAndSet(cjl.GetFinishedFlag(jobIdx)) == 0) {
-        cjl.m_CurrentBlockIndex = 0;
-        cjl.m_CurrentJobIndex++;
-      }
-
-      // Wait until this texture finishes.
-      while(cjl.m_CurrentJobIndex == jobIdx) { }
+      uint32 block[16];
+      uint32 x = cj->XStart() + 4 * (blockIdx % (cj->Width() / 4));
+      uint32 y = cj->YStart() + 4 * (blockIdx / (cj->Width() / 4));
+      const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj->InBuf());
+      GetBlock(x, y, cj->Width(), inPixels, block);
+      CompressBC7Block(block, out);
     }
+
+    if(TestAndSet(cjl.GetFinishedFlag(jobIdx)) == 0) {
+      cjl.m_CurrentBlockIndex = 0;
+      cjl.m_CurrentJobIndex++;
+    }
+
+    // Wait until this texture finishes.
+    while(cjl.m_CurrentJobIndex == jobIdx) { }
   }
+}
 #endif  // HAS_ATOMICS
 
-  void CompressWithStats(const FasTC::CompressionJob &cj, std::ostream *logStream) {
-    const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
-    const uint32 kBlockSz = GetBlockSize(FasTC::eCompressionFormat_BPTC);
-    uint8 *outBuf = cj.OutBuf() + cj.CoordsToBlockIdx(cj.XStart(), cj.YStart()) * kBlockSz;
+void CompressWithStats(const FasTC::CompressionJob &cj, std::ostream *logStream) {
+  const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
+  const uint32 kBlockSz = GetBlockSize(FasTC::eCompressionFormat_BPTC);
+  uint8 *outBuf = cj.OutBuf() + cj.CoordsToBlockIdx(cj.XStart(), cj.YStart()) * kBlockSz;
 
-    uint32 startX = cj.XStart();
-    bool done = false;
-    for(uint32 j = cj.YStart(); !done; j += 4) {
-      for(uint32 i = startX; !done && i < cj.Width(); i += 4) {
+  uint32 startX = cj.XStart();
+  bool done = false;
+  for(uint32 j = cj.YStart(); !done; j += 4) {
+    for(uint32 i = startX; !done && i < cj.Width(); i += 4) {
 
-        uint32 block[16];
-        GetBlock(i, j, cj.Width(), inPixels, block);
+      uint32 block[16];
+      GetBlock(i, j, cj.Width(), inPixels, block);
 
-        if(logStream) {
-          uint64 blockIdx = cj.CoordsToBlockIdx(i, j);
-          CompressBC7Block(block, outBuf, BlockLogger(blockIdx, *logStream));
-        } else {
-          CompressBC7Block(block, outBuf);
-        }
+      if(logStream) {
+        uint64 blockIdx = cj.CoordsToBlockIdx(i, j);
+        CompressBC7Block(block, outBuf, BlockLogger(blockIdx, *logStream));
+      } else {
+        CompressBC7Block(block, outBuf);
+      }
 
 #ifndef NDEBUG
-        const uint8 *inBlock = reinterpret_cast<const uint8 *>(block);
-        const uint8 *cmpData = outBuf;
-        uint32 unComp[16];
-        DecompressBC7Block(cmpData, unComp);
-        const uint8* unCompData = reinterpret_cast<uint8 *>(unComp);
+      const uint8 *inBlock = reinterpret_cast<const uint8 *>(block);
+      const uint8 *cmpData = outBuf;
+      uint32 unComp[16];
+      DecompressBC7Block(cmpData, unComp);
+      const uint8* unCompData = reinterpret_cast<uint8 *>(unComp);
 
-        uint32 diffSum = 0;
-        for(uint32 k = 0; k < 64; k++) {
-          diffSum += sad(unCompData[k], inBlock[k]);
-        }
-        double blockError = static_cast<double>(diffSum) / 64.0;
-        if(blockError > 50.0) {
-          fprintf(stderr, "WARNING: Block error very high"
-                          " (%.2f)\n", blockError);
-        }
+      uint32 diffSum = 0;
+      for(uint32 k = 0; k < 64; k++) {
+        diffSum += sad(unCompData[k], inBlock[k]);
+      }
+      double blockError = static_cast<double>(diffSum) / 64.0;
+      if(blockError > 50.0) {
+        fprintf(stderr, "WARNING: Block error very high"
+                        " (%.2f)\n", blockError);
+      }
 #endif
 
-        outBuf += 16;
-        done = i+4 >= cj.XEnd() && j+(i+4 == cj.Width()? 4 : 0) >= cj.YEnd();
-      }
-
-      startX = 0;
+      outBuf += 16;
+      done = i+4 >= cj.XEnd() && j+(i+4 == cj.Width()? 4 : 0) >= cj.YEnd();
     }
+
+    startX = 0;
+  }
+}
+
+static double CompressTwoClusters(
+  int shapeIdx,
+  const RGBACluster *clusters,
+  uint8 *outBuf,
+  bool opaque,
+  double *errors = NULL,
+  int *modeChosen = NULL
+) {
+
+  uint8 tempBuf1[16];
+  BitStream tmpStream1(tempBuf1, 128, 0);
+  double bestError =
+    CompressionMode(1, opaque).Compress(tmpStream1, shapeIdx, clusters);
+
+  if(errors) errors[1] = bestError;
+  if(modeChosen) *modeChosen = 1;
+
+  memcpy(outBuf, tempBuf1, 16);
+  if(bestError == 0.0) {
+    return 0.0;
   }
 
-  static double CompressTwoClusters(
-    int shapeIdx,
-    const RGBACluster *clusters,
-    uint8 *outBuf,
-    bool opaque,
-    double *errors = NULL,
-    int *modeChosen = NULL
-  ) {
+  uint8 tempBuf3[16];
+  BitStream tmpStream3(tempBuf3, 128, 0);
 
-    uint8 tempBuf1[16];
-    BitStream tmpStream1(tempBuf1, 128, 0);
-    double bestError =
-      BC7CompressionMode(1, opaque).Compress(tmpStream1, shapeIdx, clusters);
+  double error =
+    CompressionMode(3, opaque).Compress(tmpStream3, shapeIdx, clusters);
 
-    if(errors) errors[1] = bestError;
-    if(modeChosen) *modeChosen = 1;
-
-    memcpy(outBuf, tempBuf1, 16);
+  if(errors) errors[3] = error;
+  if(error < bestError) {
+    if(modeChosen) *modeChosen = 3;
+    bestError = error;
+    memcpy(outBuf, tempBuf3, 16);
     if(bestError == 0.0) {
       return 0.0;
     }
-
-    uint8 tempBuf3[16];
-    BitStream tmpStream3(tempBuf3, 128, 0);
-
-    double error =
-      BC7CompressionMode(3, opaque).Compress(tmpStream3, shapeIdx, clusters);
-
-    if(errors) errors[3] = error;
-    if(error < bestError) {
-      if(modeChosen) *modeChosen = 3;
-      bestError = error;
-      memcpy(outBuf, tempBuf3, 16);
-      if(bestError == 0.0) {
-        return 0.0;
-      }
-    }
-
-    // Mode 3 offers more precision for RGB data. Mode 7 is really only if we
-    // have alpha.
-    if(!opaque) {
-      uint8 tempBuf7[16];
-      BitStream tmpStream7(tempBuf7, 128, 0);
-
-      error =
-        BC7CompressionMode(7, opaque).Compress(tmpStream7, shapeIdx, clusters);
-
-      if(errors) errors[7] = error;
-      if(error < bestError) {
-        if(modeChosen) *modeChosen = 7;
-        memcpy(outBuf, tempBuf7, 16);
-        return error;
-      }
-    }
-
-    return bestError;
   }
 
-  static double CompressThreeClusters(
-    int shapeIdx,
-    const RGBACluster *clusters,
-    uint8 *outBuf,
-    bool opaque,
-    double *errors = NULL,
-    int *modeChosen = NULL
-  ) {
-    uint8 tempBuf0[16];
-    BitStream tmpStream0(tempBuf0, 128, 0);
-
-    uint8 tempBuf2[16];
-    BitStream tmpStream2(tempBuf2, 128, 0);
-
-    double error, bestError = DBL_MAX;;
-    if(shapeIdx < 16) {
-      bestError =
-        BC7CompressionMode(0, opaque).Compress(tmpStream0, shapeIdx, clusters);
-
-      if(errors) errors[0] = bestError;
-    } else {
-      if(errors) errors[0] = -1.0;
-    }
-
-    if(modeChosen) *modeChosen = 0;
-    memcpy(outBuf, tempBuf0, 16);
-    if(bestError == 0.0) {
-      return 0.0;
-    }
+  // Mode 3 offers more precision for RGB data. Mode 7 is really only if we
+  // have alpha.
+  if(!opaque) {
+    uint8 tempBuf7[16];
+    BitStream tmpStream7(tempBuf7, 128, 0);
 
     error =
-      BC7CompressionMode(2, opaque).Compress(tmpStream2, shapeIdx, clusters);
+      CompressionMode(7, opaque).Compress(tmpStream7, shapeIdx, clusters);
 
-    if(errors) errors[2] = error;
+    if(errors) errors[7] = error;
     if(error < bestError) {
-      if(modeChosen) *modeChosen = 2;
-      memcpy(outBuf, tempBuf2, 16);
+      if(modeChosen) *modeChosen = 7;
+      memcpy(outBuf, tempBuf7, 16);
       return error;
     }
-
-    return bestError;
   }
 
-  static void PopulateTwoClustersForShape(
-    const RGBACluster &points, int shapeIdx, RGBACluster *clusters
-  ) {
-    const uint16 shape = kShapeMask2[shapeIdx];
-    for(uint32 pt = 0; pt < kMaxNumDataPoints; pt++) {
+  return bestError;
+}
 
-      const RGBAVector &p = points.GetPoint(pt);
+static double CompressThreeClusters(
+  int shapeIdx,
+  const RGBACluster *clusters,
+  uint8 *outBuf,
+  bool opaque,
+  double *errors = NULL,
+  int *modeChosen = NULL
+) {
+  uint8 tempBuf0[16];
+  BitStream tmpStream0(tempBuf0, 128, 0);
 
-      if((1 << pt) & shape)
-        clusters[1].AddPoint(p);
-      else
-        clusters[0].AddPoint(p);
-    }
+  uint8 tempBuf2[16];
+  BitStream tmpStream2(tempBuf2, 128, 0);
+
+  double error, bestError = DBL_MAX;;
+  if(shapeIdx < 16) {
+    bestError =
+      CompressionMode(0, opaque).Compress(tmpStream0, shapeIdx, clusters);
+
+    if(errors) errors[0] = bestError;
+  } else {
+    if(errors) errors[0] = -1.0;
+  }
+
+  if(modeChosen) *modeChosen = 0;
+  memcpy(outBuf, tempBuf0, 16);
+  if(bestError == 0.0) {
+    return 0.0;
+  }
+
+  error =
+    CompressionMode(2, opaque).Compress(tmpStream2, shapeIdx, clusters);
+
+  if(errors) errors[2] = error;
+  if(error < bestError) {
+    if(modeChosen) *modeChosen = 2;
+    memcpy(outBuf, tempBuf2, 16);
+    return error;
+  }
+
+  return bestError;
+}
+
+static void PopulateTwoClustersForShape(
+  const RGBACluster &points, int shapeIdx, RGBACluster *clusters
+) {
+  const uint16 shape = kShapeMask2[shapeIdx];
+  for(uint32 pt = 0; pt < kMaxNumDataPoints; pt++) {
+
+    const RGBAVector &p = points.GetPoint(pt);
+
+    if((1 << pt) & shape)
+      clusters[1].AddPoint(p);
+    else
+      clusters[0].AddPoint(p);
+  }
 
 #ifndef NDEBUG
-    const uint32 pbs1 = clusters[0].GetPointBitString();
-    const uint32 pbs2 = clusters[1].GetPointBitString();
-    assert(!(pbs1 & pbs2));
-    assert((pbs1 ^ pbs2) == 0xFFFF);
-    assert((shape & pbs2) == shape);
+  const uint32 pbs1 = clusters[0].GetPointBitString();
+  const uint32 pbs2 = clusters[1].GetPointBitString();
+  assert(!(pbs1 & pbs2));
+  assert((pbs1 ^ pbs2) == 0xFFFF);
+  assert((shape & pbs2) == shape);
 #endif
-  }
+}
 
-  static void PopulateThreeClustersForShape(
-    const RGBACluster &points, int shapeIdx, RGBACluster *clusters
-  ) {
-    for(uint32 pt = 0; pt < kMaxNumDataPoints; pt++) {
+static void PopulateThreeClustersForShape(
+  const RGBACluster &points, int shapeIdx, RGBACluster *clusters
+) {
+  for(uint32 pt = 0; pt < kMaxNumDataPoints; pt++) {
 
-      const RGBAVector &p = points.GetPoint(pt);
+    const RGBAVector &p = points.GetPoint(pt);
 
-      if((1 << pt) & kShapeMask3[shapeIdx][0]) {
-        if((1 << pt) & kShapeMask3[shapeIdx][1]) {
-          clusters[2].AddPoint(p);
-        } else {
-          clusters[1].AddPoint(p);
-        }
+    if((1 << pt) & kShapeMask3[shapeIdx][0]) {
+      if((1 << pt) & kShapeMask3[shapeIdx][1]) {
+        clusters[2].AddPoint(p);
       } else {
-        clusters[0].AddPoint(p);
+        clusters[1].AddPoint(p);
       }
+    } else {
+      clusters[0].AddPoint(p);
     }
+  }
 
 #ifndef NDEBUG
-    const uint32 pbs1 = clusters[0].GetPointBitString();
-    const uint32 pbs2 = clusters[1].GetPointBitString();
-    const uint32 pbs3 = clusters[2].GetPointBitString();
+  const uint32 pbs1 = clusters[0].GetPointBitString();
+  const uint32 pbs2 = clusters[1].GetPointBitString();
+  const uint32 pbs3 = clusters[2].GetPointBitString();
 
-    assert(!(pbs1 & pbs2));
-    assert(!(pbs3 & pbs2));
-    assert(!(pbs3 & pbs1));
+  assert(!(pbs1 & pbs2));
+  assert(!(pbs3 & pbs2));
+  assert(!(pbs3 & pbs1));
 #endif
+}
+
+static double EstimateTwoClusterError(RGBACluster &c) {
+  RGBAVector Min, Max, v;
+  c.GetBoundingBox(Min, Max);
+  v = Max - Min;
+  if(v * v == 0) {
+    return 0.0;
   }
 
-  static double EstimateTwoClusterError(RGBACluster &c) {
-    RGBAVector Min, Max, v;
-    c.GetBoundingBox(Min, Max);
-    v = Max - Min;
-    if(v * v == 0) {
-      return 0.0;
-    }
+  const float *w = BPTCC::GetErrorMetric();
 
-    const float *w = BC7C::GetErrorMetric();
-
-    double error = 0.0001;
+  double error = 0.0001;
 #ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-    double eigOne = c.GetPrincipalEigenvalue();
-    double eigTwo = c.GetSecondEigenvalue();
-    if(eigOne != 0.0) {
-      error += eigTwo / eigOne;
-    } else {
-      error += 1.0;
-    }
+  double eigOne = c.GetPrincipalEigenvalue();
+  double eigTwo = c.GetSecondEigenvalue();
+  if(eigOne != 0.0) {
+    error += eigTwo / eigOne;
+  } else {
+    error += 1.0;
+  }
 #else
-    error += c.QuantizedError(Min, Max, 8,
-                              0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
+  error += c.QuantizedError(Min, Max, 8,
+                            0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
 #endif
-    return error;
+  return error;
+}
+
+static double EstimateThreeClusterError(RGBACluster &c) {
+  RGBAVector Min, Max, v;
+  c.GetBoundingBox(Min, Max);
+  v = Max - Min;
+  if(v * v == 0) {
+    return 0.0;
   }
 
-  static double EstimateThreeClusterError(RGBACluster &c) {
-    RGBAVector Min, Max, v;
-    c.GetBoundingBox(Min, Max);
-    v = Max - Min;
-    if(v * v == 0) {
-      return 0.0;
-    }
+  const float *w = BPTCC::GetErrorMetric();
 
-    const float *w = BC7C::GetErrorMetric();
-
-    double error = 0.0001;
+  double error = 0.0001;
 #ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-    double eigOne = c.GetPrincipalEigenvalue();
-    double eigTwo = c.GetSecondEigenvalue();
+  double eigOne = c.GetPrincipalEigenvalue();
+  double eigTwo = c.GetSecondEigenvalue();
 
-    if(eigOne != 0.0) {
-      error += eigTwo / eigOne;
-    } else {
-      error += 1.0;
-    }
+  if(eigOne != 0.0) {
+    error += eigTwo / eigOne;
+  } else {
+    error += 1.0;
+  }
 #else
-    error += c.QuantizedError(Min, Max, 4,
-                              0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
+  error += c.QuantizedError(Min, Max, 4,
+                            0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
 #endif
-    return error;
+  return error;
+}
+
+static void CompressBC7Block(const uint32 *block, uint8 *outBuf) {
+  // All a single color?
+  if(AllOneColor(block)) {
+    BitStream bStrm(outBuf, 128, 0);
+    CompressOptimalColorBC7(*block, bStrm);
+    return;
   }
 
-  static void CompressBC7Block(const uint32 *block, uint8 *outBuf) {
-    // All a single color?
-    if(AllOneColor(block)) {
-      BitStream bStrm(outBuf, 128, 0);
-      CompressOptimalColorBC7(*block, bStrm);
+  RGBACluster blockCluster;
+  bool opaque = true;
+  bool transparent = true;
+
+  for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
+    RGBAVector p = RGBAVector(i, block[i]);
+    blockCluster.AddPoint(p);
+    if(fabs(p.a - 255.0f) > 1e-10)
+      opaque = false;
+
+    if(p.a > 0.0f)
+      transparent = false;
+  }
+
+  // The whole block is transparent?
+  if(transparent) {
+    BitStream bStrm(outBuf, 128, 0);
+    WriteTransparentBlock(bStrm);
+    return;
+  }
+
+  // First we must figure out which shape to use. To do this, simply
+  // see which shape has the smallest sum of minimum bounding spheres.
+  double bestError[2] = { DBL_MAX, DBL_MAX };
+  int bestShapeIdx[2] = { -1, -1 };
+  RGBACluster bestClusters[2][3];
+
+  for(unsigned int i = 0; i < kNumShapes2; i++) {
+    RGBACluster clusters[2];
+    PopulateTwoClustersForShape(blockCluster, i, clusters);
+
+    double err = 0.0;
+    for(int ci = 0; ci < 2; ci++) {
+      err += EstimateTwoClusterError(clusters[ci]);
+    }
+
+    // If it's small, we'll take it!
+    if(err < 1e-9) {
+      CompressTwoClusters(i, clusters, outBuf, opaque);
       return;
     }
 
-    RGBACluster blockCluster;
-    bool opaque = true;
-    bool transparent = true;
-
-    for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
-      RGBAVector p = RGBAVector(i, block[i]);
-      blockCluster.AddPoint(p);
-      if(fabs(p.a - 255.0f) > 1e-10)
-        opaque = false;
-
-      if(p.a > 0.0f)
-        transparent = false;
+    if(err < bestError[0]) {
+      bestError[0] = err;
+      bestShapeIdx[0] = i;
+      bestClusters[0][0] = clusters[0];
+      bestClusters[0][1] = clusters[1];
     }
+  }
 
-    // The whole block is transparent?
-    if(transparent) {
-      BitStream bStrm(outBuf, 128, 0);
-      WriteTransparentBlock(bStrm);
-      return;
-    }
+  // There are not 3 subset blocks that support alpha, so only check these
+  // if the entire block is opaque.
+  if(opaque) {
+    for(unsigned int i = 0; i < kNumShapes3; i++) {
 
-    // First we must figure out which shape to use. To do this, simply
-    // see which shape has the smallest sum of minimum bounding spheres.
-    double bestError[2] = { DBL_MAX, DBL_MAX };
-    int bestShapeIdx[2] = { -1, -1 };
-    RGBACluster bestClusters[2][3];
-
-    for(unsigned int i = 0; i < kNumShapes2; i++) {
-      RGBACluster clusters[2];
-      PopulateTwoClustersForShape(blockCluster, i, clusters);
+      RGBACluster clusters[3];
+      PopulateThreeClustersForShape(blockCluster, i, clusters);
 
       double err = 0.0;
-      for(int ci = 0; ci < 2; ci++) {
-        err += EstimateTwoClusterError(clusters[ci]);
+      for(int ci = 0; ci < 3; ci++) {
+        err += EstimateThreeClusterError(clusters[ci]);
       }
 
       // If it's small, we'll take it!
       if(err < 1e-9) {
-        CompressTwoClusters(i, clusters, outBuf, opaque);
+        CompressThreeClusters(i, clusters, outBuf, opaque);
         return;
       }
 
-      if(err < bestError[0]) {
-        bestError[0] = err;
-        bestShapeIdx[0] = i;
-        bestClusters[0][0] = clusters[0];
-        bestClusters[0][1] = clusters[1];
+      if(err < bestError[1]) {
+        bestError[1] = err;
+        bestShapeIdx[1] = i;
+        bestClusters[1][0] = clusters[0];
+        bestClusters[1][1] = clusters[1];
+        bestClusters[1][2] = clusters[2];
       }
     }
+  }
 
-    // There are not 3 subset blocks that support alpha, so only check these
-    // if the entire block is opaque.
-    if(opaque) {
-      for(unsigned int i = 0; i < kNumShapes3; i++) {
+  uint8 tempBuf1[16], tempBuf2[16];
 
-        RGBACluster clusters[3];
-        PopulateThreeClustersForShape(blockCluster, i, clusters);
+  BitStream tempStream1 (tempBuf1, 128, 0);
+  CompressionMode compressor(6, opaque);
+  double best = compressor.Compress(tempStream1, 0, &blockCluster);
+  if(best == 0.0f) {
+    memcpy(outBuf, tempBuf1, 16);
+    return;
+  }
 
-        double err = 0.0;
-        for(int ci = 0; ci < 3; ci++) {
-          err += EstimateThreeClusterError(clusters[ci]);
-        }
+  // Check modes 4 and 5 if the block isn't opaque...
+  if(!opaque) {
+    for(int mode = 4; mode <= 5; mode++) {
 
-        // If it's small, we'll take it!
-        if(err < 1e-9) {
-          CompressThreeClusters(i, clusters, outBuf, opaque);
+      BitStream tempStream2(tempBuf2, 128, 0);
+      CompressionMode compressorTry(mode, opaque);
+
+      double error = compressorTry.Compress(tempStream2, 0, &blockCluster);
+      if(error < best) {
+
+        best = error;
+
+        if(best == 0.0f) {
+          memcpy(outBuf, tempBuf2, 16);
           return;
-        }
-
-        if(err < bestError[1]) {
-          bestError[1] = err;
-          bestShapeIdx[1] = i;
-          bestClusters[1][0] = clusters[0];
-          bestClusters[1][1] = clusters[1];
-          bestClusters[1][2] = clusters[2];
+        } else {
+          memcpy(tempBuf1, tempBuf2, 16);
         }
       }
     }
+  }
 
-    uint8 tempBuf1[16], tempBuf2[16];
+  double error =
+    CompressTwoClusters(bestShapeIdx[0], bestClusters[0], tempBuf2, opaque);
+  if(error < best) {
 
-    BitStream tempStream1 (tempBuf1, 128, 0);
-    BC7CompressionMode compressor(6, opaque);
-    double best = compressor.Compress(tempStream1, 0, &blockCluster);
-    if(best == 0.0f) {
-      memcpy(outBuf, tempBuf1, 16);
+    best = error;
+    if(error == 0.0f) {
+      memcpy(outBuf, tempBuf2, 16);
+      return;
+    } else {
+      memcpy(tempBuf1, tempBuf2, 16);
+    }
+  }
+
+  if(opaque) {
+    const double newError =
+      CompressThreeClusters(bestShapeIdx[1],
+                            bestClusters[1],
+                            tempBuf2,
+                            opaque);
+    if(newError < best) {
+      memcpy(outBuf, tempBuf2, 16);
       return;
     }
+  }
 
-    // Check modes 4 and 5 if the block isn't opaque...
-    if(!opaque) {
-      for(int mode = 4; mode <= 5; mode++) {
+  memcpy(outBuf, tempBuf1, 16);
+}
 
-        BitStream tempStream2(tempBuf2, 128, 0);
-        BC7CompressionMode compressorTry(mode, opaque);
+static double EstimateTwoClusterErrorStats(
+  RGBACluster &c, double (&estimates)[2]
+) {
+  RGBAVector Min, Max, v;
+  c.GetBoundingBox(Min, Max);
+  v = Max - Min;
+  if(v * v == 0) {
+    estimates[0] = estimates[1] = 0.0;
+    return 0.0;
+  }
 
-        double error = compressorTry.Compress(tempStream2, 0, &blockCluster);
-        if(error < best) {
+  const float *w = BPTCC::GetErrorMetric();
 
-          best = error;
+  const double err1 = c.QuantizedError(
+    Min, Max, 8, 0xFFFCFCFC, RGBAVector(w[0], w[1], w[2], w[3])
+  );
 
-          if(best == 0.0f) {
-            memcpy(outBuf, tempBuf2, 16);
-            return;
+  if(err1 >= 0.0) {
+    estimates[0] = err1;
+  } else {
+    estimates[0] = std::min(estimates[0], err1);
+  }
+
+  const double err3 = c.QuantizedError(
+    Min, Max, 8, 0xFFFEFEFE, RGBAVector(w[0], w[1], w[2], w[3])
+  );
+
+  if(err3 >= 0.0) {
+    estimates[1] = err3;
+  } else {
+    estimates[1] = std::min(estimates[1], err3);
+  }
+
+  double error = 0.0001;
+#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
+  double eigOne = c.GetPrincipalEigenvalue();
+  double eigTwo = c.GetSecondEigenvalue();
+  if(eigOne != 0.0) {
+    error += eigTwo / eigOne;
+  } else {
+    error += 1.0;
+  }
+#else
+  error += std::min(err1, err3);
+#endif
+  return error;
+}
+
+static double EstimateThreeClusterErrorStats(
+  RGBACluster &c, double (&estimates)[2]
+) {
+  RGBAVector Min, Max, v;
+  c.GetBoundingBox(Min, Max);
+  v = Max - Min;
+  if(v * v == 0) {
+    estimates[0] = estimates[1] = 0.0;
+    return 0.0;
+  }
+
+  const float *w = BPTCC::GetErrorMetric();
+  const double err0 = 0.0001 + c.QuantizedError(
+    Min, Max, 4, 0xFFF0F0F0, RGBAVector(w[0], w[1], w[2], w[3])
+  );
+
+  if(err0 >= 0.0) {
+    estimates[0] = err0;
+  } else {
+    estimates[0] = std::min(estimates[0], err0);
+  }
+
+  const double err2 = 0.0001 + c.QuantizedError(
+    Min, Max, 4, 0xFFF8F8F8, RGBAVector(w[0], w[1], w[2], w[3])
+  );
+
+  if(err2 >= 0.0) {
+    estimates[1] = err2;
+  } else {
+    estimates[1] = std::min(estimates[1], err2);
+  }
+
+  double error = 0.0001;
+#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
+  double eigOne = c.GetPrincipalEigenvalue();
+  double eigTwo = c.GetSecondEigenvalue();
+
+  if(eigOne != 0.0) {
+    error += eigTwo / eigOne;
+  } else {
+    error += 1.0;
+  }
+#else
+  error += std::min(err0, err2);
+#endif
+  return error;
+}
+
+static void UpdateErrorEstimate(double *estimates, uint32 mode, double est) {
+  assert(estimates);
+  assert(mode >= 0);
+  assert(mode < CompressionMode::kNumModes);
+  if(estimates[mode] == -1.0 || est < estimates[mode]) {
+    estimates[mode] = est;
+  }
+}
+
+template<typename T>
+static void PrintStat(const BlockLogger &lgr, const char *stat, const T &v) {
+  std::stringstream ss;
+  ss << stat << " -- " << v << std::endl;
+  lgr << ss.str();
+}
+
+// Compress a single block but collect statistics as well...
+static void CompressBC7Block(
+  const uint32 *block, uint8 *outBuf, const BlockLogger &logStream
+) {
+
+  class RAIIStatSaver {
+  private:
+    const BlockLogger &m_Logger;
+
+    int *m_ModePtr;
+    double *m_Estimates;
+    double *m_Errors;
+
+  public:
+    RAIIStatSaver(const BlockLogger &logger)
+      : m_Logger(logger)
+      , m_ModePtr(NULL), m_Estimates(NULL), m_Errors(NULL) { }
+    void SetMode(int *modePtr) { m_ModePtr = modePtr; }
+    void SetEstimates(double *estimates) { m_Estimates = estimates; }
+    void SetErrors(double *errors) { m_Errors = errors; }
+
+    ~RAIIStatSaver() {
+
+      assert(m_ModePtr);
+      assert(m_Estimates);
+      assert(m_Errors);
+
+      PrintStat(m_Logger, kBlockStatString[eBlockStat_Mode], *m_ModePtr);
+
+      for(uint32 i = 0; i < CompressionMode::kNumModes; i++) {
+
+        PrintStat(m_Logger,
+                  kBlockStatString[eBlockStat_ModeZeroEstimate + i],
+                  m_Estimates[i]);
+        PrintStat(m_Logger,
+                  kBlockStatString[eBlockStat_ModeZeroError + i],
+                  m_Errors[i]);
+      }
+    }
+  };
+
+  int bestMode = 0;
+  double modeEstimate[CompressionMode::kNumModes];
+  double modeError[CompressionMode::kNumModes];
+
+  // reset global variables...
+  bestMode = 0;
+  for(uint32 i = 0; i < CompressionMode::kNumModes; i++) {
+    modeError[i] = modeEstimate[i] = -1.0;
+  }
+
+  RAIIStatSaver __statsaver__(logStream);
+  __statsaver__.SetMode(&bestMode);
+  __statsaver__.SetEstimates(modeEstimate);
+  __statsaver__.SetErrors(modeError);
+
+  // All a single color?
+  if(AllOneColor(block)) {
+    BitStream bStrm(outBuf, 128, 0);
+    CompressOptimalColorBC7(*block, bStrm);
+    bestMode = 5;
+
+    PrintStat(logStream, kBlockStatString[eBlockStat_Path], 0);
+    return;
+  }
+
+  RGBACluster blockCluster;
+  bool opaque = true;
+  bool transparent = true;
+
+  for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
+    RGBAVector p = RGBAVector(i, block[i]);
+    blockCluster.AddPoint(p);
+    if(fabs(p.a - 255.0f) > 1e-10) {
+      opaque = false;
+    }
+
+    if(p.a > 0.0f) {
+      transparent = false;
+    }
+  }
+
+  // The whole block is transparent?
+  if(transparent) {
+    BitStream bStrm(outBuf, 128, 0);
+    WriteTransparentBlock(bStrm);
+    bestMode = 6;
+
+    PrintStat(logStream, kBlockStatString[eBlockStat_Path], 1);
+    return;
+  }
+
+  // First, estimate the error it would take to compress a single line with
+  // mode 6...
+  {
+    RGBAVector Min, Max, v;
+    blockCluster.GetBoundingBox(Min, Max);
+    v = Max - Min;
+    if(v * v == 0) {
+      modeEstimate[6] = 0.0;
+    } else {
+      const float *w = GetErrorMetric();
+      const double err = 0.0001 + blockCluster.QuantizedError(
+        Min, Max, 4, 0xFEFEFEFE, RGBAVector(w[0], w[1], w[2], w[3])
+      );
+      UpdateErrorEstimate(modeEstimate, 6, err);
+
+#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
+      double eigOne = blockCluster.GetPrincipalEigenvalue();
+      double eigTwo = blockCluster.GetSecondEigenvalue();
+      double error;
+      if(eigOne != 0.0) {
+        error = eigTwo / eigOne;
+      } else {
+        error = 1.0;
+      }
+
+      PrintStream(logStream, kBlockStatString[eBlockStat_SingleShapeEstimate], error);
+#endif
+    }
+  }
+
+  // First we must figure out which shape to use. To do this, simply
+  // see which shape has the smallest sum of minimum bounding spheres.
+  double bestError[2] = { DBL_MAX, DBL_MAX };
+  int bestShapeIdx[2] = { -1, -1 };
+  RGBACluster bestClusters[2][3];
+
+  for(unsigned int i = 0; i < kNumShapes2; i++) {
+    RGBACluster clusters[2];
+    PopulateTwoClustersForShape(blockCluster, i, clusters);
+
+    double err = 0.0;
+    double errEstimate[2] = { -1.0, -1.0 };
+    for(int ci = 0; ci < 2; ci++) {
+      double shapeEstimate[2] = { -1.0, -1.0 };
+      err += EstimateTwoClusterErrorStats(clusters[ci], shapeEstimate);
+
+      for(int ei = 0; ei < 2; ei++) {
+        if(shapeEstimate[ei] >= 0.0) {
+          if(errEstimate[ei] == -1.0) {
+            errEstimate[ei] = shapeEstimate[ei];
           } else {
-            memcpy(tempBuf1, tempBuf2, 16);
+            errEstimate[ei] += shapeEstimate[ei];
           }
         }
       }
     }
 
-    double error =
-      CompressTwoClusters(bestShapeIdx[0], bestClusters[0], tempBuf2, opaque);
-    if(error < best) {
-
-      best = error;
-      if(error == 0.0f) {
-        memcpy(outBuf, tempBuf2, 16);
-        return;
-      } else {
-        memcpy(tempBuf1, tempBuf2, 16);
-      }
-    }
-
-    if(opaque) {
-      const double newError =
-        CompressThreeClusters(bestShapeIdx[1],
-                              bestClusters[1],
-                              tempBuf2,
-                              opaque);
-      if(newError < best) {
-        memcpy(outBuf, tempBuf2, 16);
-        return;
-      }
-    }
-
-    memcpy(outBuf, tempBuf1, 16);
-  }
-
-  static double EstimateTwoClusterErrorStats(
-    RGBACluster &c, double (&estimates)[2]
-  ) {
-    RGBAVector Min, Max, v;
-    c.GetBoundingBox(Min, Max);
-    v = Max - Min;
-    if(v * v == 0) {
-      estimates[0] = estimates[1] = 0.0;
-      return 0.0;
-    }
-
-    const float *w = BC7C::GetErrorMetric();
-
-    const double err1 = c.QuantizedError(
-      Min, Max, 8, 0xFFFCFCFC, RGBAVector(w[0], w[1], w[2], w[3])
-    );
-
-    if(err1 >= 0.0) {
-      estimates[0] = err1;
-    } else {
-      estimates[0] = std::min(estimates[0], err1);
-    }
-
-    const double err3 = c.QuantizedError(
-      Min, Max, 8, 0xFFFEFEFE, RGBAVector(w[0], w[1], w[2], w[3])
-    );
-
-    if(err3 >= 0.0) {
-      estimates[1] = err3;
-    } else {
-      estimates[1] = std::min(estimates[1], err3);
-    }
-
-    double error = 0.0001;
 #ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-    double eigOne = c.GetPrincipalEigenvalue();
-    double eigTwo = c.GetSecondEigenvalue();
-    if(eigOne != 0.0) {
-      error += eigTwo / eigOne;
-    } else {
-      error += 1.0;
-    }
-#else
-    error += std::min(err1, err3);
+    err /= 2.0;
 #endif
-    return error;
-  }
 
-  static double EstimateThreeClusterErrorStats(
-    RGBACluster &c, double (&estimates)[2]
-  ) {
-    RGBAVector Min, Max, v;
-    c.GetBoundingBox(Min, Max);
-    v = Max - Min;
-    if(v * v == 0) {
-      estimates[0] = estimates[1] = 0.0;
-      return 0.0;
+    if(errEstimate[0] != -1.0) {
+      UpdateErrorEstimate(modeEstimate, 1, errEstimate[0]);
     }
 
-    const float *w = BC7C::GetErrorMetric();
-    const double err0 = 0.0001 + c.QuantizedError(
-      Min, Max, 4, 0xFFF0F0F0, RGBAVector(w[0], w[1], w[2], w[3])
-    );
-
-    if(err0 >= 0.0) {
-      estimates[0] = err0;
-    } else {
-      estimates[0] = std::min(estimates[0], err0);
+    if(errEstimate[1] != -1.0) {
+      UpdateErrorEstimate(modeEstimate, 3, errEstimate[1]);
     }
 
-    const double err2 = 0.0001 + c.QuantizedError(
-      Min, Max, 4, 0xFFF8F8F8, RGBAVector(w[0], w[1], w[2], w[3])
-    );
-
-    if(err2 >= 0.0) {
-      estimates[1] = err2;
-    } else {
-      estimates[1] = std::min(estimates[1], err2);
+    if(err < bestError[0]) {
+      PrintStat(logStream, 
+        kBlockStatString[eBlockStat_TwoShapeEstimate], err
+      );
     }
 
-    double error = 0.0001;
-#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-    double eigOne = c.GetPrincipalEigenvalue();
-    double eigTwo = c.GetSecondEigenvalue();
+    // If it's small, we'll take it!
+    if(err < 1e-9) {
+      int modeChosen;
+      CompressTwoClusters(
+        i, clusters, outBuf, opaque, modeError, &modeChosen
+      );
+      bestMode = modeChosen;
 
-    if(eigOne != 0.0) {
-      error += eigTwo / eigOne;
-    } else {
-      error += 1.0;
-    }
-#else
-    error += std::min(err0, err2);
-#endif
-    return error;
-  }
-
-  static void UpdateErrorEstimate(double *estimates, uint32 mode, double est) {
-    assert(estimates);
-    assert(mode >= 0);
-    assert(mode < BC7CompressionMode::kNumModes);
-    if(estimates[mode] == -1.0 || est < estimates[mode]) {
-      estimates[mode] = est;
-    }
-  }
-
-  template<typename T>
-  static void PrintStat(const BlockLogger &lgr, const char *stat, const T &v) {
-    std::stringstream ss;
-    ss << stat << " -- " << v << std::endl;
-    lgr << ss.str();
-  }
-
-  // Compress a single block but collect statistics as well...
-  static void CompressBC7Block(
-    const uint32 *block, uint8 *outBuf, const BlockLogger &logStream
-  ) {
-
-    class RAIIStatSaver {
-    private:
-      const BlockLogger &m_Logger;
-
-      int *m_ModePtr;
-      double *m_Estimates;
-      double *m_Errors;
-
-    public:
-      RAIIStatSaver(const BlockLogger &logger)
-        : m_Logger(logger)
-        , m_ModePtr(NULL), m_Estimates(NULL), m_Errors(NULL) { }
-      void SetMode(int *modePtr) { m_ModePtr = modePtr; }
-      void SetEstimates(double *estimates) { m_Estimates = estimates; }
-      void SetErrors(double *errors) { m_Errors = errors; }
-
-      ~RAIIStatSaver() {
-
-        assert(m_ModePtr);
-        assert(m_Estimates);
-        assert(m_Errors);
-
-        PrintStat(m_Logger, kBlockStatString[eBlockStat_Mode], *m_ModePtr);
-
-        for(uint32 i = 0; i < BC7CompressionMode::kNumModes; i++) {
-
-          PrintStat(m_Logger,
-                    kBlockStatString[eBlockStat_ModeZeroEstimate + i],
-                    m_Estimates[i]);
-          PrintStat(m_Logger,
-                    kBlockStatString[eBlockStat_ModeZeroError + i],
-                    m_Errors[i]);
-        }
-      }
-    };
-
-    int bestMode = 0;
-    double modeEstimate[BC7CompressionMode::kNumModes];
-    double modeError[BC7CompressionMode::kNumModes];
-
-    // reset global variables...
-    bestMode = 0;
-    for(uint32 i = 0; i < BC7CompressionMode::kNumModes; i++) {
-      modeError[i] = modeEstimate[i] = -1.0;
-    }
-
-    RAIIStatSaver __statsaver__(logStream);
-    __statsaver__.SetMode(&bestMode);
-    __statsaver__.SetEstimates(modeEstimate);
-    __statsaver__.SetErrors(modeError);
-
-    // All a single color?
-    if(AllOneColor(block)) {
-      BitStream bStrm(outBuf, 128, 0);
-      CompressOptimalColorBC7(*block, bStrm);
-      bestMode = 5;
-
-      PrintStat(logStream, kBlockStatString[eBlockStat_Path], 0);
+      PrintStat(logStream, kBlockStatString[eBlockStat_Path], 2);
       return;
     }
 
-    RGBACluster blockCluster;
-    bool opaque = true;
-    bool transparent = true;
-
-    for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
-      RGBAVector p = RGBAVector(i, block[i]);
-      blockCluster.AddPoint(p);
-      if(fabs(p.a - 255.0f) > 1e-10) {
-        opaque = false;
-      }
-
-      if(p.a > 0.0f) {
-        transparent = false;
-      }
+    if(err < bestError[0]) {
+      bestError[0] = err;
+      bestShapeIdx[0] = i;
+      bestClusters[0][0] = clusters[0];
+      bestClusters[0][1] = clusters[1];
     }
+  }
 
-    // The whole block is transparent?
-    if(transparent) {
-      BitStream bStrm(outBuf, 128, 0);
-      WriteTransparentBlock(bStrm);
-      bestMode = 6;
+  // There are not 3 subset blocks that support alpha, so only check these
+  // if the entire block is opaque.
+  if(opaque) {
+    for(unsigned int i = 0; i < kNumShapes3; i++) {
 
-      PrintStat(logStream, kBlockStatString[eBlockStat_Path], 1);
-      return;
-    }
-
-    // First, estimate the error it would take to compress a single line with
-    // mode 6...
-    {
-      RGBAVector Min, Max, v;
-      blockCluster.GetBoundingBox(Min, Max);
-      v = Max - Min;
-      if(v * v == 0) {
-        modeEstimate[6] = 0.0;
-      } else {
-        const float *w = GetErrorMetric();
-        const double err = 0.0001 + blockCluster.QuantizedError(
-          Min, Max, 4, 0xFEFEFEFE, RGBAVector(w[0], w[1], w[2], w[3])
-        );
-        UpdateErrorEstimate(modeEstimate, 6, err);
-
-#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-        double eigOne = blockCluster.GetPrincipalEigenvalue();
-        double eigTwo = blockCluster.GetSecondEigenvalue();
-        double error;
-        if(eigOne != 0.0) {
-          error = eigTwo / eigOne;
-        } else {
-          error = 1.0;
-        }
-
-        PrintStream(logStream, kBlockStatString[eBlockStat_SingleShapeEstimate], error);
-#endif
-      }
-    }
-
-    // First we must figure out which shape to use. To do this, simply
-    // see which shape has the smallest sum of minimum bounding spheres.
-    double bestError[2] = { DBL_MAX, DBL_MAX };
-    int bestShapeIdx[2] = { -1, -1 };
-    RGBACluster bestClusters[2][3];
-
-    for(unsigned int i = 0; i < kNumShapes2; i++) {
-      RGBACluster clusters[2];
-      PopulateTwoClustersForShape(blockCluster, i, clusters);
+      RGBACluster clusters[3];
+      PopulateThreeClustersForShape(blockCluster, i, clusters);
 
       double err = 0.0;
       double errEstimate[2] = { -1.0, -1.0 };
-      for(int ci = 0; ci < 2; ci++) {
+      for(int ci = 0; ci < 3; ci++) {
         double shapeEstimate[2] = { -1.0, -1.0 };
-        err += EstimateTwoClusterErrorStats(clusters[ci], shapeEstimate);
+        err += EstimateThreeClusterErrorStats(clusters[ci], shapeEstimate);
 
         for(int ei = 0; ei < 2; ei++) {
           if(shapeEstimate[ei] >= 0.0) {
@@ -2399,27 +2463,27 @@ namespace BC7C {
       }
 
 #ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-      err /= 2.0;
+      err /= 3.0;
 #endif
 
       if(errEstimate[0] != -1.0) {
-        UpdateErrorEstimate(modeEstimate, 1, errEstimate[0]);
+        UpdateErrorEstimate(modeEstimate, 0, errEstimate[0]);
       }
 
       if(errEstimate[1] != -1.0) {
-        UpdateErrorEstimate(modeEstimate, 3, errEstimate[1]);
+        UpdateErrorEstimate(modeEstimate, 2, errEstimate[1]);
       }
 
-      if(err < bestError[0]) {
+      if(err < bestError[1]) {
         PrintStat(logStream, 
-          kBlockStatString[eBlockStat_TwoShapeEstimate], err
+          kBlockStatString[eBlockStat_ThreeShapeEstimate], err
         );
       }
 
       // If it's small, we'll take it!
       if(err < 1e-9) {
         int modeChosen;
-        CompressTwoClusters(
+        CompressThreeClusters(
           i, clusters, outBuf, opaque, modeError, &modeChosen
         );
         bestMode = modeChosen;
@@ -2428,257 +2492,210 @@ namespace BC7C {
         return;
       }
 
-      if(err < bestError[0]) {
-        bestError[0] = err;
-        bestShapeIdx[0] = i;
-        bestClusters[0][0] = clusters[0];
-        bestClusters[0][1] = clusters[1];
+      if(err < bestError[1]) {
+        bestError[1] = err;
+        bestShapeIdx[1] = i;
+        bestClusters[1][0] = clusters[0];
+        bestClusters[1][1] = clusters[1];
+        bestClusters[1][2] = clusters[2];
       }
     }
-
-    // There are not 3 subset blocks that support alpha, so only check these
-    // if the entire block is opaque.
-    if(opaque) {
-      for(unsigned int i = 0; i < kNumShapes3; i++) {
-
-        RGBACluster clusters[3];
-        PopulateThreeClustersForShape(blockCluster, i, clusters);
-
-        double err = 0.0;
-        double errEstimate[2] = { -1.0, -1.0 };
-        for(int ci = 0; ci < 3; ci++) {
-          double shapeEstimate[2] = { -1.0, -1.0 };
-          err += EstimateThreeClusterErrorStats(clusters[ci], shapeEstimate);
-
-          for(int ei = 0; ei < 2; ei++) {
-            if(shapeEstimate[ei] >= 0.0) {
-              if(errEstimate[ei] == -1.0) {
-                errEstimate[ei] = shapeEstimate[ei];
-              } else {
-                errEstimate[ei] += shapeEstimate[ei];
-              }
-            }
-          }
-        }
-
-#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-        err /= 3.0;
-#endif
-
-        if(errEstimate[0] != -1.0) {
-          UpdateErrorEstimate(modeEstimate, 0, errEstimate[0]);
-        }
-
-        if(errEstimate[1] != -1.0) {
-          UpdateErrorEstimate(modeEstimate, 2, errEstimate[1]);
-        }
-
-        if(err < bestError[1]) {
-          PrintStat(logStream, 
-            kBlockStatString[eBlockStat_ThreeShapeEstimate], err
-          );
-        }
-
-        // If it's small, we'll take it!
-        if(err < 1e-9) {
-          int modeChosen;
-          CompressThreeClusters(
-            i, clusters, outBuf, opaque, modeError, &modeChosen
-          );
-          bestMode = modeChosen;
-
-          PrintStat(logStream, kBlockStatString[eBlockStat_Path], 2);
-          return;
-        }
-
-        if(err < bestError[1]) {
-          bestError[1] = err;
-          bestShapeIdx[1] = i;
-          bestClusters[1][0] = clusters[0];
-          bestClusters[1][1] = clusters[1];
-          bestClusters[1][2] = clusters[2];
-        }
-      }
-    }
-
-    PrintStat(logStream, kBlockStatString[eBlockStat_Path], 3);
-
-    uint8 tempBuf1[16], tempBuf2[16];
-
-    BitStream tempStream1 (tempBuf1, 128, 0);
-    BC7CompressionMode compressor(6, opaque);
-    double best = compressor.Compress(tempStream1, 0, &blockCluster);
-    modeError[6] = best;
-    bestMode = 6;
-    if(best == 0.0f) {
-      memcpy(outBuf, tempBuf1, 16);
-      return;
-    }
-
-    // Check modes 4 and 5 if the block isn't opaque...
-    if(!opaque) {
-      for(int mode = 4; mode <= 5; mode++) {
-
-        BitStream tempStream2(tempBuf2, 128, 0);
-        BC7CompressionMode compressorTry(mode, opaque);
-
-        double error = compressorTry.Compress(tempStream2, 0, &blockCluster);
-        if(error < best) {
-
-          bestMode = mode;
-          best = error;
-
-          if(best == 0.0f) {
-            memcpy(outBuf, tempBuf2, 16);
-            return;
-          } else {
-            memcpy(tempBuf1, tempBuf2, 16);
-          }
-        }
-      }
-    }
-
-    int modeChosen;
-    double error = CompressTwoClusters(
-      bestShapeIdx[0], bestClusters[0], tempBuf2, opaque, modeError, &modeChosen
-    );
-    if(error < best) {
-
-      bestMode = modeChosen;
-      best = error;
-
-      if(error == 0.0f) {
-        memcpy(outBuf, tempBuf2, 16);
-        return;
-      } else {
-        memcpy(tempBuf1, tempBuf2, 16);
-      }
-    }
-
-    if(opaque) {
-      const double newError = CompressThreeClusters(
-        bestShapeIdx[1], bestClusters[1],
-        tempBuf2, opaque, modeError, &modeChosen
-      );
-      if(newError < best) {
-
-        bestMode = modeChosen;
-        memcpy(outBuf, tempBuf2, 16);
-        return;
-      }
-    }
-
-    memcpy(outBuf, tempBuf1, 16);
   }
 
-  static void DecompressBC7Block(const uint8 block[16], uint32 outBuf[16]) {
+  PrintStat(logStream, kBlockStatString[eBlockStat_Path], 3);
 
-    BitStreamReadOnly strm(block);
+  uint8 tempBuf1[16], tempBuf2[16];
 
-    uint32 mode = 0;
-    while(!strm.ReadBit()) {
-      mode++;
-    }
+  BitStream tempStream1 (tempBuf1, 128, 0);
+  CompressionMode compressor(6, opaque);
+  double best = compressor.Compress(tempStream1, 0, &blockCluster);
+  modeError[6] = best;
+  bestMode = 6;
+  if(best == 0.0f) {
+    memcpy(outBuf, tempBuf1, 16);
+    return;
+  }
 
-    const BC7CompressionMode::Attributes *attrs =
-      BC7CompressionMode::GetAttributesForMode(mode);
-    const uint32 nSubsets = attrs->numSubsets;
+  // Check modes 4 and 5 if the block isn't opaque...
+  if(!opaque) {
+    for(int mode = 4; mode <= 5; mode++) {
 
-    uint32 idxMode = 0;
-    uint32 rotMode = 0;
-    uint32 shapeIdx = 0;
-    if ( nSubsets > 1 ) {
-      shapeIdx = strm.ReadBits(mode == 0? 4 : 6);
-    } else if( attrs->hasRotation ) {
-      rotMode = strm.ReadBits(2);
-      if( attrs->hasIdxMode ) {
-        idxMode = strm.ReadBit();
+      BitStream tempStream2(tempBuf2, 128, 0);
+      CompressionMode compressorTry(mode, opaque);
+
+      double error = compressorTry.Compress(tempStream2, 0, &blockCluster);
+      if(error < best) {
+
+        bestMode = mode;
+        best = error;
+
+        if(best == 0.0f) {
+          memcpy(outBuf, tempBuf2, 16);
+          return;
+        } else {
+          memcpy(tempBuf1, tempBuf2, 16);
+        }
       }
     }
+  }
 
-    assert(idxMode < 2);
-    assert(rotMode < 4);
-    assert(shapeIdx < ((mode == 0)? 16U : 64U));
+  int modeChosen;
+  double error = CompressTwoClusters(
+    bestShapeIdx[0], bestClusters[0], tempBuf2, opaque, modeError, &modeChosen
+  );
+  if(error < best) {
 
-    uint32 cp = attrs->colorChannelPrecision;
-    const uint32 shift = 8 - cp;
+    bestMode = modeChosen;
+    best = error;
 
-    uint8 eps[3][2][4];
-    for(uint32 ch = 0; ch < 3; ch++)
+    if(error == 0.0f) {
+      memcpy(outBuf, tempBuf2, 16);
+      return;
+    } else {
+      memcpy(tempBuf1, tempBuf2, 16);
+    }
+  }
+
+  if(opaque) {
+    const double newError = CompressThreeClusters(
+      bestShapeIdx[1], bestClusters[1],
+      tempBuf2, opaque, modeError, &modeChosen
+    );
+    if(newError < best) {
+
+      bestMode = modeChosen;
+      memcpy(outBuf, tempBuf2, 16);
+      return;
+    }
+  }
+
+  memcpy(outBuf, tempBuf1, 16);
+}
+
+static void DecompressBC7Block(const uint8 block[16], uint32 outBuf[16]) {
+
+  BitStreamReadOnly strm(block);
+
+  uint32 mode = 0;
+  while(!strm.ReadBit()) {
+    mode++;
+  }
+
+  const CompressionMode::Attributes *attrs =
+    CompressionMode::GetAttributesForMode(mode);
+  const uint32 nSubsets = attrs->numSubsets;
+
+  uint32 idxMode = 0;
+  uint32 rotMode = 0;
+  uint32 shapeIdx = 0;
+  if ( nSubsets > 1 ) {
+    shapeIdx = strm.ReadBits(mode == 0? 4 : 6);
+  } else if( attrs->hasRotation ) {
+    rotMode = strm.ReadBits(2);
+    if( attrs->hasIdxMode ) {
+      idxMode = strm.ReadBit();
+    }
+  }
+
+  assert(idxMode < 2);
+  assert(rotMode < 4);
+  assert(shapeIdx < ((mode == 0)? 16U : 64U));
+
+  uint32 cp = attrs->colorChannelPrecision;
+  const uint32 shift = 8 - cp;
+
+  uint8 eps[3][2][4];
+  for(uint32 ch = 0; ch < 3; ch++)
+  for(uint32 i = 0; i < nSubsets; i++)
+  for(uint32 ep = 0; ep < 2; ep++)
+    eps[i][ep][ch] = strm.ReadBits(cp) << shift;
+
+  uint32 ap = attrs->alphaChannelPrecision;
+  const uint32 ash = 8 - ap;
+
+  if(ap == 0) {
     for(uint32 i = 0; i < nSubsets; i++)
     for(uint32 ep = 0; ep < 2; ep++)
-      eps[i][ep][ch] = strm.ReadBits(cp) << shift;
-
-    uint32 ap = attrs->alphaChannelPrecision;
-    const uint32 ash = 8 - ap;
-
-    if(ap == 0) {
-      for(uint32 i = 0; i < nSubsets; i++)
-      for(uint32 ep = 0; ep < 2; ep++)
-        eps[i][ep][3] = 0xFF;
-    } else {
-      for(uint32 i = 0; i < nSubsets; i++)
-      for(uint32 ep = 0; ep < 2; ep++)
-        eps[i][ep][3] = strm.ReadBits(ap) << ash;
-    }
-
-    // Handle pbits
-    switch(attrs->pbitType) {
-      case BC7CompressionMode::ePBitType_None:
-        // Do nothing.
-      break;
-
-      case BC7CompressionMode::ePBitType_Shared:
-
-        cp += 1;
-        ap += 1;
-
-        for(uint32 i = 0; i < nSubsets; i++) {
-
-          uint32 pbit = strm.ReadBit();
-
-          for(uint32 j = 0; j < 2; j++)
-          for(uint32 ch = 0; ch < kNumColorChannels; ch++) {
-            const uint32 prec = ch == 3? ap : cp;
-            eps[i][j][ch] |= pbit << (8-prec);
-          }
-        }
-      break;
-
-      case BC7CompressionMode::ePBitType_NotShared:
-
-        cp += 1;
-        ap += 1;
-
-        for(uint32 i = 0; i < nSubsets; i++)
-        for(uint32 j = 0; j < 2; j++) {
-
-          uint32 pbit = strm.ReadBit();
-
-          for(uint32 ch = 0; ch < kNumColorChannels; ch++) {
-            const uint32 prec = ch == 3? ap : cp;
-            eps[i][j][ch] |= pbit << (8-prec);
-          }
-        }
-      break;
-    }
-
-    // Quantize endpoints...
+      eps[i][ep][3] = 0xFF;
+  } else {
     for(uint32 i = 0; i < nSubsets; i++)
-    for(uint32 j = 0; j < 2; j++)
-    for(uint32 ch = 0; ch < kNumColorChannels; ch++) {
-      const uint32 prec = ch == 3? ap : cp;
-      eps[i][j][ch] |= eps[i][j][ch] >> prec;
+    for(uint32 ep = 0; ep < 2; ep++)
+      eps[i][ep][3] = strm.ReadBits(ap) << ash;
+  }
+
+  // Handle pbits
+  switch(attrs->pbitType) {
+    case CompressionMode::ePBitType_None:
+      // Do nothing.
+    break;
+
+    case CompressionMode::ePBitType_Shared:
+
+      cp += 1;
+      ap += 1;
+
+      for(uint32 i = 0; i < nSubsets; i++) {
+
+        uint32 pbit = strm.ReadBit();
+
+        for(uint32 j = 0; j < 2; j++)
+        for(uint32 ch = 0; ch < kNumColorChannels; ch++) {
+          const uint32 prec = ch == 3? ap : cp;
+          eps[i][j][ch] |= pbit << (8-prec);
+        }
+      }
+    break;
+
+    case CompressionMode::ePBitType_NotShared:
+
+      cp += 1;
+      ap += 1;
+
+      for(uint32 i = 0; i < nSubsets; i++)
+      for(uint32 j = 0; j < 2; j++) {
+
+        uint32 pbit = strm.ReadBit();
+
+        for(uint32 ch = 0; ch < kNumColorChannels; ch++) {
+          const uint32 prec = ch == 3? ap : cp;
+          eps[i][j][ch] |= pbit << (8-prec);
+        }
+      }
+    break;
+  }
+
+  // Quantize endpoints...
+  for(uint32 i = 0; i < nSubsets; i++)
+  for(uint32 j = 0; j < 2; j++)
+  for(uint32 ch = 0; ch < kNumColorChannels; ch++) {
+    const uint32 prec = ch == 3? ap : cp;
+    eps[i][j][ch] |= eps[i][j][ch] >> prec;
+  }
+
+  // Figure out indices...
+  uint32 alphaIndices[kMaxNumDataPoints];
+  uint32 colorIndices[kMaxNumDataPoints];
+
+  int nBitsPerAlpha = attrs->numBitsPerAlpha;
+  int nBitsPerColor = attrs->numBitsPerIndex;
+
+  uint32 idxPrec = attrs->numBitsPerIndex;
+  for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
+    uint32 subset = GetSubsetForIndex(i, shapeIdx, nSubsets);
+
+    int idx = 0;
+    if(GetAnchorIndexForSubset(subset, shapeIdx, nSubsets) == i) {
+      idx = strm.ReadBits(idxPrec - 1);
+    } else {
+      idx = strm.ReadBits(idxPrec);
     }
+    colorIndices[i] = idx;
+  }
 
-    // Figure out indices...
-    uint32 alphaIndices[kMaxNumDataPoints];
-    uint32 colorIndices[kMaxNumDataPoints];
-
-    int nBitsPerAlpha = attrs->numBitsPerAlpha;
-    int nBitsPerColor = attrs->numBitsPerIndex;
-
-    uint32 idxPrec = attrs->numBitsPerIndex;
+  idxPrec = attrs->numBitsPerAlpha;
+  if(idxPrec == 0) {
+    memcpy(alphaIndices, colorIndices, sizeof(alphaIndices));
+  } else {
     for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
       uint32 subset = GetSubsetForIndex(i, shapeIdx, nSubsets);
 
@@ -2688,110 +2705,95 @@ namespace BC7C {
       } else {
         idx = strm.ReadBits(idxPrec);
       }
-      colorIndices[i] = idx;
+      alphaIndices[i] = idx;
     }
 
-    idxPrec = attrs->numBitsPerAlpha;
-    if(idxPrec == 0) {
-      memcpy(alphaIndices, colorIndices, sizeof(alphaIndices));
-    } else {
+    if(idxMode) {
       for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
-        uint32 subset = GetSubsetForIndex(i, shapeIdx, nSubsets);
-
-        int idx = 0;
-        if(GetAnchorIndexForSubset(subset, shapeIdx, nSubsets) == i) {
-          idx = strm.ReadBits(idxPrec - 1);
-        } else {
-          idx = strm.ReadBits(idxPrec);
-        }
-        alphaIndices[i] = idx;
+        swap(alphaIndices[i], colorIndices[i]);
       }
 
-      if(idxMode) {
-        for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
-          swap(alphaIndices[i], colorIndices[i]);
-        }
-
-        swap(nBitsPerAlpha, nBitsPerColor);
-      }
-    }
-
-    assert(strm.GetBitsRead() == 128);
-
-    // Get final colors by interpolating...
-    for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
-
-      const uint32 subset = GetSubsetForIndex(i, shapeIdx, nSubsets);
-      uint32 &pixel = outBuf[i];
-
-      pixel = 0;
-      for(int ch = 0; ch < 4; ch++) {
-        if(ch == 3 && nBitsPerAlpha > 0) {
-          uint32 i0 =
-            kBC7InterpolationValues[nBitsPerAlpha - 1][alphaIndices[i]][0];
-          uint32 i1 =
-            kBC7InterpolationValues[nBitsPerAlpha - 1][alphaIndices[i]][1];
-
-          const uint32 ep1 = static_cast<uint32>(eps[subset][0][3]);
-          const uint32 ep2 = static_cast<uint32>(eps[subset][1][3]);
-          const uint8 ip = (((ep1 * i0 + ep2 * i1) + 32) >> 6) & 0xFF;
-          pixel |= ip << 24;
-
-        } else {
-          uint32 i0 =
-            kBC7InterpolationValues[nBitsPerColor - 1][colorIndices[i]][0];
-          uint32 i1 =
-            kBC7InterpolationValues[nBitsPerColor - 1][colorIndices[i]][1];
-
-          const uint32 ep1 = static_cast<uint32>(eps[subset][0][ch]);
-          const uint32 ep2 = static_cast<uint32>(eps[subset][1][ch]);
-          const uint8 ip = (((ep1 * i0 + ep2 * i1) + 32) >> 6) & 0xFF;
-          pixel |= ip << (8*ch);
-        }
-      }
-
-      // Swap colors if necessary...
-      uint8 *pb = reinterpret_cast<uint8 *>(&pixel);
-      switch(rotMode) {
-        default:
-        case 0:
-          // Do nothing
-          break;
-
-        case 1:
-          swap(pb[0], pb[3]);
-          break;
-
-        case 2:
-          swap(pb[1], pb[3]);
-          break;
-
-        case 3:
-          swap(pb[2], pb[3]);
-          break;
-      }
+      swap(nBitsPerAlpha, nBitsPerColor);
     }
   }
 
-  // Convert the image from a BC7 buffer to a RGBA8 buffer
-  void Decompress(const FasTC::DecompressionJob &dj) {
+  assert(strm.GetBitsRead() == 128);
 
-    const uint8 *inBuf = dj.InBuf();
-    uint32 *outBuf = reinterpret_cast<uint32 *>(dj.OutBuf());
+  // Get final colors by interpolating...
+  for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
 
-    for(unsigned int j = 0; j < dj.Height(); j += 4) {
-      for(unsigned int i = 0; i < dj.Width(); i += 4) {
+    const uint32 subset = GetSubsetForIndex(i, shapeIdx, nSubsets);
+    uint32 &pixel = outBuf[i];
 
-        uint32 pixels[16];
-        DecompressBC7Block(inBuf, pixels);
+    pixel = 0;
+    for(int ch = 0; ch < 4; ch++) {
+      if(ch == 3 && nBitsPerAlpha > 0) {
+        uint32 i0 =
+          kInterpolationValues[nBitsPerAlpha - 1][alphaIndices[i]][0];
+        uint32 i1 =
+          kInterpolationValues[nBitsPerAlpha - 1][alphaIndices[i]][1];
 
-        memcpy(outBuf + j*dj.Width() + i, pixels, 4 * sizeof(pixels[0]));
-        memcpy(outBuf + (j+1)*dj.Width() + i, pixels+4, 4 * sizeof(pixels[0]));
-        memcpy(outBuf + (j+2)*dj.Width() + i, pixels+8, 4 * sizeof(pixels[0]));
-        memcpy(outBuf + (j+3)*dj.Width() + i, pixels+12, 4 * sizeof(pixels[0]));
+        const uint32 ep1 = static_cast<uint32>(eps[subset][0][3]);
+        const uint32 ep2 = static_cast<uint32>(eps[subset][1][3]);
+        const uint8 ip = (((ep1 * i0 + ep2 * i1) + 32) >> 6) & 0xFF;
+        pixel |= ip << 24;
 
-        inBuf += 16;
+      } else {
+        uint32 i0 =
+          kInterpolationValues[nBitsPerColor - 1][colorIndices[i]][0];
+        uint32 i1 =
+          kInterpolationValues[nBitsPerColor - 1][colorIndices[i]][1];
+
+        const uint32 ep1 = static_cast<uint32>(eps[subset][0][ch]);
+        const uint32 ep2 = static_cast<uint32>(eps[subset][1][ch]);
+        const uint8 ip = (((ep1 * i0 + ep2 * i1) + 32) >> 6) & 0xFF;
+        pixel |= ip << (8*ch);
       }
     }
+
+    // Swap colors if necessary...
+    uint8 *pb = reinterpret_cast<uint8 *>(&pixel);
+    switch(rotMode) {
+      default:
+      case 0:
+        // Do nothing
+        break;
+
+      case 1:
+        swap(pb[0], pb[3]);
+        break;
+
+      case 2:
+        swap(pb[1], pb[3]);
+        break;
+
+      case 3:
+        swap(pb[2], pb[3]);
+        break;
+    }
   }
-}  // namespace BC7C
+}
+
+// Convert the image from a BC7 buffer to a RGBA8 buffer
+void Decompress(const FasTC::DecompressionJob &dj) {
+
+  const uint8 *inBuf = dj.InBuf();
+  uint32 *outBuf = reinterpret_cast<uint32 *>(dj.OutBuf());
+
+  for(unsigned int j = 0; j < dj.Height(); j += 4) {
+    for(unsigned int i = 0; i < dj.Width(); i += 4) {
+
+      uint32 pixels[16];
+      DecompressBC7Block(inBuf, pixels);
+
+      memcpy(outBuf + j*dj.Width() + i, pixels, 4 * sizeof(pixels[0]));
+      memcpy(outBuf + (j+1)*dj.Width() + i, pixels+4, 4 * sizeof(pixels[0]));
+      memcpy(outBuf + (j+2)*dj.Width() + i, pixels+8, 4 * sizeof(pixels[0]));
+      memcpy(outBuf + (j+3)*dj.Width() + i, pixels+12, 4 * sizeof(pixels[0]));
+
+      inBuf += 16;
+    }
+  }
+}
+
+}  // namespace BPTCC

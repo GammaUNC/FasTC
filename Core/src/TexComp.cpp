@@ -52,7 +52,7 @@
 
 #include "ETCCompressor.h"
 #include "DXTCompressor.h"
-#include "BC7Compressor.h"
+#include "BPTCCompressor.h"
 #include "CompressionFuncs.h"
 #include "Image.h"
 #include "ImageFile.h"
@@ -104,12 +104,12 @@ static  CompressionFuncWithStats ChooseFuncFromSettingsWithStats(const SCompress
 
     case FasTC::eCompressionFormat_BPTC:
     {
-#ifdef FOUND_NVTT_BC7_EXPORT
+#ifdef FOUND_NVTT_BPTC_EXPORT
       if(s.bUseNVTT)
-       return BC7C::CompressNVTTWithStats;
+       return BPTCC::CompressNVTTWithStats;
       else
 #endif
-       return BC7C::CompressWithStats;
+       return BPTCC::CompressWithStats;
     }
     break;
     
@@ -135,19 +135,19 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
   switch(s.format) {
     case FasTC::eCompressionFormat_BPTC:
     {
-      BC7C::SetQualityLevel(s.iQuality);
+      BPTCC::SetQualityLevel(s.iQuality);
 #ifdef HAS_SSE_41
       if(s.bUseSIMD) {
-        return BC7C::CompressImageBC7SIMD;
+        return BPTCC::CompressImageBPTCSIMD;
       }
 #endif
 
-#ifdef FOUND_NVTT_BC7_EXPORT
+#ifdef FOUND_NVTT_BPTC_EXPORT
       if(s.bUseNVTT)
-       return BC7C::CompressNVTT;
+       return BPTCC::CompressNVTT;
       else
 #endif
-       return BC7C::Compress;
+       return BPTCC::Compress;
     }
     break;
 
@@ -232,8 +232,8 @@ class AtomicThreadUnit : public TCCallable {
   virtual ~AtomicThreadUnit() { }
   virtual void operator()() {
     m_Barrier->Wait();
-    if(m_CmpFnc == BC7C::Compress) {
-      BC7C::CompressAtomic(m_CompressionJobList);
+    if(m_CmpFnc == BPTCC::Compress) {
+      BPTCC::CompressAtomic(m_CompressionJobList);
     }
     else {
       assert(!"I don't know what we're compressing...");

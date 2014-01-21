@@ -1,5 +1,5 @@
 /* FasTC
- * Copyright (c) 2012 University of North Carolina at Chapel Hill.
+ * Copyright (c) 2014 University of North Carolina at Chapel Hill.
  * All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software and its
@@ -73,13 +73,16 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef BPTCENCODER_SRC_BC7COMPRESSIONMODE_H_
-#define BPTCENCODER_SRC_BC7COMPRESSIONMODE_H_
+#ifndef BPTCENCODER_SRC_BPTCCOMPRESSIONMODE_H_
+#define BPTCENCODER_SRC_BPTCCOMPRESSIONMODE_H_
 
 #include "RGBAEndpoints.h"
 
-// Forward Declarations
 class BitStream;
+
+namespace BPTCC {
+
+// Forward Declarations
 struct VisitedState;
 const int kMaxEndpoints = 3;
 
@@ -90,7 +93,7 @@ static const int kPBits[4][2] = {
   { 1, 1 }
 };
 
-class BC7CompressionMode {
+class CompressionMode {
 
  public:
 
@@ -100,13 +103,13 @@ class BC7CompressionMode {
   // This initializes the compression variables used in order to compress a list
   // of clusters. We can increase the speed a tad by specifying whether or not
   // the block is opaque or not.
-  explicit BC7CompressionMode(int mode, bool opaque = true)
+  explicit CompressionMode(int mode, bool opaque = true)
     : m_IsOpaque(opaque)
     , m_Attributes(&(kModeAttributes[mode]))
     , m_RotateMode(0)
     , m_IndexMode(0)
   { }
-  ~BC7CompressionMode() { }
+  ~CompressionMode() { }
 
   // This function compresses a group of clusters into the passed bitstream. The
   // size of the clusters array is determined by the BC7 compression mode.
@@ -195,7 +198,7 @@ class BC7CompressionMode {
 
   // This returns the proper error metric even if we have rotation bits set
   RGBAVector GetErrorMetric() const {
-    const float *w = BC7C::GetErrorMetric();
+    const float *w = BPTCC::GetErrorMetric();
     switch(GetRotationMode()) {
       default:
       case 0: return RGBAVector(w[0], w[1], w[2], w[3]);
@@ -307,6 +310,7 @@ class BC7CompressionMode {
                             int &bestPBitCombo) const;
 };
 
-extern const uint32 kBC7InterpolationValues[4][16][2];
+extern const uint32 kInterpolationValues[4][16][2];
 
-#endif  // BPTCENCODER_SRC_BC7COMPRESSIONMODE_H_
+}  // namespace BPTCC {
+#endif  // BPTCENCODER_SRC_BPTCCOMPRESSIONMODE_H_

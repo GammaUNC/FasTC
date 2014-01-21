@@ -49,7 +49,7 @@
 #include <cassert>
 #include <iostream>
 
-#include "BC7Compressor.h"
+#include "BPTCCompressor.h"
 
 using FasTC::CompressionJob;
 

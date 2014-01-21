@@ -42,7 +42,7 @@
  */
 
 #include "ThreadGroup.h"
-#include "BC7Compressor.h"
+#include "BPTCCompressor.h"
 
 #include <cstdlib>
 #include <cstdio>
