@@ -356,7 +356,7 @@ CompressionMode::kModeAttributes[kNumModes] = {
 };
 
 void CompressionMode::ClampEndpointsToGrid(
-  RGBAVector &p1, RGBAVector &p2, int &bestPBitCombo
+  RGBAVector &p1, RGBAVector &p2, uint8 &bestPBitCombo
 ) const {
   const int nPbitCombos = GetNumPbitCombos();
   const bool hasPbits = nPbitCombos > 1;
@@ -397,11 +397,10 @@ void CompressionMode::ClampEndpointsToGrid(
 
 double CompressionMode::CompressSingleColor(
   const RGBAVector &p, RGBAVector &p1, RGBAVector &p2,
-  int &bestPbitCombo
+  uint8 &bestPbitCombo
 ) const {
   const uint32 pixel = p.ToPixel();
   float bestError = FLT_MAX;
-  bestPbitCombo = -1;
 
   for(int pbi = 0; pbi < GetNumPbitCombos(); pbi++) {
     const int *pbitCombo = GetPBitCombo(pbi);
@@ -453,7 +452,7 @@ double CompressionMode::CompressSingleColor(
         possValsL[i] |= (possValsL[i] >> nBits);
       }
 
-      const uint32 bpi = GetNumberOfBitsPerIndex() - 1;
+      const uint8 bpi = GetNumberOfBitsPerIndex() - 1;
       const uint32 interpVal0 = kInterpolationValues[bpi][1][0];
       const uint32 interpVal1 = kInterpolationValues[bpi][1][1];
 
@@ -685,8 +684,8 @@ bool CompressionMode::AcceptNewEndpointError(
 double CompressionMode::OptimizeEndpointsForCluster(
   const RGBACluster &cluster,
   RGBAVector &p1, RGBAVector &p2,
-  int *bestIndices,
-  int &bestPbitCombo
+  uint8 *bestIndices,
+  uint8 &bestPbitCombo
 ) const {
 
   const uint32 nBuckets = (1 << GetNumberOfBitsPerIndex());
@@ -731,7 +730,7 @@ double CompressionMode::OptimizeEndpointsForCluster(
 
     float temp = static_cast<float>(energy) / static_cast<float>(maxEnergy-1);
 
-    int indices[kMaxNumDataPoints];
+    uint8 indices[kMaxNumDataPoints];
     RGBAVector np1, np2;
     int nPbitCombo = 0;
 
@@ -779,8 +778,8 @@ double CompressionMode::OptimizeEndpointsForCluster(
 double CompressionMode::CompressCluster(
   const RGBACluster &cluster,
   RGBAVector &p1, RGBAVector &p2,
-  int *bestIndices,
-  int *alphaIndices
+  uint8 *bestIndices,
+  uint8 *alphaIndices
 ) const {
   assert(GetModeNumber() == 4 || GetModeNumber() == 5);
   assert(GetNumberOfSubsets() == 1);
@@ -796,7 +795,7 @@ double CompressionMode::CompressCluster(
             "detected much earlier.");
 
     const RGBAVector &p = cluster.GetPoint(0);
-    int dummyPbit = 0;
+    uint8 dummyPbit = 0;
     double bestErr = CompressSingleColor(p, p1, p2, dummyPbit);
 
     // We're assuming all indices will be index 1...
@@ -843,7 +842,7 @@ double CompressionMode::CompressCluster(
     rgbCluster.AddPoint(v);
   }
 
-  int dummyPbit = 0;
+  uint8 dummyPbit = 0;
   RGBAVector rgbp1, rgbp2;
   double rgbError = CompressCluster(
     rgbCluster, rgbp1, rgbp2, bestIndices, dummyPbit
@@ -1070,8 +1069,8 @@ double CompressionMode::CompressCluster(
 double CompressionMode::CompressCluster(
   const RGBACluster &cluster,
   RGBAVector &p1, RGBAVector &p2,
-  int *bestIndices,
-  int &bestPbitCombo
+  uint8 *bestIndices,
+  uint8 &bestPbitCombo
 ) const {
   // If all the points are the same in the cluster, then we need to figure out
   // what the best approximation to this point is....
@@ -1233,7 +1232,7 @@ double CompressionMode::CompressCluster(
   ClampEndpointsToGrid(p1, p2, bestPbitCombo);
 
   #ifdef _DEBUG
-    int pBitCombo = bestPbitCombo;
+    uint8 pBitCombo = bestPbitCombo;
     RGBAVector tp1 = p1, tp2 = p2;
     ClampEndpointsToGrid(tp1, tp2, pBitCombo);
 
@@ -1249,99 +1248,29 @@ double CompressionMode::CompressCluster(
   );
 }
 
-double CompressionMode::Compress(
-  BitStream &stream, const int shapeIdx, const RGBACluster *clusters
-) {
-
+void CompressionMode::Pack(Params &params, BitStream &stream) const {
+  
   const int kModeNumber = GetModeNumber();
   const int nPartitionBits = GetNumberOfPartitionBits();
   const int nSubsets = GetNumberOfSubsets();
 
+  
   // Mode #
   stream.WriteBits(1 << kModeNumber, kModeNumber + 1);
 
   // Partition #
-  assert((((1 << nPartitionBits) - 1) & shapeIdx) == shapeIdx);
-  stream.WriteBits(shapeIdx, nPartitionBits);
+  assert((((1 << nPartitionBits) - 1) & params.m_ShapeIdx) == params.m_ShapeIdx);
+  stream.WriteBits(params.m_ShapeIdx, nPartitionBits);
 
-  RGBAVector p1[kMaxNumSubsets], p2[kMaxNumSubsets];
-
-  int bestIndices[kMaxNumSubsets][kMaxNumDataPoints];
-  memset(bestIndices, 0xFF, sizeof(bestIndices));
-
-  int bestAlphaIndices[kMaxNumDataPoints];
-  memset(bestAlphaIndices, 0xFF, sizeof(bestAlphaIndices));
-
-  int bestPbitCombo[kMaxNumSubsets] = { -1, -1, -1 };
-  int bestRotationMode = -1, bestIndexMode = -1;
-
-  double totalErr = 0.0;
-  for(int cidx = 0; cidx < nSubsets; cidx++) {
-    int indices[kMaxNumDataPoints] = {0};
-
-    if(m_Attributes->hasRotation) {
-
-      assert(nSubsets == 1);
-
-      int alphaIndices[kMaxNumDataPoints];
-
-      double bestError = DBL_MAX;
-      for(int rotMode = 0; rotMode < 4; rotMode++) {
-
-        SetRotationMode(rotMode);
-        const int nIdxModes = kModeNumber == 4? 2 : 1;
-
-        for(int idxMode = 0; idxMode < nIdxModes; idxMode++) {
-
-          SetIndexMode(idxMode);
-
-          RGBAVector v1, v2;
-          double error = CompressCluster(
-            clusters[cidx], v1, v2, indices, alphaIndices
-          );
-
-          if(error < bestError) {
-            bestError = error;
-
-            memcpy(bestIndices[cidx], indices, sizeof(indices));
-            memcpy(bestAlphaIndices, alphaIndices, sizeof(alphaIndices));
-
-            bestRotationMode = rotMode;
-            bestIndexMode = idxMode;
-
-            p1[cidx] = v1;
-            p2[cidx] = v2;
-          }
-        }
-      }
-
-      totalErr += bestError;
-    } else {  // ! m_Attributes->hasRotation
-      // Compress this cluster
-      totalErr += CompressCluster(
-        clusters[cidx], p1[cidx], p2[cidx], indices, bestPbitCombo[cidx]
-      );
-
-      // Map the indices to their proper position.
-      int idx = 0;
-      for(int i = 0; i < 16; i++) {
-        int subs = GetSubsetForIndex(i, shapeIdx, GetNumberOfSubsets());
-        if(subs == cidx) {
-          bestIndices[cidx][i] = indices[idx++];
-        }
-      }
-    }
-  }
-
-  stream.WriteBits(bestRotationMode, m_Attributes->hasRotation? 2 : 0);
-  stream.WriteBits(bestIndexMode, m_Attributes->hasIdxMode? 1 : 0);
+  stream.WriteBits(params.m_RotationMode, m_Attributes->hasRotation? 2 : 0);
+  stream.WriteBits(params.m_IndexMode, m_Attributes->hasIdxMode? 1 : 0);
 
 #ifdef _DEBUG
   for(int i = 0; i < kMaxNumDataPoints; i++) {
 
     int nSet = 0;
     for(int j = 0; j < nSubsets; j++) {
-      if(bestIndices[j][i] >= 0)
+      if(params.m_Indices[j][i] < 255)
         nSet++;
     }
 
@@ -1358,14 +1287,14 @@ double CompressionMode::Compress(
     switch(GetPBitType()) {
       default:
       case ePBitType_None:
-        pixel1[i] = p1[i].ToPixel(qmask);
-        pixel2[i] = p2[i].ToPixel(qmask);
+        pixel1[i] = params.m_P1[i].ToPixel(qmask);
+        pixel2[i] = params.m_P2[i].ToPixel(qmask);
       break;
 
       case ePBitType_Shared:
       case ePBitType_NotShared:
-        pixel1[i] = p1[i].ToPixel(qmask, GetPBitCombo(bestPbitCombo[i])[0]);
-        pixel2[i] = p2[i].ToPixel(qmask, GetPBitCombo(bestPbitCombo[i])[1]);
+        pixel1[i] = params.m_P1[i].ToPixel(qmask, GetPBitCombo(params.m_PbitCombo[i])[0]);
+        pixel2[i] = params.m_P2[i].ToPixel(qmask, GetPBitCombo(params.m_PbitCombo[i])[1]);
       break;
     }
   }
@@ -1374,28 +1303,28 @@ double CompressionMode::Compress(
   // we need to swap EVERYTHING.
   for(int sidx = 0; sidx < nSubsets; sidx++) {
 
-    int anchorIdx = GetAnchorIndexForSubset(sidx, shapeIdx, nSubsets);
-    assert(bestIndices[sidx][anchorIdx] != -1);
+    int anchorIdx = GetAnchorIndexForSubset(sidx, params.m_ShapeIdx, nSubsets);
+    assert(params.m_Indices[sidx][anchorIdx] != 255);
 
-    const int nAlphaIndexBits = GetNumberOfBitsPerAlpha(bestIndexMode);
-    const int nIndexBits = GetNumberOfBitsPerIndex(bestIndexMode);
-    if(bestIndices[sidx][anchorIdx] >> (nIndexBits - 1)) {
-      uint32 t = pixel1[sidx]; pixel1[sidx] = pixel2[sidx]; pixel2[sidx] = t;
+    const int nAlphaIndexBits = GetNumberOfBitsPerAlpha(params.m_IndexMode);
+    const int nIndexBits = GetNumberOfBitsPerIndex(params.m_IndexMode);
+    if(params.m_Indices[sidx][anchorIdx] >> (nIndexBits - 1)) {
+      std::swap(pixel1[sidx], pixel2[sidx]);
 
       int nIndexVals = 1 << nIndexBits;
       for(int i = 0; i < 16; i++) {
-        bestIndices[sidx][i] = (nIndexVals - 1) - bestIndices[sidx][i];
+        params.m_Indices[sidx][i] = (nIndexVals - 1) - params.m_Indices[sidx][i];
       }
 
       int nAlphaIndexVals = 1 << nAlphaIndexBits;
       if(m_Attributes->hasRotation) {
         for(int i = 0; i < 16; i++) {
-          bestAlphaIndices[i] = (nAlphaIndexVals - 1) - bestAlphaIndices[i];
+          params.m_AlphaIndices[i] = (nAlphaIndexVals - 1) - params.m_AlphaIndices[i];
         }
       }
     }
 
-    const bool rotated = (bestAlphaIndices[anchorIdx] >> (nAlphaIndexBits - 1)) > 0;
+    const bool rotated = (params.m_AlphaIndices[anchorIdx] >> (nAlphaIndexBits - 1)) > 0;
     if(m_Attributes->hasRotation && rotated) {
       uint8 * bp1 = reinterpret_cast<uint8 *>(&pixel1[sidx]);
       uint8 * bp2 = reinterpret_cast<uint8 *>(&pixel2[sidx]);
@@ -1403,13 +1332,13 @@ double CompressionMode::Compress(
 
       int nAlphaIndexVals = 1 << nAlphaIndexBits;
       for(int i = 0; i < 16; i++) {
-        bestAlphaIndices[i] = (nAlphaIndexVals - 1) - bestAlphaIndices[i];
+        params.m_AlphaIndices[i] = (nAlphaIndexVals - 1) - params.m_AlphaIndices[i];
       }
     }
 
-    assert(!(bestIndices[sidx][anchorIdx] >> (nIndexBits - 1)));
+    assert(!(params.m_Indices[sidx][anchorIdx] >> (nIndexBits - 1)));
     assert(!m_Attributes->hasRotation ||
-           !(bestAlphaIndices[anchorIdx] >> (nAlphaIndexBits - 1)));
+           !(params.m_AlphaIndices[anchorIdx] >> (nAlphaIndexBits - 1)));
   }
 
   // Get the quantized values...
@@ -1459,7 +1388,7 @@ double CompressionMode::Compress(
   // Write out the best pbits..
   if(GetPBitType() != ePBitType_None) {
     for(int s = 0; s < nSubsets; s++) {
-      const int *pbits = GetPBitCombo(bestPbitCombo[s]);
+      const int *pbits = GetPBitCombo(params.m_PbitCombo[s]);
       stream.WriteBits(pbits[0], 1);
       if(GetPBitType() != ePBitType_Shared)
         stream.WriteBits(pbits[1], 1);
@@ -1468,14 +1397,14 @@ double CompressionMode::Compress(
 
   // If our index mode has changed, then we need to write the alpha indices
   // first.
-  if(m_Attributes->hasIdxMode && bestIndexMode == 1) {
+  if(m_Attributes->hasIdxMode && params.m_IndexMode == 1) {
 
     assert(m_Attributes->hasRotation);
 
     for(int i = 0; i < 16; i++) {
-      const int idx = bestAlphaIndices[i];
-      assert(GetAnchorIndexForSubset(0, shapeIdx, nSubsets) == 0);
-      assert(GetNumberOfBitsPerAlpha(bestIndexMode) == 2);
+      const int idx = params.m_AlphaIndices[i];
+      assert(GetAnchorIndexForSubset(0, params.m_ShapeIdx, nSubsets) == 0);
+      assert(GetNumberOfBitsPerAlpha(params.m_IndexMode) == 2);
       assert(idx >= 0 && idx < (1 << 2));
       assert(i != 0 ||
              !(idx >> 1) ||
@@ -1484,10 +1413,10 @@ double CompressionMode::Compress(
     }
 
     for(int i = 0; i < 16; i++) {
-      const int idx = bestIndices[0][i];
-      assert(GetSubsetForIndex(i, shapeIdx, nSubsets) == 0);
-      assert(GetAnchorIndexForSubset(0, shapeIdx, nSubsets) == 0);
-      assert(GetNumberOfBitsPerIndex(bestIndexMode) == 3);
+      const int idx = params.m_Indices[0][i];
+      assert(GetSubsetForIndex(i, params.m_ShapeIdx, nSubsets) == 0);
+      assert(GetAnchorIndexForSubset(0, params.m_ShapeIdx, nSubsets) == 0);
+      assert(GetNumberOfBitsPerIndex(params.m_IndexMode) == 3);
       assert(idx >= 0 && idx < (1 << 3));
       assert(i != 0 ||
              !(idx >> 2) ||
@@ -1496,10 +1425,10 @@ double CompressionMode::Compress(
     }
   } else {
     for(int i = 0; i < 16; i++) {
-      const int subs = GetSubsetForIndex(i, shapeIdx, nSubsets);
-      const int idx = bestIndices[subs][i];
-      const int anchorIdx = GetAnchorIndexForSubset(subs, shapeIdx, nSubsets);
-      const int nBitsForIdx = GetNumberOfBitsPerIndex(bestIndexMode);
+      const int subs = GetSubsetForIndex(i, params.m_ShapeIdx, nSubsets);
+      const int idx = params.m_Indices[subs][i];
+      const int anchorIdx = GetAnchorIndexForSubset(subs, params.m_ShapeIdx, nSubsets);
+      const int nBitsForIdx = GetNumberOfBitsPerIndex(params.m_IndexMode);
       assert(idx >= 0 && idx < (1 << nBitsForIdx));
       assert(i != anchorIdx ||
              !(idx >> (nBitsForIdx - 1)) ||
@@ -1509,9 +1438,9 @@ double CompressionMode::Compress(
 
     if(m_Attributes->hasRotation) {
       for(int i = 0; i < 16; i++) {
-        const int idx = bestAlphaIndices[i];
+        const int idx = params.m_AlphaIndices[i];
         const int anchorIdx = 0;
-        const int nBitsForIdx = GetNumberOfBitsPerAlpha(bestIndexMode);
+        const int nBitsForIdx = GetNumberOfBitsPerAlpha(params.m_IndexMode);
         assert(idx >= 0 && idx < (1 << nBitsForIdx));
         assert(i != anchorIdx ||
                !(idx >> (nBitsForIdx - 1)) ||
@@ -1520,6 +1449,80 @@ double CompressionMode::Compress(
       }
     }
   }
+  assert(stream.GetBitsWritten() == 128);
+}
+
+double CompressionMode::Compress(
+  BitStream &stream, const int shapeIdx, const RGBACluster *clusters
+) {
+
+  const int kModeNumber = GetModeNumber();
+  const int nPartitionBits = GetNumberOfPartitionBits();
+  const int nSubsets = GetNumberOfSubsets();
+
+  Params params(shapeIdx);
+
+  double totalErr = 0.0;
+  for(int cidx = 0; cidx < nSubsets; cidx++) {
+    uint8 indices[kMaxNumDataPoints] = {0};
+
+    if(m_Attributes->hasRotation) {
+
+      assert(nSubsets == 1);
+
+      uint8 alphaIndices[kMaxNumDataPoints];
+
+      double bestError = DBL_MAX;
+      for(int rotMode = 0; rotMode < 4; rotMode++) {
+
+        SetRotationMode(rotMode);
+        const int nIdxModes = kModeNumber == 4? 2 : 1;
+
+        for(int idxMode = 0; idxMode < nIdxModes; idxMode++) {
+
+          SetIndexMode(idxMode);
+
+          RGBAVector v1, v2;
+          double error = CompressCluster(
+            clusters[cidx], v1, v2, indices, alphaIndices
+          );
+
+          if(error < bestError) {
+            bestError = error;
+
+            memcpy(params.m_Indices[cidx], indices, sizeof(indices));
+            memcpy(params.m_AlphaIndices, alphaIndices, sizeof(alphaIndices));
+
+            params.m_RotationMode = rotMode;
+            params.m_IndexMode = idxMode;
+
+            params.m_P1[cidx] = v1;
+            params.m_P2[cidx] = v2;
+          }
+        }
+      }
+
+      totalErr += bestError;
+    } else {  // ! m_Attributes->hasRotation
+      // Compress this cluster
+      totalErr += CompressCluster(
+        clusters[cidx],
+        params.m_P1[cidx], params.m_P2[cidx],
+        indices, params.m_PbitCombo[cidx]
+      );
+
+      // Map the indices to their proper position.
+      int idx = 0;
+      for(int i = 0; i < 16; i++) {
+        int subs = GetSubsetForIndex(i, shapeIdx, GetNumberOfSubsets());
+        if(subs == cidx) {
+          params.m_Indices[cidx][i] = indices[idx++];
+        }
+      }
+    }
+  }
+
+  Pack(params, stream);
   assert(stream.GetBitsWritten() == 128);
   return totalErr;
 }

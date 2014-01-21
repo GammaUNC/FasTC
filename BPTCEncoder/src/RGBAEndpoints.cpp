@@ -419,7 +419,7 @@ uint32 RGBACluster::GetPowerMethodIterations() {
 double RGBACluster::QuantizedError(
   const RGBAVector &p1, const RGBAVector &p2,
   uint8 nBuckets, uint32 bitMask, const RGBAVector &errorMetricVec,
-  const int pbits[2], int *indices
+  const int pbits[2], uint8 *indices
 ) const {
 
   // nBuckets should be a power of two.
@@ -457,7 +457,7 @@ double RGBACluster::QuantizedError(
     const uint8 *pb = (const uint8 *)(&pixel);
 
     float minError = FLT_MAX;
-    int bestBucket = -1;
+    uint8 bestBucket = 0;
     for(int j = 0; j < nBuckets; j++) {
 
       uint32 interp0 = (*interpVals)[j][0];

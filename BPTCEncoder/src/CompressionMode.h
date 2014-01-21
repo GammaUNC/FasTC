@@ -113,6 +113,30 @@ class CompressionMode {
   { }
   ~CompressionMode() { }
 
+  // These are all of the parameters required to define the data in a compressed
+  // BPTC block. The mode determines how these parameters will be translated
+  // into actual bits.
+  struct Params {
+    const uint16 m_ShapeIdx;
+    RGBAVector m_P1[kMaxNumSubsets], m_P2[kMaxNumSubsets];
+    uint8 m_Indices[kMaxNumSubsets][kMaxNumDataPoints];
+    uint8 m_AlphaIndices[kMaxNumDataPoints];
+    uint8 m_PbitCombo[kMaxNumSubsets];
+    int8 m_RotationMode, m_IndexMode;
+    explicit Params(uint32 shape)
+      : m_RotationMode(-1), m_IndexMode(-1), m_ShapeIdx(shape) {
+      memset(m_Indices, 0xFF, sizeof(m_Indices));
+      memset(m_AlphaIndices, 0xFF, sizeof(m_AlphaIndices));
+      memset(m_PbitCombo, 0xFF, sizeof(m_PbitCombo));
+    }
+  };
+
+  // This outputs the parameters to the given bitstream based on the current
+  // compression mode. The first argument is not const because the mode and
+  // the value of the first index determines whether or not the indices need to
+  // be swapped. The final output bits will always be a valid BPTC block. 
+  void Pack(Params &params, FasTC::BitStream &stream) const;
+
   // This function compresses a group of clusters into the passed bitstream. The
   // size of the clusters array is determined by the BC7 compression mode.
   double Compress(FasTC::BitStream &stream,
@@ -176,7 +200,7 @@ class CompressionMode {
   }
   int GetNumberOfSubsets() const { return m_Attributes->numSubsets; }
 
-  int GetNumberOfBitsPerIndex(int indexMode = -1) const {
+  int GetNumberOfBitsPerIndex(int8 indexMode = -1) const {
     if(indexMode < 0) indexMode = m_IndexMode;
     if(indexMode == 0)
       return m_Attributes->numBitsPerIndex;
@@ -184,7 +208,7 @@ class CompressionMode {
       return m_Attributes->numBitsPerAlpha;
   }
 
-  int GetNumberOfBitsPerAlpha(int indexMode = -1) const {
+  int GetNumberOfBitsPerAlpha(int8 indexMode = -1) const {
     if(indexMode < 0) indexMode = m_IndexMode;
     if(indexMode == 0)
       return m_Attributes->numBitsPerAlpha;
@@ -261,8 +285,8 @@ class CompressionMode {
   double OptimizeEndpointsForCluster(
     const RGBACluster &cluster,
     RGBAVector &p1, RGBAVector &p2,
-    int *bestIndices,
-    int &bestPbitCombo
+    uint8 *bestIndices,
+    uint8 &bestPbitCombo
   ) const;
 
   // This function performs the heuristic to choose the "best" neighboring
@@ -290,26 +314,26 @@ class CompressionMode {
   // then we choose the best p-bit combo and return it as well.
   double CompressSingleColor(const RGBAVector &p,
                              RGBAVector &p1, RGBAVector &p2,
-                             int &bestPbitCombo) const;
+                             uint8 &bestPbitCombo) const;
 
   // Compress the cluster using a generalized cluster fit. This figures out the
   // proper endpoints assuming that we have no alpha.
   double CompressCluster(const RGBACluster &cluster,
                          RGBAVector &p1, RGBAVector &p2,
-                         int *bestIndices, int &bestPbitCombo) const;
+                         uint8 *bestIndices, uint8 &bestPbitCombo) const;
 
   // Compress the non-opaque cluster using a generalized cluster fit, and place
   // the endpoints within p1 and p2. The color indices and alpha indices are
   // computed as well.
   double CompressCluster(const RGBACluster &cluster,
                          RGBAVector &p1, RGBAVector &p2,
-                         int *bestIndices, int *alphaIndices) const;
+                         uint8 *bestIndices, uint8 *alphaIndices) const;
 
   // This function takes two endpoints in the continuous domain (as floats) and
   // clamps them to the nearest grid points based on the compression mode (and
   // possible pbit values)
   void ClampEndpointsToGrid(RGBAVector &p1, RGBAVector &p2,
-                            int &bestPBitCombo) const;
+                            uint8 &bestPBitCombo) const;
 };
 
 extern const uint32 kInterpolationValues[4][16][2];

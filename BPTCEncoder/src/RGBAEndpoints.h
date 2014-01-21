@@ -387,8 +387,12 @@ public:
     Min = m_Min, Max = m_Max;
   }
 
-  // Returns the error if we were to quantize the colors right now with the given number of buckets and bit mask.
-  double QuantizedError(const RGBAVector &p1, const RGBAVector &p2, uint8 nBuckets, uint32 bitMask, const RGBAVector &errorMetricVec, const int pbits[2] = NULL, int *indices = NULL) const;
+  // Returns the error if we were to quantize the colors right now with the
+  // given number of buckets and bit mask.
+  double QuantizedError(
+    const RGBAVector &p1, const RGBAVector &p2,
+    uint8 nBuckets, uint32 bitMask, const RGBAVector &errorMetricVec,
+    const int pbits[2] = NULL, uint8 *indices = NULL) const;
 
   // Returns the principal axis for this point cluster.
   double GetPrincipalEigenvalue();
