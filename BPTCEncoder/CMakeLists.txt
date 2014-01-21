@@ -106,7 +106,6 @@ SET( HEADERS
   config/BPTCConfig.h.in
   include/BPTCCompressor.h
   src/CompressionMode.h
-  src/BitStream.h
   src/RGBAEndpoints.h
   src/ParallelStage.h
 )

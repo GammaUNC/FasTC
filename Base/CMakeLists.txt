@@ -58,6 +58,7 @@ SET( SOURCES
 )
 
 SET( HEADERS
+  "include/BitStream.h"
   "include/TexCompTypes.h"
   "include/Image.h"
   "include/Color.h"

@@ -79,7 +79,10 @@
 #include "TexCompTypes.h"
 #include "BCLookupTables.h"
 #include "RGBAEndpoints.h"
+
 #include "BitStream.h"
+using FasTC::BitStream;
+using FasTC::BitStreamReadOnly;
 
 #ifdef HAS_MSVC_ATOMICS
 #   include "Windows.h"

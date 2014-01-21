@@ -78,7 +78,9 @@
 
 #include "RGBAEndpoints.h"
 
-class BitStream;
+namespace FasTC {
+  class BitStream;
+}  // namespace FasTC
 
 namespace BPTCC {
 
@@ -113,7 +115,7 @@ class CompressionMode {
 
   // This function compresses a group of clusters into the passed bitstream. The
   // size of the clusters array is determined by the BC7 compression mode.
-  double Compress(BitStream &stream,
+  double Compress(FasTC::BitStream &stream,
                   const int shapeIdx, const RGBACluster *clusters);
 
   // This switch controls the quality of the simulated annealing optimizer. We
