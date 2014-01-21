@@ -52,6 +52,7 @@ class ImageLoader {
  protected:
 
   const uint8 *const m_RawData;
+  const int32 m_NumRawDataBytes;
   uint8 *m_PixelData;
 
   uint32 m_Width;
@@ -71,6 +72,18 @@ class ImageLoader {
 
   ImageLoader(const uint8 *rawData) 
   : m_RawData(rawData)
+  , m_NumRawDataBytes(-1)
+  , m_PixelData(0)
+  , m_Width(0), m_Height(0)
+  , m_RedChannelPrecision(0), m_RedData(0)
+  , m_GreenChannelPrecision(0), m_GreenData(0)
+  , m_BlueChannelPrecision(0), m_BlueData(0)
+  , m_AlphaChannelPrecision(0), m_AlphaData(0)
+    { }
+
+  ImageLoader(const uint8 *rawData, const int32 numBytes)
+  : m_RawData(rawData)
+  , m_NumRawDataBytes(numBytes)
   , m_PixelData(0)
   , m_Width(0), m_Height(0)
   , m_RedChannelPrecision(0), m_RedData(0)
@@ -80,6 +93,8 @@ class ImageLoader {
     { }
 
   uint32 GetChannelForPixel(uint32 x, uint32 y, uint32 ch);
+
+  bool LoadFromPixelBuffer(uint32 *data, bool flipY = false);
 
  public:
   virtual ~ImageLoader() {

@@ -40,78 +40,65 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
-PROJECT(FasTC)
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_LIST_DIR})
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_LIST_DIR}/arvo)
 
-OPTION(TREAT_WARNINGS_AS_ERRORS "Treat compiler warnings as errors. We use the highest warnings levels for compilers." OFF)
-
-IF(MSVC)
-	SET(MSVC_INSTALL_PATH "${PROJECT_SOURCE_DIR}/Windows")
-	SET(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${MSVC_INSTALL_PATH}")
-
-	IF(MSVC10)
-		SET(MSVC_VERSION_STRING vc100)
-	ELSEIF(MSVC11)
-		SET(MSVC_VERSION_STRING vc110)
-	ELSEIF(MSVC90)
-		SET(MSVC_VERSION_STRING vc90)
-	ELSEIF(MSVC80)
-		SET(MSVC_VERSION_STRING vc80)
-	ENDIF()
-
-	# !FIXME! Actually detect compiler architecture version....
-	IF( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-		SET(MSVC_ARCHITECTURE_STRING x64)
-	ELSE()
-		SET(MSVC_ARCHITECTURE_STRING x86)
-	ENDIF()
-
-	SET(MSVC_LIB_DIR "${MSVC_INSTALL_PATH}/lib/${MSVC_ARCHITECTURE_STRING}/${MSVC_VERSION_STRING}")
-	SET(CMAKE_LIBRARY_PATH "${CMAKE_LIBRARY_PATH};${MSVC_LIB_DIR}")
-
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-
-ELSEIF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fms-extensions")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fms-extensions")
-
-ENDIF(MSVC)
-
-IF(TREAT_WARNINGS_AS_ERRORS)
-  IF(MSVC)
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /WX")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
-  ELSEIF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
-  ENDIF(MSVC)
-ENDIF(TREAT_WARNINGS_AS_ERRORS)
-
-SET(CMAKE_MODULE_PATH "${FasTC_SOURCE_DIR}/CMakeModules" ${CMAKE_MODULE_PATH})
-FIND_PACKAGE(PVRTexLib)
-FIND_PACKAGE(BC7Export)
-
-SET(FASTC_DIRECTORIES
-  Base Core IO BPTCEncoder PVRTCEncoder DXTEncoder ETCEncoder
+SET( HEADERS
+  avpcl.h
+  bits.h
+  endpts.h
+  ImfArray.h
+  rgba.h
+  shapes_three.h
+  shapes_two.h
+  targa.h
+  tile.h
+  utils.h
+  arvo/ArvoMath.h
+  arvo/Char.h
+  arvo/Complex.h
+  arvo/form.h
+  arvo/Matrix.h
+  arvo/Perm.h
+  arvo/Rand.h
+  arvo/SI_units.h
+  arvo/SphTri.h
+  arvo/SVD.h
+  arvo/Token.h
+  arvo/Vec2.h
+  arvo/Vec3.h
+  arvo/Vec4.h
+  arvo/Vector.h
 )
 
-FOREACH(DIR ${FASTC_DIRECTORIES})
-  ADD_SUBDIRECTORY(${DIR})
-ENDFOREACH()
+SET( SOURCES
+  avpcl.cpp
+  avpcl_mode0.cpp
+  avpcl_mode1.cpp
+  avpcl_mode2.cpp
+  avpcl_mode3.cpp
+  avpcl_mode4.cpp
+  avpcl_mode5.cpp
+  avpcl_mode6.cpp
+  avpcl_mode7.cpp
+  targa.cpp
+  utils.cpp
+  arvo/ArvoMath.cpp
+  arvo/Char.cpp
+  arvo/Complex.cpp
+  arvo/Matrix.cpp
+  arvo/Perm.cpp
+  arvo/Rand.cpp
+  arvo/SphTri.cpp
+  arvo/SVD.cpp
+  arvo/Token.cpp
+  arvo/Vec2.cpp
+  arvo/Vec3.cpp
+  arvo/Vec4.cpp
+  arvo/Vector.cpp
+)
 
-ENABLE_TESTING()
-
-IF(MSVC)
-  SET(gtest_force_shared_crt TRUE)
-ENDIF(MSVC)
-ADD_SUBDIRECTORY(GTest)
-FOREACH(DIR ${FASTC_DIRECTORIES})
-  SET(TESTDIR ${FasTC_SOURCE_DIR}/${DIR}/test)
-  IF(IS_DIRECTORY ${TESTDIR})
-    ADD_SUBDIRECTORY(${TESTDIR})
-  ENDIF()
-ENDFOREACH()
-
-ADD_SUBDIRECTORY(CLTool)
+ADD_LIBRARY( avpcl
+  ${HEADERS}
+  ${SOURCES}
+)

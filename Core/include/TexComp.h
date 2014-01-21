@@ -91,6 +91,11 @@ struct SCompressionSettings {
   // ignored. The quality being used is the fastest compression quality.
   bool bUsePVRTexLib;
 
+  // This flag instructs the infrastructure to use the compression routine from
+  // NVidia Texture Tools. If no such lib is found during configuration then this
+  // flag is ignored.
+  bool bUseNVTT;
+
   // This is the output stream with which we should output the logs for the
   // compression functions.
   std::ostream *logStream;

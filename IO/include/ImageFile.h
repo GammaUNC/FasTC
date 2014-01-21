@@ -91,12 +91,15 @@ public:
 
   const EImageFileFormat m_FileFormat;
 
+  uint8 *m_FileData;
+  int32 m_FileDataSz;
+
   FasTC::Image<> *m_Image;
   
-  static unsigned char *ReadFileData(const CHAR *filename);
+  bool ReadFileData(const CHAR *filename);
   static bool WriteImageDataToFile(const uint8 *data, const uint32 dataSz, const CHAR *filename);
   static EImageFileFormat DetectFileFormat(const CHAR *filename);
 
-  FasTC::Image<> *LoadImage(const unsigned char *rawImageData) const;
+  FasTC::Image<> *LoadImage() const;
 };
 #endif // _IMAGE_FILE_H_ 

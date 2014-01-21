@@ -75,8 +75,10 @@ void PrintUsage() {
   fprintf(stderr, "Usage: tc [OPTIONS] imagefile\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "\t-v\t\tVerbose mode: prints out Entropy, Mean Local Entropy, and MSSIM\n");
-  fprintf(stderr, "\t-f\t\tFormat to use. Either \"BPTC\", \"ETC1\", \"DXT1\", \"DXT5\", or \"PVRTC\". Default: BPTC\n");
+  fprintf(stderr, "\t-f <fmt>\tFormat to use. Either \"BPTC\", \"ETC1\", \"DXT1\", \"DXT5\", or \"PVRTC\". Default: BPTC\n");
   fprintf(stderr, "\t-l\t\tSave an output log.\n");
+  fprintf(stderr, "\t-d <file>\tSpecify decompressed output (currently only png files supported, default: basename-<fmt>.png)\n");
+  fprintf(stderr, "\t-nd\t\tSuppress decompressed output\n");
   fprintf(stderr, "\t-q <quality>\tSet compression quality level. Default: 50\n");
   fprintf(stderr, "\t-n <num>\tCompress the image num times and give the average time and PSNR. Default: 1\n");
   fprintf(stderr, "\t-simd\t\tUse SIMD compression path\n");
@@ -113,6 +115,8 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+  char decompressedOutput[256]; decompressedOutput[0] = '\0';
+  bool bNoDecompress = false;
   int numJobs = 0;
   int quality = 50;
   int numThreads = 1;
@@ -121,6 +125,7 @@ int main(int argc, char **argv) {
   bool bSaveLog = false;
   bool bUseAtomics = false;
   bool bUsePVRTexLib = false;
+  bool bUseNVTT = false;
   bool bVerbose = false;
   FasTC::ECompressionFormat format = FasTC::eCompressionFormat_BPTC;
 
@@ -153,6 +158,9 @@ int main(int argc, char **argv) {
         } else if(!strcmp(argv[fileArg], "PVRTCLib")) {
           format = FasTC::eCompressionFormat_PVRTC;
           bUsePVRTexLib = true;
+        } else if(!strcmp(argv[fileArg], "BPTCLib")) {
+          format = FasTC::eCompressionFormat_BPTC;
+          bUseNVTT = true;
         } else if(!strcmp(argv[fileArg], "ETC1")) {
           format = FasTC::eCompressionFormat_ETC1;
         } else if(!strcmp(argv[fileArg], "DXT1")) {
@@ -163,6 +171,30 @@ int main(int argc, char **argv) {
       }
 
       fileArg++;
+      knowArg = true;
+      continue;
+    }
+
+    if(strcmp(argv[fileArg], "-d") == 0) {
+      fileArg++;
+      
+      if(fileArg == argc) {
+        PrintUsage();
+        exit(1);
+      } else {
+        size_t sz = 255;
+        sz = ::std::min(sz, static_cast<size_t>(strlen(argv[fileArg])));
+        memcpy(decompressedOutput, argv[fileArg], sz + 1);
+      }
+
+      fileArg++;
+      knowArg = true;
+      continue;
+    }
+
+    if(strcmp(argv[fileArg], "-nd") == 0) {
+      fileArg++;
+      bNoDecompress = true;
       knowArg = true;
       continue;
     }
@@ -275,6 +307,7 @@ int main(int argc, char **argv) {
   settings.iNumCompressions = numCompressions;
   settings.iJobSize = numJobs;
   settings.bUsePVRTexLib = bUsePVRTexLib;
+  settings.bUseNVTT = bUseNVTT;
   if(bSaveLog) {
     settings.logStream = &logStream;
   } else {
@@ -304,18 +337,22 @@ int main(int argc, char **argv) {
     }
   }
 
-  if(format == FasTC::eCompressionFormat_BPTC) {
-    strcat(basename, "-bc7.png");
-  } else if(format == FasTC::eCompressionFormat_PVRTC) {
-    strcat(basename, "-pvrtc.png");
-  } else if(format == FasTC::eCompressionFormat_DXT1) {
-    strcat(basename, "-dxt1.png");
-  } else if(format == FasTC::eCompressionFormat_ETC1) {
-    strcat(basename, "-etc1.png");
-  }
+  if(!bNoDecompress) {
+    if(decompressedOutput[0] != '\0') {
+      memcpy(basename, decompressedOutput, 256);
+    } else if(format == FasTC::eCompressionFormat_BPTC) {
+      strcat(basename, "-bc7.png");
+    } else if(format == FasTC::eCompressionFormat_PVRTC) {
+      strcat(basename, "-pvrtc.png");
+    } else if(format == FasTC::eCompressionFormat_DXT1) {
+      strcat(basename, "-dxt1.png");
+    } else if(format == FasTC::eCompressionFormat_ETC1) {
+      strcat(basename, "-etc1.png");
+    }
 
-  ImageFile cImgFile (basename, eFileFormat_PNG, *ci);
-  cImgFile.Write();
+    ImageFile cImgFile (basename, eFileFormat_PNG, *ci);
+    cImgFile.Write();
+  }
 
   // Cleanup 
   delete ci;

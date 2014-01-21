@@ -65,6 +65,8 @@
 #  include "ImageLoaderPVR.h"
 #endif
 
+#include "ImageLoaderTGA.h"
+
 //////////////////////////////////////////////////////////////////////////////////////////
 //
 // Static helper functions
@@ -93,6 +95,8 @@ static inline T abs(const T &a) {
 
 ImageFile::ImageFile(const CHAR *filename)
   : m_FileFormat(  DetectFileFormat(filename) )
+  , m_FileData(NULL)
+  , m_FileDataSz(-1)
   , m_Image(NULL)
 { 
   strncpy(m_Filename, filename, kMaxFilenameSz);
@@ -100,6 +104,8 @@ ImageFile::ImageFile(const CHAR *filename)
 
 ImageFile::ImageFile(const CHAR *filename, EImageFileFormat format)
   : m_FileFormat(format)
+  , m_FileData(NULL)
+  , m_FileDataSz(-1)
   , m_Image(NULL)
 { 
   strncpy(m_Filename, filename, kMaxFilenameSz);
@@ -107,6 +113,8 @@ ImageFile::ImageFile(const CHAR *filename, EImageFileFormat format)
 
 ImageFile::ImageFile(const char *filename, EImageFileFormat format, const FasTC::Image<> &image)
   : m_FileFormat(format)
+  , m_FileData(NULL)
+  , m_FileDataSz(-1)
   , m_Image(image.Clone())
 {
   strncpy(m_Filename, filename, kMaxFilenameSz);
@@ -117,6 +125,11 @@ ImageFile::~ImageFile() {
     delete m_Image;
     m_Image = NULL;
   }
+
+  if(m_FileData) {
+    delete m_FileData;
+    m_FileData = NULL;
+  }
 }
 
 bool ImageFile::Load() {
@@ -126,10 +139,13 @@ bool ImageFile::Load() {
     m_Image = NULL;
   }
   
-  unsigned char *rawData = ReadFileData(m_Filename);
-  if(rawData) {
-    m_Image = LoadImage(rawData);
-    delete [] rawData;
+  if(m_FileData) {
+    delete m_FileData;
+    m_FileData = NULL;
+  }
+
+  if(ReadFileData(m_Filename)) {
+    m_Image = LoadImage();
   }
 
   return m_Image != NULL;
@@ -165,22 +181,26 @@ bool ImageFile::Write() {
   return true;
 }
 
-FasTC::Image<> *ImageFile::LoadImage(const unsigned char *rawImageData) const {
+FasTC::Image<> *ImageFile::LoadImage() const {
 
   ImageLoader *loader = NULL;
   switch(m_FileFormat) {
 
 #ifdef PNG_FOUND
     case eFileFormat_PNG:
-      loader = new ImageLoaderPNG(rawImageData);
+      loader = new ImageLoaderPNG(m_FileData);
       break;
 #endif // PNG_FOUND
 
 #ifdef PVRTEXLIB_FOUND
     case eFileFormat_PVR:
-      loader = new ImageLoaderPVR(rawImageData);
+      loader = new ImageLoaderPVR(m_FileData);
       break;
 #endif // PVRTEXLIB_FOUND
+
+    case eFileFormat_TGA:
+      loader = new ImageLoaderTGA(m_FileData, m_FileDataSz);
+      break;
 
     default:
       fprintf(stderr, "Unable to load image: unknown file format.\n");
@@ -242,11 +262,14 @@ EImageFileFormat ImageFile::DetectFileFormat(const CHAR *filename) {
   else if(strcmp(ext, ".pvr") == 0) {
     return eFileFormat_PVR;
   }
+  else if(strcmp(ext, ".tga") == 0) {
+    return eFileFormat_TGA;
+  }
 
   return kNumImageFileFormats;
 }
 
-unsigned char *ImageFile::ReadFileData(const CHAR *filename) {
+bool ImageFile::ReadFileData(const CHAR *filename) {
   FileStream fstr (filename, eFileMode_ReadBinary);
   if(fstr.Tell() < 0) {
     fprintf(stderr, "Error opening file for reading: %s\n", filename);
@@ -258,7 +281,7 @@ unsigned char *ImageFile::ReadFileData(const CHAR *filename) {
   uint32 fileSize = fstr.Tell();
 
   // Allocate data for file contents
-  unsigned char *rawData = new unsigned char[fileSize];
+  m_FileData = new unsigned char[fileSize];
 
   // Return stream to beginning of file
   fstr.Seek(0, FileStream::eSeekPosition_Beginning);
@@ -268,7 +291,7 @@ unsigned char *ImageFile::ReadFileData(const CHAR *filename) {
   uint64 totalBytesRead = 0;
   uint64 totalBytesLeft = fileSize;
   int32 bytesRead;
-  while((bytesRead = fstr.Read(rawData, uint32(fileSize))) > 0) {
+  while((bytesRead = fstr.Read(m_FileData, uint32(fileSize))) > 0) {
     totalBytesRead += bytesRead;
     totalBytesLeft -= bytesRead;
   }
@@ -276,11 +299,11 @@ unsigned char *ImageFile::ReadFileData(const CHAR *filename) {
   if(totalBytesRead != fileSize) {
     assert(!"We didn't read as much data as we thought we had!");
     fprintf(stderr, "Internal error: Incorrect file size assumption\n");
-    return 0;
+    return false;
   }
 
-  // Return the data..
-  return rawData;
+  m_FileDataSz = fileSize;
+  return true;
 }
 
 bool ImageFile::WriteImageDataToFile(const uint8 *data,

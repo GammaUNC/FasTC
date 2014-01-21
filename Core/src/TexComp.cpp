@@ -104,6 +104,11 @@ static  CompressionFuncWithStats ChooseFuncFromSettingsWithStats(const SCompress
 
     case FasTC::eCompressionFormat_BPTC:
     {
+#ifdef FOUND_NVTT_BC7_EXPORT
+      if(s.bUseNVTT)
+       return BC7C::CompressNVTTWithStats;
+      else
+#endif
        return BC7C::CompressWithStats;
     }
     break;
@@ -136,7 +141,13 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
         return BC7C::CompressImageBC7SIMD;
       }
 #endif
-      return BC7C::Compress;
+
+#ifdef FOUND_NVTT_BC7_EXPORT
+      if(s.bUseNVTT)
+       return BC7C::CompressNVTT;
+      else
+#endif
+       return BC7C::Compress;
     }
     break;
 

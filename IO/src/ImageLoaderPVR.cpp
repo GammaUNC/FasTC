@@ -74,34 +74,11 @@ bool ImageLoaderPVR::ReadData() {
     return false;
   }
 
-  m_RedChannelPrecision = 8;
-  m_GreenChannelPrecision = 8;
-  m_BlueChannelPrecision = 8;
-  m_AlphaChannelPrecision = 8;
-
   const pvrtexture::CPVRTextureHeader &hdr = pvrTex.getHeader();
 
   m_Width = hdr.getWidth();
   m_Height = hdr.getHeight();
 
-  const int nPixels = m_Width * m_Height;
-  m_RedData = new uint8[nPixels];
-  m_GreenData = new uint8[nPixels];
-  m_BlueData = new uint8[nPixels];
-  m_AlphaData = new uint8[nPixels];
-
-  uint32 *data = (uint32 *)(pvrTex.getDataPtr());
-  for (uint32 i = 0; i < m_Width; i++) {
-    for (uint32 j = 0; j < m_Height; j++) {
-      uint32 idx = j*m_Height + i;
-      uint32 pixel = data[idx];
-      m_RedData[idx] = pixel & 0xFF;
-      m_GreenData[idx] = (pixel >> 8) & 0xFF;
-      m_BlueData[idx] = (pixel >> 16) & 0xFF;
-      m_AlphaData[idx] = (pixel >> 24) & 0xFF;
-    }
-  }
-
-  return true;
+  return LoadFromPixelBuffer(reinterpret_cast<uint32 *>(pvrTex.getDataPtr()));
 }
 
