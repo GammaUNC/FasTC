@@ -64,6 +64,7 @@ SET( HEADERS
   "include/CompressionJob.h"
   "include/Pixel.h"
   "include/IPixel.h"
+  "include/ScopedAllocator.h"
   "include/VectorBase.h"
   "include/Vector2.h"
   "include/Vector3.h"
