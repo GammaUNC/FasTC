@@ -137,7 +137,7 @@ unsigned int ImageLoader::GetChannelForPixel(uint32 x, uint32 y, uint32 ch) {
   return val;
 }
 
-bool ImageLoader::LoadFromPixelBuffer(uint32 *data, bool flipY) {
+bool ImageLoader::LoadFromPixelBuffer(const uint32 *data, bool flipY) {
   m_RedChannelPrecision = 8;
   m_GreenChannelPrecision = 8;
   m_BlueChannelPrecision = 8;
