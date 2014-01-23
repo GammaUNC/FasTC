@@ -94,6 +94,8 @@ class CompressedImage : public FasTC::Image<FasTC::Pixel> {
   // size for a given compressed image.
   bool DecompressImage(uint8 *outBuf, uint32 outBufSz) const;
 
+  const uint8 *GetCompressedData() const { return m_CompressedData; }
+
   FasTC::ECompressionFormat GetFormat() const { return m_Format; }
 };
 
