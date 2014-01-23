@@ -87,6 +87,11 @@ INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/IO/third_party/tga )
 SET( SOURCES ${SOURCES} "src/ImageLoaderTGA.cpp" )
 SET( HEADERS ${HEADERS} "src/ImageLoaderTGA.h" )
 
+FIND_PACKAGE( OpenGL )
+IF(OPENGL_FOUND)
+  INCLUDE_DIRECTORIES( ${OPENGL_INCLUDE_DIRS} )
+ENDIF(OPENGL_FOUND)
+
 CONFIGURE_FILE(
 	"config/ImageLoader.h.in"
 	"include/ImageLoader.h"
