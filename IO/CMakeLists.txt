@@ -87,6 +87,10 @@ INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/IO/third_party/tga )
 SET( SOURCES ${SOURCES} "src/ImageLoaderTGA.cpp" )
 SET( HEADERS ${HEADERS} "src/ImageLoaderTGA.h" )
 
+# Add KTX loaders
+SET( SOURCES ${SOURCES} "src/ImageLoaderKTX.cpp" )
+SET( HEADERS ${HEADERS} "src/ImageLoaderKTX.h" )
+
 FIND_PACKAGE( OpenGL )
 IF(OPENGL_FOUND)
   INCLUDE_DIRECTORIES( ${OPENGL_INCLUDE_DIRS} )
