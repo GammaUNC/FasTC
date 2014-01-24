@@ -70,6 +70,7 @@ public:
 
   ~ImageFile();
 
+  static EImageFileFormat DetectFileFormat(const CHAR *filename);
   unsigned int GetWidth() const { return m_Width; }
   unsigned int GetHeight() const { return m_Height; }
   FasTC::Image<> *GetImage() const { return m_Image; }
@@ -98,7 +99,6 @@ public:
   
   bool ReadFileData(const CHAR *filename);
   static bool WriteImageDataToFile(const uint8 *data, const uint32 dataSz, const CHAR *filename);
-  static EImageFileFormat DetectFileFormat(const CHAR *filename);
 
   FasTC::Image<> *LoadImage() const;
 };

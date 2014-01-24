@@ -48,6 +48,7 @@ enum EImageFileFormat {
   eFileFormat_PNG,
   eFileFormat_PVR,
   eFileFormat_TGA,
+  eFileFormat_KTX,
 
   kNumImageFileFormats
 };

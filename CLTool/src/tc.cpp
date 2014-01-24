@@ -77,7 +77,7 @@ void PrintUsage() {
   fprintf(stderr, "\t-v\t\tVerbose mode: prints out Entropy, Mean Local Entropy, and MSSIM\n");
   fprintf(stderr, "\t-f <fmt>\tFormat to use. Either \"BPTC\", \"ETC1\", \"DXT1\", \"DXT5\", or \"PVRTC\". Default: BPTC\n");
   fprintf(stderr, "\t-l\t\tSave an output log.\n");
-  fprintf(stderr, "\t-d <file>\tSpecify decompressed output (currently only png files supported, default: basename-<fmt>.png)\n");
+  fprintf(stderr, "\t-d <file>\tSpecify decompressed output (default: basename-<fmt>.png)\n");
   fprintf(stderr, "\t-nd\t\tSuppress decompressed output\n");
   fprintf(stderr, "\t-q <quality>\tSet compression quality level. Default: 50\n");
   fprintf(stderr, "\t-n <num>\tCompress the image num times and give the average time and PSNR. Default: 1\n");
@@ -350,7 +350,8 @@ int main(int argc, char **argv) {
       strcat(basename, "-etc1.png");
     }
 
-    ImageFile cImgFile (basename, eFileFormat_PNG, *ci);
+    EImageFileFormat fmt = ImageFile::DetectFileFormat(basename);
+    ImageFile cImgFile (basename, fmt, *ci);
     cImgFile.Write();
   }
 

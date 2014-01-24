@@ -67,6 +67,9 @@
 
 #include "ImageLoaderTGA.h"
 
+#include "ImageLoaderKTX.h"
+#include "ImageWriterKTX.h"
+
 //////////////////////////////////////////////////////////////////////////////////////////
 //
 // Static helper functions
@@ -162,6 +165,10 @@ bool ImageFile::Write() {
       break;
 #endif // PNG_FOUND
 
+    case eFileFormat_KTX:
+      writer = new ImageWriterKTX(*m_Image);
+      break;
+
   default:
     fprintf(stderr, "Unable to write image: unknown file format.\n");
     return false;
@@ -200,6 +207,10 @@ FasTC::Image<> *ImageFile::LoadImage() const {
 
     case eFileFormat_TGA:
       loader = new ImageLoaderTGA(m_FileData, m_FileDataSz);
+      break;
+
+    case eFileFormat_KTX:
+      loader = new ImageLoaderKTX(m_FileData, m_FileDataSz);
       break;
 
     default:
@@ -264,6 +275,9 @@ EImageFileFormat ImageFile::DetectFileFormat(const CHAR *filename) {
   }
   else if(strcmp(ext, ".tga") == 0) {
     return eFileFormat_TGA;
+  }
+  else if(strcmp(ext, ".ktx") == 0) {
+    return eFileFormat_KTX;
   }
 
   return kNumImageFileFormats;
