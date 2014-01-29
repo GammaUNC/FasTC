@@ -242,7 +242,7 @@ FasTC::Image<> *ImageFile::LoadImage() const {
 
   // Cleanup
   delete loader;
-  delete pixelData;
+  delete [] pixelData;
 
   return i;
 }
