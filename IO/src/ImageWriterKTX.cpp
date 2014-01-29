@@ -69,28 +69,39 @@ ImageWriterKTX::ImageWriterKTX(FasTC::Image<> &im)
 
 class ByteWriter {
  private:
+  uint8 *m_Base;
   uint8 *m_Head;
   uint32 m_BytesWritten;
+  uint32 m_BufferSz;
  public:
-  ByteWriter(uint8 *dst) : m_Head(dst), m_BytesWritten(0) { }
+  ByteWriter(uint8 *dst, uint32 sz)
+  : m_Base(dst), m_Head(dst), m_BytesWritten(0), m_BufferSz(dst? sz : 0) { }
 
+  uint8 *GetBytes() const { return m_Base; }
   uint32 GetBytesWritten() const { return m_BytesWritten; }
 
-  void Write(const uint32 v) {
-    memcpy(m_Head, &v, 4);
-    m_Head += 4;
-    m_BytesWritten += 4;
-  }
-
   void Write(const void *src, const uint32 nBytes) {
+    while(m_BytesWritten + nBytes > m_BufferSz) {
+      m_BufferSz <<= 1;
+      uint8 *newBuffer = new uint8[m_BufferSz];
+      memcpy(newBuffer, m_Base, m_BytesWritten);
+      delete m_Base;
+      m_Base = newBuffer;
+      m_Head = m_Base + m_BytesWritten;
+    }
+
     memcpy(m_Head, src, nBytes);
     m_Head += nBytes;
     m_BytesWritten += nBytes;
   }
+
+  void Write(const uint32 v) {
+    Write(&v, 4);
+  }
 };
 
 bool ImageWriterKTX::WriteImage() {
-  ByteWriter wtr (m_RawFileData);
+  ByteWriter wtr (m_RawFileData, m_RawFileDataSz);
 
   const uint8 kIdentifier[12] = {
     0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A
@@ -143,6 +154,7 @@ bool ImageWriterKTX::WriteImage() {
     wtr.Write(m_Image.GetPixels(), kImageSize); // imagedata...
   }
 
+  m_RawFileData = wtr.GetBytes();
   m_RawFileDataSz = wtr.GetBytesWritten();
   return true;
 }
