@@ -118,12 +118,25 @@ bool ImageWriterKTX::WriteImage() {
   tkvSz = (tkvSz + 3) & ~0x3; // 4-byte aligned
 
   CompressedImage *ci = dynamic_cast<CompressedImage *>(&m_Image);
-  if(ci && ci->GetFormat() == FasTC::eCompressionFormat_BPTC) {
+  if(ci) {
     wtr.Write(0);  // glType
     wtr.Write(1);  // glTypeSize
     wtr.Write(GL_RGBA);  // glFormat
-    wtr.Write(GL_COMPRESSED_RGBA_BPTC_UNORM);  // glInternalFormat
-    wtr.Write(GL_RGBA);  // glBaseFormat
+    switch(ci->GetFormat()) {
+    case FasTC::eCompressionFormat_BPTC:
+      wtr.Write(GL_COMPRESSED_RGBA_BPTC_UNORM);  // glInternalFormat
+      wtr.Write(GL_RGBA);  // glBaseFormat
+      break;
+
+    case FasTC::eCompressionFormat_PVRTC:
+      wtr.Write(COMPRESSED_RGBA_PVRTC_4BPPV1_IMG);  // glInternalFormat
+      wtr.Write(GL_RGBA);  // glBaseFormat
+      break;
+
+    default:
+      fprintf(stderr, "Unsupported KTX compressed format: %d\n", ci->GetFormat());
+      return false;
+    }
   } else {
     wtr.Write(GL_BYTE);  // glType
     wtr.Write(1);  // glTypeSize
@@ -146,6 +159,10 @@ bool ImageWriterKTX::WriteImage() {
 
   if(ci && ci->GetFormat() == FasTC::eCompressionFormat_BPTC) {
     static const uint32 kImageSize = m_Width * m_Height;
+    wtr.Write(kImageSize); // imageSize
+    wtr.Write(ci->GetCompressedData(), kImageSize); // imagedata...
+  } else if(ci && ci->GetFormat() == FasTC::eCompressionFormat_PVRTC) {
+    static const uint32 kImageSize = m_Width * m_Height >> 1;
     wtr.Write(kImageSize); // imageSize
     wtr.Write(ci->GetCompressedData(), kImageSize); // imagedata...
   } else {
