@@ -142,7 +142,7 @@ bool ImageWriterKTX::WriteImage() {
   wtr.Write(kvSz);     // key value size
   wtr.Write(orientationKey, strlen(orientationKey) + 1); // key
   wtr.Write(orientationValue, strlen(orientationValue) + 1); // value
-  wtr.Write(orientationKey, tkvSz - kvSz); // padding
+  wtr.Write(orientationKey, tkvSz - kvSz - 4); // padding
 
   if(ci && ci->GetFormat() == FasTC::eCompressionFormat_BPTC) {
     static const uint32 kImageSize = m_Width * m_Height;
