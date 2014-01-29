@@ -70,6 +70,9 @@ compression time and PSNR.
   * [DXT1](http://www.opengl.org/registry/specs/EXT/texture_compression_s3tc.txt) [2]
   * [DXT5](http://www.opengl.org/registry/specs/EXT/texture_compression_s3tc.txt) [2]
   * [PVRTC](http://web.onetel.net.uk/~simonnihal/assorted3d/fenney03texcomp.pdf)
+* `-d`: Specifies the decompressed output file.
+  * **Default**: <filename>-<fmt>.png
+* `-nd`: Suppress decompressed output.
 * `-t`: Specifies the number of threads to use for compression.
   * **Default**: 1
   * **Formats**: BPTC, ETC1, DXT1, DXT5
