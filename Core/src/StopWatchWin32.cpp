@@ -68,21 +68,30 @@
 
 #include <cassert>
 #include <Windows.h>
+#include <WinBase.h>
 
 class StopWatchImpl {
 public:
   uint64 frequency;
   uint64 start;
   uint64 stop;
+#ifndef __MINGW32__
   uintptr_t affinityMask;
+#endif
 
   StopWatchImpl() :
-    start(0), stop(0), affinityMask(0)
+    start(0), stop(0)
+#ifndef __MINGW32__
+    , affinityMask(0)
+#endif
   {
     // Initialize the performance counter frequency.
     LARGE_INTEGER perfQuery;
-    BOOL supported = QueryPerformanceFrequency(&perfQuery);
-    assert(supported == TRUE);
+#ifndef NDEBUG
+    assert(QueryPerformanceFrequency(&perfQuery));
+#else
+    QueryPerformanceFrequency(&perfQuery);
+#endif
     this->frequency = perfQuery.QuadPart;
   }
 };
@@ -110,42 +119,56 @@ StopWatch::~StopWatch() {
 // Start the stopwatch.
 void StopWatch::Start()
 {
+#ifndef __MINGW32__
   // MSDN recommends setting the thread affinity to avoid bugs in the BIOS and HAL.
   // Create an affinity mask for the current processor.
   impl->affinityMask = (DWORD_PTR)1 << GetCurrentProcessorNumber();
   HANDLE currThread = GetCurrentThread();
   DWORD_PTR prevAffinityMask = SetThreadAffinityMask(currThread, impl->affinityMask);
   assert(prevAffinityMask != 0);
+#endif
 
   // Query the performance counter.
   LARGE_INTEGER perfQuery;
-  BOOL result = QueryPerformanceCounter(&perfQuery);
-  assert(result);
+#ifndef NDEBUG
+  assert(QueryPerformanceCounter(&perfQuery));
+#else
+  QueryPerformanceCounter(&perfQuery);
+#endif
   impl->start = perfQuery.QuadPart;
 
+#ifndef __MINGW32__
   // Restore the thread's affinity mask.
   prevAffinityMask = SetThreadAffinityMask(currThread, prevAffinityMask);
   assert(prevAffinityMask != 0);
+#endif
 }
 
 // Stop the stopwatch.
 void StopWatch::Stop()
 {
+#ifndef __MINGW32__
   // MSDN recommends setting the thread affinity to avoid bugs in the BIOS and HAL.
   // Use the affinity mask that was created in the Start function.
   HANDLE currThread = GetCurrentThread();
   DWORD_PTR prevAffinityMask = SetThreadAffinityMask(currThread, impl->affinityMask);
   assert(prevAffinityMask != 0);
+#endif
 
   // Query the performance counter.
   LARGE_INTEGER perfQuery;
-  BOOL result = QueryPerformanceCounter(&perfQuery);
-  assert(result);
+#ifndef NDEBUG
+  assert(QueryPerformanceCounter(&perfQuery));
+#else
+  QueryPerformanceCounter(&perfQuery);
+#endif
   impl->stop = perfQuery.QuadPart;
 
+#ifndef __MINGW32__
   // Restore the thread's affinity mask.
   prevAffinityMask = SetThreadAffinityMask(currThread, prevAffinityMask);
   assert(prevAffinityMask != 0);
+#endif
 }
 
 // Reset the stopwatch.
@@ -153,7 +176,9 @@ void StopWatch::Reset()
 {
   impl->start = 0;
   impl->stop = 0;
+#ifndef __MINGW32__
   impl->affinityMask = 0;
+#endif
 }
 
 // Get the elapsed time in seconds.

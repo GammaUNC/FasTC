@@ -95,4 +95,8 @@ class ImageWriter {
 #cmakedefine PVRTEXLIB_FOUND
 #endif // PVRTEXLIB_FOUND
 
+#ifndef OPENGL_FOUND
+#cmakedefine OPENGL_FOUND
+#endif // OPENGL_FOUND
+
 #endif // _IMAGE_LOADER_H_

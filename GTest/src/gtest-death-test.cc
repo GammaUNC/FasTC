@@ -120,7 +120,9 @@ namespace internal {
 
 // Valid only for fast death tests. Indicates the code is running in the
 // child process of a fast style death test.
+#ifndef GTEST_OS_WINDOWS
 static bool g_in_fast_death_test_child = false;
+#endif
 
 // Returns a Boolean value indicating whether the caller is currently
 // executing in the context of the death test child process.  Tools such as
@@ -852,7 +854,9 @@ DeathTest::TestRole NoExecDeathTest::AssumeRole() {
     // Event forwarding to the listeners of event listener API mush be shut
     // down in death test subprocesses.
     GetUnitTestImpl()->listeners()->SuppressEventForwarding();
+#ifndef GTEST_OS_WINDOWS
     g_in_fast_death_test_child = true;
+#endif
     return EXECUTE_TEST;
   } else {
     GTEST_DEATH_TEST_CHECK_SYSCALL_(close(pipe_fd[1]));

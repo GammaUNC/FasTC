@@ -59,19 +59,20 @@ SET( SOURCES
 
 SET( HEADERS
   "include/BitStream.h"
-  "include/TexCompTypes.h"
-  "include/Image.h"
   "include/Color.h"
   "include/CompressionJob.h"
-  "include/Pixel.h"
   "include/IPixel.h"
+  "include/Image.h"
+  "include/MatrixBase.h"
+  "include/MatrixSquare.h"
+  "include/Matrix3x3.h"
+  "include/Pixel.h"
+  "include/ScopedAllocator.h"
+  "include/TexCompTypes.h"
   "include/VectorBase.h"
   "include/Vector2.h"
   "include/Vector3.h"
   "include/Vector4.h"
-  "include/MatrixBase.h"
-  "include/MatrixSquare.h"
-  "include/Matrix3x3.h"
 )
 
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)

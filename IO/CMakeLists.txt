@@ -87,6 +87,17 @@ INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/IO/third_party/tga )
 SET( SOURCES ${SOURCES} "src/ImageLoaderTGA.cpp" )
 SET( HEADERS ${HEADERS} "src/ImageLoaderTGA.h" )
 
+# Add KTX loaders
+SET( SOURCES ${SOURCES} "src/ImageLoaderKTX.cpp" )
+SET( HEADERS ${HEADERS} "src/ImageLoaderKTX.h" )
+SET( SOURCES ${SOURCES} "src/ImageWriterKTX.cpp" )
+SET( HEADERS ${HEADERS} "src/ImageWriterKTX.h" )
+
+FIND_PACKAGE( OpenGL )
+IF(OPENGL_FOUND)
+  INCLUDE_DIRECTORIES( ${OPENGL_INCLUDE_DIRS} )
+ENDIF(OPENGL_FOUND)
+
 CONFIGURE_FILE(
 	"config/ImageLoader.h.in"
 	"include/ImageLoader.h"
@@ -108,6 +119,7 @@ ADD_LIBRARY(FasTCIO
 )
 
 TARGET_LINK_LIBRARIES( FasTCIO FasTCBase )
+TARGET_LINK_LIBRARIES( FasTCIO FasTCCore )
 
 IF( PNG_FOUND )
   TARGET_LINK_LIBRARIES( FasTCIO ${PNG_LIBRARY} )

@@ -94,7 +94,7 @@ class ImageLoader {
 
   uint32 GetChannelForPixel(uint32 x, uint32 y, uint32 ch);
 
-  bool LoadFromPixelBuffer(uint32 *data, bool flipY = false);
+  bool LoadFromPixelBuffer(const uint32 *data, bool flipY = false);
 
  public:
   virtual ~ImageLoader() {
@@ -153,5 +153,9 @@ class ImageLoader {
 #ifndef PVRTEXLIB_FOUND
 #cmakedefine PVRTEXLIB_FOUND
 #endif // PVRTEXLIB_FOUND
+
+#ifndef OPENGL_FOUND
+#cmakedefine OPENGL_FOUND
+#endif // OPENGL_FOUND
 
 #endif // _IMAGE_LOADER_H_
