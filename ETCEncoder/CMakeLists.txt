@@ -41,6 +41,7 @@
 # <http://gamma.cs.unc.edu/FasTC/>
 
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)
+INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/Base/include)
 
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/ETCEncoder/include)
 INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/ETCEncoder/include)

@@ -49,6 +49,28 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
+INCLUDE(CheckCXXSourceCompiles)
+CHECK_CXX_SOURCE_COMPILES("
+  #include <cstdint>
+  int main() {
+    int8_t x8 = 0;
+    int16_t x16 = 1;
+    int32_t x32 = 2;
+    int64_t x64 = 3;
+    uint8_t ux8 = 0;
+    uint16_t ux16 = 1;
+    uint32_t ux32 = 2;
+    uint64_t ux64 = 3;
+    return (x8 | ux8 | x16 | ux16 | x32 | ux32 | x64 | ux64);
+  }"
+  HAS_CPP11_TYPES
+)
+
+CONFIGURE_FILE(
+  "config/FasTCBaseConfig.h.in"
+  "include/FasTCBaseConfig.h"
+)
+
 SET( SOURCES
   "src/Image.cpp"
   "src/CompressionJob.cpp"
@@ -60,6 +82,7 @@ SET( SOURCES
 SET( HEADERS
   "include/Color.h"
   "include/CompressionJob.h"
+  "config/FasTCBaseConfig.h.in"
   "include/IPixel.h"
   "include/Image.h"
   "include/MatrixBase.h"
@@ -75,6 +98,7 @@ SET( HEADERS
 )
 
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)
+INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/Base/include)
 
 ADD_LIBRARY( FasTCBase
 	${HEADERS}

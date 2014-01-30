@@ -40,6 +40,12 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Base/include )
+INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/Base/include)
+
+INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/IO/include )
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/IO/include )
+
 SET( SOURCES
 	"src/ImageWriter.cpp"
 	"src/ImageLoader.cpp"
@@ -108,9 +114,6 @@ CONFIGURE_FILE(
 	"include/ImageWriter.h"
 )
 
-INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/IO/include )
-INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/IO/include )
-INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Base/include )
 INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Core/include )
 
 ADD_LIBRARY(FasTCIO
