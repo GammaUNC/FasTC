@@ -63,7 +63,7 @@ CHECK_CXX_SOURCE_COMPILES("
     uint64_t ux64 = 3;
     return (x8 | ux8 | x16 | ux16 | x32 | ux32 | x64 | ux64);
   }"
-  HAS_CPP11_TYPES
+  FASTC_BASE_HAS_CPP11_TYPES
 )
 
 CONFIGURE_FILE(
