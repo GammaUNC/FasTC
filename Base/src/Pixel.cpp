@@ -222,6 +222,29 @@ namespace FasTC {
     B() = ChangeBitDepth((rgba >> 16) & 0xFF, 8, m_BitDepth[3]);
   }
 
+  void Pixel::Shuffle(uint8 shuffleMask) {
+    Pixel thisPixel(*this);
+    uint8 a = shuffleMask & 3;
+    uint8 b = (shuffleMask >> 2) & 3;
+    uint8 c = (shuffleMask >> 4) & 3;
+    uint8 d = (shuffleMask >> 6) & 3;
+
+    Pixel tmp;
+    tmp[0] = thisPixel[a];
+    tmp.m_BitDepth[0] = thisPixel.m_BitDepth[a];
+
+    tmp[1] = thisPixel[b];
+    tmp.m_BitDepth[1] = thisPixel.m_BitDepth[b];
+
+    tmp[2] = thisPixel[c];
+    tmp.m_BitDepth[2] = thisPixel.m_BitDepth[c];
+
+    tmp[3] = thisPixel[d];
+    tmp.m_BitDepth[3] = thisPixel.m_BitDepth[d];
+
+    *this = tmp;
+  }
+
   bool Pixel::operator==(const Pixel &other) const {
     uint8 depths[4];
     other.GetBitDepth(depths);

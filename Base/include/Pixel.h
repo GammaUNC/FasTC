@@ -143,6 +143,17 @@ class Pixel : public Vector4<uint16> {
   uint32 Pack() const;
   void Unpack(uint32 rgba);
 
+  // Shuffles the pixel values around so that they change their ordering based
+  // on the passed mask. The values are chosen such that each two bits from the
+  // least significant bit define a value from 0-3. From LSB to MSB, the values
+  // are labelled a, b, c, d. From these labels, we store:
+  // m_Pixels[0] = m_Pixels[a]
+  // m_Pixels[1] = m_Pixels[b]
+  // m_Pixels[2] = m_Pixels[c]
+  // m_Pixels[3] = m_Pixels[d]
+  // hence, 0xE4 (11 10 01 00) represents a no-op.
+  void Shuffle(uint8 shuffleMask = 0xE4);
+
   // Tests for equality by comparing the values and the bit depths.
   bool operator==(const Pixel &) const;
 };
