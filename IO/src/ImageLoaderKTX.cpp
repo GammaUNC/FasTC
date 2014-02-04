@@ -103,6 +103,7 @@ class IntLoader {
 
 class BigEndianIntLoader : public IntLoader {
  public:
+  BigEndianIntLoader() { }
   virtual uint32 ReadInt(const uint8 *data) const {
     uint32 ret = 0;
     ret |= data[0];
@@ -117,10 +118,11 @@ static const BigEndianIntLoader gBEldr;
 
 class LittleEndianIntLoader : public IntLoader {
  public:
+  LittleEndianIntLoader() { }
   virtual uint32 ReadInt(const uint8 *data) const {
     uint32 ret = 0;
     ret |= data[3];
-    for(uint32 i = 3; i >= 0; i--) {
+    for(int32 i = 3; i >= 0; i--) {
       ret <<= 8;
       ret |= data[i];
     }
