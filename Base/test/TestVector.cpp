@@ -215,3 +215,204 @@ TEST(VectorBase, Addition) {
   EXPECT_NEAR(af[0], -3.9f, kEpsilon);
   EXPECT_NEAR(af[1], 1.2f, kEpsilon);  
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Vec2
+//
+////////////////////////////////////////////////////////////////////////////////
+
+#include "Vector2.h"
+
+TEST(Vector2, BaseFunctionality) {
+  FasTC::Vec2f v2f;
+  FasTC::Vec2d v2d;
+
+  v2f = v2d;
+  EXPECT_NEAR(v2f[0], v2d[0], kEpsilon);
+  EXPECT_NEAR(v2f[1], v2d[1], kEpsilon);
+}
+
+TEST(Vector2, Accessors) {
+  float fv[2] = { 1.0f, 2.0f };
+  FasTC::Vec2f v2f (fv);
+  EXPECT_EQ(v2f.X(), 1.0f);
+  EXPECT_EQ(v2f.Y(), 2.0f);
+
+  v2f.X() = 4.0f;
+  v2f.Y() = 5.0f;
+
+  EXPECT_EQ(v2f.X(), 4.0f);
+  EXPECT_EQ(v2f.Y(), 5.0f);
+}
+
+TEST(Vector2, Addition) {
+  float fv[2] = { 1.0f, 2.0f };
+  FasTC::Vec2f v2f (fv);
+
+  double dv[2] = { 4.3, -10.2 };
+  FasTC::Vec2d v2d (dv);
+
+  EXPECT_NEAR((v2f + v2d).X(), 5.3, kEpsilon);
+  EXPECT_NEAR((v2f + v2d).Y(), -8.2, kEpsilon);
+}
+
+TEST(Vector2, Swizzle) {
+  float fv[2] = {1.0f, 2.0f};
+  FasTC::Vec2f v;
+  v = fv;
+
+  EXPECT_EQ(v.XX().X(), 1.0f);
+  EXPECT_EQ(v.XX().Y(), 1.0f);
+  EXPECT_EQ(v.YY().X(), 2.0f);
+  EXPECT_EQ(v.YY().Y(), 2.0f);
+  EXPECT_EQ(v.YX().X(), 2.0f);
+  EXPECT_EQ(v.YX().Y(), 1.0f);
+  EXPECT_EQ(v.XY().X(), 1.0f);
+  EXPECT_EQ(v.XY().Y(), 2.0f);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Vec3
+//
+////////////////////////////////////////////////////////////////////////////////
+
+#include "Vector3.h"
+
+TEST(Vector3, BaseFunctionality) {
+  FasTC::Vec3f vf;
+  FasTC::Vec3d vd;
+
+  vf = vd;
+  for(int i = 0; i < 3; i++) {
+    EXPECT_NEAR(vf[i], vd[i], kEpsilon);
+  }
+}
+
+TEST(Vector3, Accessors) {
+  float fv[3] = { 1.0f, 2.0f, 3.0f };
+  FasTC::Vec3f v3f (fv);
+  EXPECT_EQ(v3f.X(), 1.0f);
+  EXPECT_EQ(v3f.Y(), 2.0f);
+  EXPECT_EQ(v3f.Z(), 3.0f);
+
+  v3f.X() = 4.0f;
+  v3f.Y() = 5.0f;
+  v3f.Z() = 6.0f;
+
+  EXPECT_EQ(v3f.X(), 4.0f);
+  EXPECT_EQ(v3f.Y(), 5.0f);
+  EXPECT_EQ(v3f.Z(), 6.0f);
+}
+
+TEST(Vector3, Addition) {
+  float fv[3] = { 1.0f, 2.0f, 3.0f };
+  FasTC::Vec3f v3f (fv);
+
+  double dv[3] = { 4.3, -10.2, 0.0f };
+  FasTC::Vec3d v3d (dv);
+
+  EXPECT_NEAR((v3f + v3d).X(), 5.3, kEpsilon);
+  EXPECT_NEAR((v3f + v3d).Y(), -8.2, kEpsilon);
+  EXPECT_NEAR((v3f + v3d).Z(), 3.0, kEpsilon);
+}
+
+TEST(Vector3, Swizzle) {
+  float fv[3] = {1.0f, 2.0f, 3.0f};
+  FasTC::Vec3f v;
+  v = fv;
+
+  EXPECT_EQ(v.XXX().Y(), 1.0f);
+  EXPECT_EQ(v.YZX().X(), 2.0f);
+  EXPECT_EQ(v.ZZY().Z(), 2.0f);
+  EXPECT_EQ(v.ZYZ().X(), 3.0f);
+}
+
+TEST(Vector3, CrossProduct) {
+  float fv[3] = {1.0f, 2.0f, 3.0f};
+  FasTC::Vec3f v1 (fv);
+  FasTC::Vec3f v2 = v1;
+  std::swap(v1.X(), v1.Z());
+  
+  // Right handed coordinate system...
+  FasTC::Vec3f r = v1.Cross(v2);
+  EXPECT_NEAR(r.X(), 4.0f, kEpsilon);
+  EXPECT_NEAR(r.Y(), -8.0f, kEpsilon);
+  EXPECT_NEAR(r.Z(), 4.0f, kEpsilon);
+
+  v1.X() = v1.Y() = v2.X() = v2.Z() = 0.0f;
+  v1.Z() = v2.Y() = 1.0f;
+
+  r = v1.Cross(v2);
+  EXPECT_EQ(r.X(), -1.0f);
+  EXPECT_EQ(r.Y(), 0.0f);
+  EXPECT_EQ(r.Z(), 0.0f);
+
+  r = v2.Cross(v1);
+  EXPECT_EQ(r.X(), 1.0f);
+  EXPECT_EQ(r.Y(), 0.0f);
+  EXPECT_EQ(r.Z(), 0.0f);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Vec4
+//
+////////////////////////////////////////////////////////////////////////////////
+
+#include "Vector4.h"
+
+TEST(Vector4, BaseFunctionality) {
+  FasTC::Vec4f vf;
+  FasTC::Vec4d vd;
+
+  vf = vd;
+  for(int i = 0; i < 4; i++) {
+    EXPECT_NEAR(vf[i], vd[i], kEpsilon);
+  }
+}
+
+TEST(Vector4, Accessors) {
+  float fv[4] = { 1.0f, 2.0f, 3.0f, 4.0f };
+  FasTC::Vec4f v4f (fv);
+  EXPECT_EQ(v4f.X(), 1.0f);
+  EXPECT_EQ(v4f.Y(), 2.0f);
+  EXPECT_EQ(v4f.Z(), 3.0f);
+  EXPECT_EQ(v4f.W(), 4.0f);
+
+  v4f.X() = 5.0f;
+  v4f.Y() = 6.0f;
+  v4f.Z() = 7.0f;
+  v4f.W() = 8.0f;
+
+  EXPECT_EQ(v4f.X(), 5.0f);
+  EXPECT_EQ(v4f.Y(), 6.0f);
+  EXPECT_EQ(v4f.Z(), 7.0f);
+  EXPECT_EQ(v4f.W(), 8.0f);
+}
+
+TEST(Vector4, Addition) {
+  float fv[4] = { 1.0f, 2.0f, 3.0f, 4.0f };
+  FasTC::Vec4f v4f (fv);
+
+  double dv[4] = { 4.3, -10.2, 0.0f, -22.0f };
+  FasTC::Vec4d v3d (dv);
+
+  EXPECT_NEAR((v4f + v3d).X(), 5.3, kEpsilon);
+  EXPECT_NEAR((v4f + v3d).Y(), -8.2, kEpsilon);
+  EXPECT_NEAR((v4f + v3d).Z(), 3.0, kEpsilon);
+  EXPECT_NEAR((v4f + v3d).W(), -18.0, kEpsilon);
+}
+
+TEST(Vector4, Swizzle) {
+  float fv[4] = {1.0f, 2.0f, 3.0f, 4.0f};
+  FasTC::Vec4f v;
+  v = fv;
+
+  EXPECT_EQ(v.XXXX().Y(), 1.0f);
+  EXPECT_EQ(v.YZXW().X(), 2.0f);
+  EXPECT_EQ(v.ZWY().Z(), 2.0f);
+  EXPECT_EQ(v.ZZ().X(), 3.0f);
+  EXPECT_EQ(v.WWXY().W(), 2.0f);
+}

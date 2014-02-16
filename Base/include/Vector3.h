@@ -27,10 +27,8 @@
 
 #include "Vector2.h"
 
-#ifdef _VEX_ENABLE_SWIZZLE_
 # define _VEX_VEC3_SWIZZLE_DEF(X, Y, Z) \
     Vector3<T> X##Y##Z() const { return Vector3<T>( X(), Y(), Z() ); }
-#endif // _VEX_ENABLE_SWIZZLE_
 
 namespace FasTC {
 
@@ -43,6 +41,12 @@ namespace FasTC {
       Y() = y;
       Z() = z;
     }
+
+    explicit Vector3(const T *_vec) {
+      for(int i = 0; i < 3; i++) {
+        this->vec[i] = _vec[i];
+      }
+    }
     
     // Overloaded functions
     template<typename _T>
@@ -50,6 +54,12 @@ namespace FasTC {
 
     template<typename _T>
     Vector3<T> &operator=(const Vector3<_T> &v) {
+      VectorBase<T, 3>::operator=(v);
+      return *this;
+    }
+
+    template<typename _T>
+    Vector3<T> &operator=(const _T *v) {
       VectorBase<T, 3>::operator=(v);
       return *this;
     }
@@ -75,7 +85,6 @@ namespace FasTC {
     }
 
     // Swizzle
-    #ifdef _VEX_ENABLE_SWIZZLE_
     _VEX_VEC2_SWIZZLE_DEF(X, X)
     _VEX_VEC2_SWIZZLE_DEF(X, Y)
     _VEX_VEC2_SWIZZLE_DEF(X, Z)
@@ -113,7 +122,6 @@ namespace FasTC {
     _VEX_VEC3_SWIZZLE_DEF(Z, Z, X)
     _VEX_VEC3_SWIZZLE_DEF(Z, Z, Y)
     _VEX_VEC3_SWIZZLE_DEF(Z, Z, Z)
-    #endif // _VEX_ENABLE_SWIZZLE_
   };
   REGISTER_ONE_TEMPLATE_VECTOR_TYPE(Vector3);
 
