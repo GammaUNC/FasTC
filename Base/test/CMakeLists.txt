@@ -55,7 +55,7 @@ INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/Base/include )
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/GTest/include)
 
 SET(TESTS
-  Pixel Image Color
+  Vector Pixel Image Color
 )
 
 FOREACH(TEST ${TESTS})
@@ -68,6 +68,18 @@ FOREACH(TEST ${TESTS})
   ENDIF()
 
   ADD_EXECUTABLE(${TEST_NAME} ${TEST_MODULE})
+
+  # Vector tests need to use uninitialized variables
+  IF(${TEST_NAME} STREQUAL "Test_Base_Vector")
+    IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUXX)
+      SET_TARGET_PROPERTIES(
+        ${TEST_NAME}
+        PROPERTIES
+        COMPILE_FLAGS
+        "-Wno-uninitialized")
+    ENDIF()
+  ENDIF()
+
   TARGET_LINK_LIBRARIES(${TEST_NAME} FasTCBase)
   TARGET_LINK_LIBRARIES(${TEST_NAME} gtest_main)
   ADD_TEST(${TEST_NAME} ${TEST_NAME})
