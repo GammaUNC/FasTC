@@ -248,3 +248,33 @@ TEST(Pixel, UnpackRGBA) {
   EXPECT_EQ(p.G(), 0x3);
   EXPECT_EQ(p.R(), 0x1f);
 }
+
+TEST(Pixel, ScaleColor) {
+  FasTC::Pixel p;
+  uint8 newBitDepth[4] = { 3, 5, 2, 1 };  // A R G B
+  p.ChangeBitDepth(newBitDepth);
+  
+  p.R() = 1;
+  p.G() = 2;
+  p.B() = 3;
+  p.A() = 4;
+
+  FasTC::Pixel sp = p * 3;
+  FasTC::Pixel ps = 3 * p;
+
+  EXPECT_EQ(sp.R(), 3); EXPECT_EQ(ps.R(), 3);
+  EXPECT_EQ(sp.G(), 6); EXPECT_EQ(ps.G(), 6);
+  EXPECT_EQ(sp.B(), 9); EXPECT_EQ(ps.B(), 9);
+  EXPECT_EQ(sp.A(), 12); EXPECT_EQ(ps.A(), 12);
+
+  uint8 bd[4];
+  sp.GetBitDepth(bd);
+  for(uint32 i = 0; i < 4; i++) {
+    EXPECT_EQ(bd[i], newBitDepth[i]);
+  }
+
+  ps.GetBitDepth(bd);
+  for(uint32 i = 0; i < 4; i++) {
+    EXPECT_EQ(bd[i], newBitDepth[i]);
+  }
+}
