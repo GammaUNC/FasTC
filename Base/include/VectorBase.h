@@ -46,7 +46,7 @@ namespace FasTC {
       for(int i = 0; i < N; i++) vec[i] = other[i];
     }
 
-    explicit VectorBase(T *_vec) {
+    explicit VectorBase(const T *_vec) {
       for(int i = 0; i < N; i++) {
         vec[i] = _vec[i];
       }
