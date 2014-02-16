@@ -85,6 +85,13 @@ namespace FasTC {
 
     T LengthSq() const { return this->Dot(*this); }
     T Length() const { return sqrt(LengthSq()); }
+
+    void Normalize() {
+      T len = Length();
+      for(int i = 0; i < N; i++) {
+        vec[i] /= len;
+      }
+    }
   };
 
   // Operators
