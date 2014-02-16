@@ -170,8 +170,8 @@ namespace FasTC {
     VectorSwitch(const TypeOne &a, const TypeTwo &b)
       : m_A(a), m_B(b) { }
 
-    const TypeOne &GetVector() { return m_A; }
-    const TypeTwo &GetScalar() { return m_B; }
+    const VectorType &GetVector() { return m_A; }
+    const ScalarType &GetScalar() { return m_B; }
   };
 
   template<typename TypeOne, typename TypeTwo>
@@ -187,8 +187,8 @@ namespace FasTC {
     VectorSwitch(const TypeOne &a, const TypeTwo &b)
       : m_A(a), m_B(b) { }
 
-    const TypeOne &GetVector() { return m_B; }
-    const TypeTwo &GetScalar() { return m_A; }
+    const VectorType &GetVector() { return m_B; }
+    const ScalarType &GetScalar() { return m_A; }
   };
 
   template<typename VectorType, typename ScalarType>
