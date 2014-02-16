@@ -61,7 +61,7 @@ namespace FasTC {
     const T &operator[](int idx) const { return vec[idx]; }
 
     // Allow casts to the respective array representation...
-    operator T *() const { return vec; }
+    operator const T *() const { return vec; }
     VectorBase<T, N> &operator=(const T *v) {
       for(int i = 0; i < N; i++)
         vec[i] = v[i];
@@ -71,7 +71,11 @@ namespace FasTC {
     // Allows casting to other vector types if the underlying type system does as well...
     template<typename _T>
     operator VectorBase<_T, N>() const { 
-      return VectorBase<_T, N>(vec); 
+      VectorBase<_T, N> ret;
+      for(int i = 0; i < N; i++) {
+        ret[i] = static_cast<_T>(vec[i]);
+      }
+      return ret;
     }
 
     // Vector operations
