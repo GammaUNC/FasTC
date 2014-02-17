@@ -102,9 +102,9 @@ namespace FasTC {
   template<typename VectorTypeOne, typename VectorTypeTwo>
   static inline VectorTypeOne VectorAddition(const VectorTypeOne &v1,
                                              const VectorTypeTwo &v2) {
-    VectorTypeOne a;
+    VectorTypeOne a(v1);
     for(int i = 0; i < VectorTypeOne::Size; i++) {
-      a(i) = v1(i) + v2(i);
+      a(i) += v2(i);
     }
     return a;
   }
@@ -124,9 +124,9 @@ namespace FasTC {
   template<typename VectorTypeOne, typename VectorTypeTwo>
   static inline VectorTypeOne VectorSubtraction(const VectorTypeOne &v1,
                                                 const VectorTypeTwo &v2) {
-    VectorTypeOne a;
+    VectorTypeOne a(v1);
     for(int i = 0; i < VectorTypeOne::Size; i++) {
-      a(i) = v1(i) - v2(i);
+      a(i) -= v2(i);
     }
     return a;
   }
@@ -204,9 +204,9 @@ namespace FasTC {
 
   template<typename VectorType, typename ScalarType>
   static inline VectorType ScalarMultiply(const VectorType &v, const ScalarType &s) {
-    VectorType a;
+    VectorType a(v);
     for(int i = 0; i < VectorType::Size; i++)
-      a(i) = static_cast<typename VectorType::ScalarType>(v(i) * s);
+      a(i) *= static_cast<typename VectorType::ScalarType>(s);
     return a;
   }
 
@@ -221,9 +221,9 @@ namespace FasTC {
 
   template<typename VectorType, typename ScalarType>
   static inline VectorType ScalarDivide(const VectorType &v, const ScalarType &s) {
-    VectorType a;
+    VectorType a(v);
     for(int i = 0; i < VectorType::Size; i++)
-      a(i) = static_cast<typename VectorType::ScalarType>(v(i) / s);
+      a(i) /= static_cast<typename VectorType::ScalarType>(s);
     return a;
   }
 
