@@ -56,6 +56,11 @@
 #include <cassert>
 #include <algorithm>
 
+template<typename T>
+static inline T Clamp(const T &v, const T &_min, const T &_max) {
+  return std::max(_min, std::min(v, _max));
+}
+
 namespace FasTC {
 
   void Pixel::FromBits(const uint8 *bits,
@@ -258,6 +263,32 @@ namespace FasTC {
       ok = ok && (c == (Component(i) & mask));
     }
     return ok;
+  }
+
+  void YCoCgPixel::ToYCoCg() {
+    int16 Y = ((R() + (G() << 1) + B()) + 2) >> 2;
+    int16 Co = (R() - B() + 1) >> 1;
+    int16 Cg = ((-R() + (G() << 1) - B()) + 2) >> 2;
+
+    this->Y() = Clamp<int16>(Y, 0, 255);
+    this->Co() = Clamp<int16>(Co + 128, 0, 255);
+    this->Cg() = Clamp<int16>(Cg + 128, 0, 255);
+  }
+
+  Pixel YCoCgPixel::ToRGBA() const {
+    int16 Co = this->Co() - 128;
+    int16 Cg = this->Cg() - 128;
+
+    int16 R = Y() + (Co - Cg);
+    int16 G = Y() + Cg;
+    int16 B = Y() - (Co + Cg);
+
+    Pixel p;
+    p.R() = Clamp<int16>(R, 0, 255);
+    p.G() = Clamp<int16>(G, 0, 255);
+    p.B() = Clamp<int16>(B, 0, 255);
+    p.A() = A();
+    return p;
   }
 
 }  // namespace FasTC

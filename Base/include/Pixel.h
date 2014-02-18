@@ -59,7 +59,7 @@
 namespace FasTC {
 
 class Pixel : public Vector4<uint16> {
- private:
+ protected:
   typedef uint16 ChannelType;
   typedef Vector4<ChannelType> VectorType;
   uint8 m_BitDepth[4];
@@ -158,6 +158,28 @@ class Pixel : public Vector4<uint16> {
   bool operator==(const Pixel &) const;
 };
 REGISTER_VECTOR_TYPE(Pixel);
+
+class YCoCgPixel : public Pixel {
+ private:
+  void ToYCoCg();
+
+ public:
+  YCoCgPixel() : Pixel() { }
+  explicit YCoCgPixel(uint32 rgba) : Pixel(rgba) { ToYCoCg(); }
+  explicit YCoCgPixel(const Pixel &p) : Pixel(p) { ToYCoCg(); }
+
+  Pixel ToRGBA() const;
+
+  float ToIntensity() const { return ConvertChannelToFloat(R(), 8); }
+  uint32 Pack() const { return ToRGBA().Pack(); }
+  void Unpack(uint32 rgba) { Pixel::Unpack(rgba); ToYCoCg(); }
+
+  const ChannelType &Co() const { return Z(); }
+  ChannelType &Co() { return Z(); }
+  const ChannelType &Cg() const { return W(); }
+  ChannelType &Cg() { return W(); }  
+};
+REGISTER_VECTOR_TYPE(YCoCgPixel);
 
 }  // namespace FasTC
 
