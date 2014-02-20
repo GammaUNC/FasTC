@@ -156,6 +156,21 @@ TEST(MatrixBase, MatrixMultiplication) {
   EXPECT_NEAR(amb(1, 4), 45, kEpsilon);
 }
 
+TEST(MatrixBase, Transposition) {
+  FasTC::MatrixBase<int, 3, 5> a;
+  a(0, 0) = -1;  a(0, 1) =  2;  a(0, 2) = -4; a(0, 3) =  5; a(0, 4) = 0; 
+  a(1, 0) =  1;  a(1, 1) =  2;  a(1, 2) =  4; a(1, 3) =  6; a(1, 4) = 3; 
+  a(2, 0) = -1;  a(2, 1) = -2;  a(2, 2) = -3; a(2, 3) = -4; a(2, 4) = 5; 
+
+  FasTC::MatrixBase<int, 5, 3> b = a.Transpose();
+
+  for(int i = 0; i < 3; i++) {
+    for(int j = 0; j < 5; j++) {
+      EXPECT_EQ(a(i, j), b(j, i));
+    }
+  }
+}
+
 TEST(MatrixBase, VectorMultiplication) {
   // Stub
   EXPECT_EQ(0, 1);

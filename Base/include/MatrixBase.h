@@ -98,6 +98,17 @@ namespace FasTC {
       return result;
     }
 
+    // Transposition
+    MatrixBase<T, nCols, nRows> Transpose() const {
+      MatrixBase<T, nCols, nRows> result;
+      for(int r = 0; r < nRows; r++) {
+        for(int c = 0; c < nCols; c++) {
+          result(c, r) = (*this)(r, c);
+        }
+      }
+      return result;
+    }
+
     // Double dot product
     template<typename _T>
     T DDot(const MatrixBase<_T, nRows, nCols> &m) {
