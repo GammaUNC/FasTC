@@ -132,3 +132,38 @@ TEST(MatrixBase, CastVector) {
   }
 }
 
+TEST(MatrixBase, MatrixMultiplication) {
+  // Stub
+  EXPECT_EQ(0, 1);
+}
+
+TEST(MatrixBase, VectorMultiplication) {
+  // Stub
+  EXPECT_EQ(0, 1);
+}
+
+TEST(MatrixSquare, Constructors) {
+  // Stub
+  EXPECT_EQ(0, 1);
+}
+
+TEST(MatrixSquare, EigenvalueCalculation) {
+  // Stub
+  EXPECT_EQ(0, 1);
+}
+
+TEST(Matrix2x2, Constructors) {
+  // Stub
+  EXPECT_EQ(0, 1);
+}
+
+TEST(Matrix3x3, Constructors) {
+  // Stub
+  EXPECT_EQ(0, 1);
+}
+
+TEST(Matrix4x4, Constructors) {
+  // Stub
+  EXPECT_EQ(0, 1);
+}
+
