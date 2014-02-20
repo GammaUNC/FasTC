@@ -55,7 +55,7 @@ INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/Base/include )
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/GTest/include)
 
 SET(TESTS
-  Vector Pixel Image Color
+  Vector Matrix Pixel Image Color
 )
 
 FOREACH(TEST ${TESTS})
@@ -70,7 +70,9 @@ FOREACH(TEST ${TESTS})
   ADD_EXECUTABLE(${TEST_NAME} ${TEST_MODULE})
 
   # Vector tests need to use uninitialized variables
-  IF(${TEST_NAME} STREQUAL "Test_Base_Vector")
+  IF((${TEST_NAME} STREQUAL "Test_Base_Vector")
+      OR
+     (${TEST_NAME} STREQUAL "Test_Base_Matrix"))
     IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUXX)
       SET_TARGET_PROPERTIES(
         ${TEST_NAME}

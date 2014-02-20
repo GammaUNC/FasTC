@@ -30,99 +30,45 @@
 namespace FasTC {
 
   template <typename T, const int nRows, const int nCols>
-  class MatrixBase {
-   protected:
-
-    // Vector representation
-    static const int kNumElements = nRows * nCols;
-    T mat[kNumElements];
-
+  class MatrixBase : public VectorBase<T, nRows * nCols> {
+   private:
+    typedef VectorBase<T, nRows * nCols> Base;
    public:
-    
+    static const int Size = Base::Size;
+
     // Constructors
     MatrixBase() { }
     MatrixBase(const MatrixBase<T, nRows, nCols> &other) {
-      for(int i = 0; i < kNumElements; i++) {
-        mat[i] = other[i];
+      for(int i = 0; i < Size; i++) {
+        (*this)[i] = other[i];
       }
     }
 
     // Accessors
-    T &operator()(int idx) { return mat[idx]; }
-    const T &operator()(int idx) const { return mat[idx]; }
-    T &operator()(int r, int c) { return mat[r * nCols + c]; }
-    const T &operator() const (int r, int c) { return mat[r * nCols + c]; }
+    T &operator()(int idx) { return Base::operator()(idx); }
+    T &operator[](int idx) { return Base::operator[](idx); }
+    const T &operator()(int idx) const { return Base::operator()(idx); }
+    const T &operator[](int idx) const { return Base::operator[](idx); }
 
-    T &operator[](int idx) { return mat[idx]; }
-    const T &operator[](int idx) const { return mat[idx]; }
+    T &operator()(int r, int c) { return (*this)[r * nCols + c]; }
+    const T &operator() (int r, int c) const { return (*this)[r * nCols + c]; }
 
-    // Operators
-    template<typename _T>
-    MatrixBase<T, nRows, nCols> operator+(const MatrixBase<_T, nRows, nCols> &m) {
-      MatrixBase<T, nRows, nCols> a;
-      for(int i = 0; i < kNumElements; i++) {
-        a[i] = mat[i] + m[i];
-      }
-      return a;
-    }
-
-    template<typename _T>
-    MatrixBase<T, nRows, nCols> &operator+=(const MatrixBase<_T, nRows, nCols> &m) {
-      for(int i = 0; i < kNumElements; i++) {
-        mat[i] += m[i];
-      }
+    // Allow casts to the respective array representation...
+    operator const T *() const { return this->vec; }
+    MatrixBase<T, nRows, nCols> &operator=(const T *v) {
+      for(int i = 0; i < Size; i++)
+        (*this)[i] = v[i];
       return *this;
     }
 
+    // Allows casting to other vector types if the underlying type system does as well...
     template<typename _T>
-    MatrixBase<T, nRows, nCols> operator-(const MatrixBase<_T, nRows, nCols> &m) {
-      MatrixBase<T, nRows, nCols> a;
-      for(int i = 0; i < kNumElements; i++) {
-        a[i] = mat[i] - m[i];
+    operator MatrixBase<_T, nRows, nCols>() const { 
+      MatrixBase<_T, nRows, nCols> ret;
+      for(int i = 0; i < Size; i++) {
+        ret[i] = static_cast<_T>(this->vec[i]);
       }
-      return a;
-    }
-
-    template<typename _T>
-    MatrixBase<T, nRows, nCols> &operator-=(const MatrixBase<_T, nRows, nCols> &m) {
-      for(int i = 0; i < kNumElements; i++) {
-        mat[i] -= m[i];
-      }
-      return *this;
-    }
-
-    template<typename _T>
-    MatrixBase<T, nRows, nCols> operator*(_T s) {
-      MatrixBase<T, nRows, nCols> a;
-      for(int i = 0; i < kNumElements; i++) {
-        a[i] = mat[i] * s;
-      }
-      return a;
-    }
-
-    template<typename _T>
-    MatrixBase<T, nRows, nCols> &operator*=(_T s) {
-      for(int i = 0; i < kNumElements; i++) {
-        mat[i] *= s;
-      }
-      return *this;
-    }
-
-    template<typename _T>
-    MatrixBase<T, nRows, nCols> operator/(_T s) {
-      MatrixBase<T, nRows, nCols> a;
-      for(int i = 0; i < kNumElements; i++) {
-        a[i] = mat[i] / s;
-      }
-      return a;
-    }
-
-    template<typename _T>
-    MatrixBase<T, nRows, nCols> &operator/=(_T s) {
-      for(int i = 0; i < kNumElements; i++) {
-        mat[i] /= s;
-      }
-      return *this;
+      return ret;
     }
 
     // Matrix multiplication
@@ -152,40 +98,41 @@ namespace FasTC {
       return result;
     }
 
-    // Outer product...
-    template<typename _T, typename _U, const int N, const int M>
-    friend MatrixBase<_T, N, M> operator^(
-      const VectorBase<_T, N> &a, 
-      const VectorBase<_U, M> &b
-    ) {
-      MatrixBase<_T, N, M> result;
-
-      for(int i = 0; i < N; i++)
-        for(int j = 0; j < M; j++)
-          result(i, j) = a[i] * b[j];
- 
-      return result;
-    }
-
-    template<typename _T, typename _U, const int N, const int M>
-    friend MatrixBase<_T, N, M> OuterProduct(
-      const VectorBase<_T, N> &a, 
-      const VectorBase<_U, M> &b
-    ) { 
-      return a ^ b; 
-    }
-
     // Double dot product
     template<typename _T>
     T DDot(const MatrixBase<_T, nRows, nCols> &m) {
       T result = 0;
-      for(int i = 0; i < kNumElements; i++) {
-        result += mat[i] * m[i];
+      for(int i = 0; i < Size; i++) {
+        result += (*this)[i] * m[i];
       }
       return result;
     }
 
   };
+
+  // Outer product...
+  template<typename _T, typename _U, const int N, const int M>
+  MatrixBase<_T, N, M> operator^(
+    const VectorBase<_T, N> &a, 
+    const VectorBase<_U, M> &b
+  ) {
+    MatrixBase<_T, N, M> result;
+
+    for(int i = 0; i < N; i++)
+      for(int j = 0; j < M; j++)
+        result(i, j) = a[i] * b[j];
+ 
+    return result;
+  }
+
+  template<typename _T, typename _U, const int N, const int M>
+  MatrixBase<_T, N, M> OuterProduct(
+    const VectorBase<_T, N> &a, 
+    const VectorBase<_U, M> &b
+  ) { 
+    return a ^ b; 
+  }
+
 };
 
 #endif  // BASE_INCLUDE_MATRIXBASE_H_
