@@ -278,3 +278,33 @@ TEST(Pixel, ScaleColor) {
     EXPECT_EQ(bd[i], newBitDepth[i]);
   }
 }
+
+TEST(YCoCgPixel, Conversion) {
+
+  FasTC::Pixel p;
+  p.R() = 127;
+  p.G() = 127;
+  p.B() = 127;
+  p.A() = 255;
+
+  FasTC::YCoCgPixel yp (p);
+  EXPECT_EQ(yp.Y(), 127);
+  EXPECT_EQ(yp.Co(), 128);
+  EXPECT_EQ(yp.Cg(), 128);
+}
+
+TEST(YCoCgPixel, ConvertBack) {
+  FasTC::Pixel p;
+
+  p.R() = 241;
+  p.G() = 22;
+  p.B() = 102;
+  p.A() = 124;
+
+  FasTC::YCoCgPixel yp (p);
+  FasTC::Pixel bp = yp.ToRGBA();
+
+  for(int i = 0; i < 4; i++) {
+    EXPECT_NEAR(p[i], bp[i], 1);
+  }
+}
