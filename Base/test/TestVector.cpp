@@ -216,6 +216,10 @@ TEST(VectorBase, Addition) {
   EXPECT_EQ(au[0], 6);
   EXPECT_EQ(au[1], 5);
 
+  au = v2u + fv + uv;
+  EXPECT_EQ(au[0], 11);
+  EXPECT_EQ(au[1], 7);
+
   FasTC::VectorBase<float, 2> af = v2f + v2u;
   EXPECT_NEAR(af[0], 6.1f, kEpsilon);
   EXPECT_NEAR(af[1], 5.2f, kEpsilon);

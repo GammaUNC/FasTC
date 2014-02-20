@@ -110,7 +110,7 @@ namespace FasTC {
                                              const VectorTypeTwo &v2) {
     VectorTypeOne a(v1);
     for(int i = 0; i < VectorTypeOne::Size; i++) {
-      a(i) += v2(i);
+      a(i) += v2[i];
     }
     return a;
   }
@@ -132,7 +132,7 @@ namespace FasTC {
                                                 const VectorTypeTwo &v2) {
     VectorTypeOne a(v1);
     for(int i = 0; i < VectorTypeOne::Size; i++) {
-      a(i) -= v2(i);
+      a(i) -= v2[i];
     }
     return a;
   }
