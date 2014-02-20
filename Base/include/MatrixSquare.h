@@ -35,11 +35,58 @@ namespace FasTC {
     
     // Constructors
     MatrixSquare() { }
-    MatrixSquare(const MatrixBase<T, N, N> &other) {
-      for(int i = 0; i < kNumElements; i++) {
-        mat[i] = other[i];
+    MatrixSquare(const MatrixSquare<T, N> &other)
+      : MatrixBase<T, N, N>(other) { }
+    MatrixSquare(const MatrixBase<T, N, N> &other)
+      : MatrixBase<T, N, N>(other) { }
+
+    // Does power iteration to determine the principal eigenvector and eigenvalue.
+    // Returns them in eigVec and eigVal after kMaxNumIterations
+    int PowerMethod(VectorBase<T, N> &eigVec, T *eigVal = NULL,
+                    const int kMaxNumIterations = 200) {
+      int numIterations = 0;
+
+      // !SPEED! Find eigenvectors by using the power method. This is good because the
+      // matrix is only 4x4, which allows us to use SIMD...
+      VectorBase<T, N> b;
+      for(int i = 0; i < N; i++)
+        b[i] = T(1.0);
+      
+      b /= b.Length();
+
+      bool fixed = false;
+      numIterations = 0;
+      while(!fixed && ++numIterations < kMaxNumIterations) {
+
+        VectorBase<T, N> newB = (*this).operator*(b);
+
+        // !HACK! If the principal eigenvector of the covariance matrix
+        // converges to zero, that means that the points lie equally 
+        // spaced on a sphere in this space. In this (extremely rare)
+        // situation, just choose a point and use it as the principal 
+        // direction.
+        const float newBlen = newB.Length();
+        if(newBlen < 1e-10) {
+          eigVec = b;
+          if(eigVal) *eigVal = 0.0;
+          return numIterations;
+        }
+
+        T len = newB.Length();
+        newB /= len;
+        if(eigVal)
+          *eigVal = len;
+
+        if(fabs(1.0f - (b.Dot(newB))) < 1e-5)
+          fixed = true;
+
+        b = newB;
       }
+
+      eigVec = b;  
+      return numIterations;
     }
+
   };
 };
 
