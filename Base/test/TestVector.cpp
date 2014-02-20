@@ -190,16 +190,26 @@ TEST(VectorBase, Scaling) {
   v2fd = v2f / 3;
   EXPECT_NEAR(v2fd[0], 1.0f / 3.0f, kEpsilon);
   EXPECT_NEAR(v2fd[1], 1.0f, kEpsilon);
+
+  unsigned uv[2] = {1, 3};
+  FasTC::VectorBase<unsigned, 2> v2u (uv);
+  FasTC::VectorBase<unsigned, 2> v2ud = v2u * 0.5;
+  EXPECT_EQ(v2ud[0], 0);
+  EXPECT_EQ(v2ud[1], 1);
+
+  v2ud = v2u / 0.5f;
+  EXPECT_EQ(v2ud[0], 2);
+  EXPECT_EQ(v2ud[1], 6);  
 }
 
 TEST(VectorBase, Addition) {
   float fv[2] = {1.1f, 3.2f};
   FasTC::VectorBase<float, 2> v2f (fv);
 
-  unsigned uv[2] = {5, 2};
-  FasTC::VectorBase<unsigned, 2> v2u (uv);
+  int uv[2] = {5, 2};
+  FasTC::VectorBase<int, 2> v2u (uv);
 
-  FasTC::VectorBase<unsigned, 2> au = v2u + v2f;
+  FasTC::VectorBase<int, 2> au = v2u + v2f;
   EXPECT_EQ(au[0], 6);
   EXPECT_EQ(au[1], 5);
 
@@ -209,7 +219,7 @@ TEST(VectorBase, Addition) {
 
   au = v2u - v2f;
   EXPECT_EQ(au[0], 3);
-  EXPECT_EQ(au[1], 0);
+  EXPECT_EQ(au[1], -1);
 
   af = v2f - v2u;
   EXPECT_NEAR(af[0], -3.9f, kEpsilon);
