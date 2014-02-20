@@ -31,6 +31,12 @@
 
 namespace FasTC {
 
+  enum EVectorType {
+    eVectorType_Scalar,
+    eVectorType_Vector,
+    eVectorType_Matrix
+  };
+
   template <typename T, const int N>
   class VectorBase {
    protected:
@@ -146,61 +152,28 @@ namespace FasTC {
   template<typename T>
   class VectorTraits {
    public:
-    static const bool IsVector = false;
+    static const EVectorType kVectorType = eVectorType_Scalar;
   };
 
   template<typename T, const int N>
   class VectorTraits<VectorBase<T, N> > {
    public:
-    static const bool IsVector = true;
+    static const EVectorType kVectorType = eVectorType_Vector;
   };
 
-  #define REGISTER_VECTOR_TYPE(TYPE) \
-  template<> \
-  class VectorTraits< TYPE > { \
-   public: \
-    static const bool IsVector = true; \
+  #define REGISTER_VECTOR_TYPE(TYPE)                           \
+  template<>                                                   \
+  class VectorTraits< TYPE > {                                 \
+  public:                                                      \
+    static const EVectorType kVectorType = eVectorType_Vector; \
   }
 
-  #define REGISTER_ONE_TEMPLATE_VECTOR_TYPE(TYPE) \
-  template<typename T> \
-  class VectorTraits< TYPE <T> > { \
-   public: \
-    static const bool IsVector = true; \
+  #define REGISTER_ONE_TEMPLATE_VECTOR_TYPE(TYPE)              \
+  template<typename T>                                         \
+  class VectorTraits< TYPE <T> > {                             \
+  public:                                                      \
+    static const EVectorType kVectorType = eVectorType_Vector; \
   }
-
-  template<bool condition, typename TypeOne, typename TypeTwo>
-  class VectorSwitch {
-   private:
-    const TypeOne &m_A;
-    const TypeTwo &m_B;
-   public:
-    typedef TypeOne VectorType;
-    typedef TypeTwo ScalarType;
-
-    VectorSwitch(const TypeOne &a, const TypeTwo &b)
-      : m_A(a), m_B(b) { }
-
-    const VectorType &GetVector() { return m_A; }
-    const ScalarType &GetScalar() { return m_B; }
-  };
-
-  template<typename TypeOne, typename TypeTwo>
-  class VectorSwitch<false, TypeOne, TypeTwo> {
-   private:
-    const TypeOne &m_A;
-    const TypeTwo &m_B;
-
-   public:
-    typedef TypeTwo VectorType;
-    typedef TypeOne ScalarType;
-
-    VectorSwitch(const TypeOne &a, const TypeTwo &b)
-      : m_A(a), m_B(b) { }
-
-    const VectorType &GetVector() { return m_B; }
-    const ScalarType &GetScalar() { return m_A; }
-  };
 
   template<typename VectorType, typename ScalarType>
   static inline VectorType ScalarMultiply(const VectorType &v, const ScalarType &s) {
@@ -210,13 +183,97 @@ namespace FasTC {
     return a;
   }
 
+  template<
+    EVectorType kVectorTypeOne,
+    EVectorType kVectorTypeTwo,
+    typename TypeOne,
+    typename TypeTwo>
+  class MultSwitch {
+   private:
+    const TypeOne &m_A;
+    const TypeTwo &m_B;
+   public:
+    typedef TypeOne ResultType;
+
+    MultSwitch(const TypeOne &a, const TypeTwo &b)
+      : m_A(a), m_B(b) { }
+
+    ResultType GetMultiplication() { return m_A * m_B; }
+  };
+
+  template<typename TypeOne, typename TypeTwo>
+  class MultSwitch<
+    eVectorType_Scalar,
+    eVectorType_Vector,
+    TypeOne, TypeTwo> {
+   private:
+    const TypeOne &m_A;
+    const TypeTwo &m_B;
+
+   public:
+    typedef TypeTwo ResultType;
+
+    MultSwitch(const TypeOne &a, const TypeTwo &b)
+      : m_A(a), m_B(b) { }
+
+    ResultType GetMultiplication() { return ScalarMultiply(m_B, m_A); }
+  };
+
+  template<typename TypeOne, typename TypeTwo>
+  class MultSwitch<
+    eVectorType_Vector,
+    eVectorType_Scalar,
+    TypeOne, TypeTwo> {
+   private:
+    const TypeOne &m_A;
+    const TypeTwo &m_B;
+
+   public:
+    typedef TypeOne ResultType;
+
+    MultSwitch(const TypeOne &a, const TypeTwo &b)
+      : m_A(a), m_B(b) { }
+
+    ResultType GetMultiplication() { return ScalarMultiply(m_A, m_B); }
+  };
+
+  template<typename TypeOne, typename TypeTwo>
+  class MultSwitch<
+    eVectorType_Vector,
+    eVectorType_Vector,
+    TypeOne, TypeTwo> {
+   private:
+    const TypeOne &m_A;
+    const TypeTwo &m_B;
+
+   public:
+    typedef typename TypeOne::ScalarType ResultType;
+
+    MultSwitch(const TypeOne &a, const TypeTwo &b)
+      : m_A(a), m_B(b) { }
+
+    ResultType GetMultiplication() { return m_A.Dot(m_B); }
+  };
+
   template<typename TypeOne, typename TypeTwo>
   static inline 
-    typename VectorSwitch< VectorTraits<TypeOne>::IsVector, TypeOne, TypeTwo >::VectorType
+    typename MultSwitch<
+      VectorTraits<TypeOne>::kVectorType,
+      VectorTraits<TypeTwo>::kVectorType,
+      TypeOne, TypeTwo
+    >::ResultType
   operator*(const TypeOne &v1, const TypeTwo &v2) {
-    typedef VectorSwitch< VectorTraits<TypeOne>::IsVector, TypeOne, TypeTwo > VSwitch;
-    VSwitch s(v1, v2);
-    return ScalarMultiply(s.GetVector(), s.GetScalar());
+    typedef MultSwitch<
+      VectorTraits<TypeOne>::kVectorType,
+      VectorTraits<TypeTwo>::kVectorType,
+      TypeOne, TypeTwo
+    > VSwitch;
+    return VSwitch(v1, v2).GetMultiplication();
+  }
+
+  template<typename VectorType, typename ScalarType>
+  static inline VectorType &operator*=(VectorType &v, const ScalarType &s) {
+    return v = v * s;
   }
 
   template<typename VectorType, typename ScalarType>
@@ -228,17 +285,8 @@ namespace FasTC {
   }
 
   template<typename TypeOne, typename TypeTwo>
-  static inline
-    typename VectorSwitch< VectorTraits<TypeOne>::IsVector, TypeOne, TypeTwo >::VectorType
-  operator/(const TypeOne &v1, const TypeTwo &v2) {
-    typedef VectorSwitch< VectorTraits<TypeOne>::IsVector, TypeOne, TypeTwo > VSwitch;
-    VSwitch s(v1, v2);
-    return ScalarDivide(s.GetVector(), s.GetScalar());
-  }
-
-  template<typename VectorType, typename ScalarType>
-  static inline VectorType &operator*=(VectorType &v, const ScalarType &s) {
-    return v = ScalarMultiply(v, s);
+  static inline TypeOne operator/(const TypeOne &v1, const TypeTwo &v2) {
+    return ScalarDivide(v1, v2);
   }
 
   template<typename VectorType, typename ScalarType>

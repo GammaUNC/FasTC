@@ -135,6 +135,9 @@ TEST(VectorBase, DotProduct) {
 
   EXPECT_EQ(v5i.Dot(v5u), 10);
   EXPECT_EQ(v5u.Dot(v5i), 10);
+
+  EXPECT_EQ(v5i * v5u, 10);
+  EXPECT_EQ(v5u * v5i, 10);
 }
 
 TEST(VectorBase, Length) {
