@@ -133,8 +133,27 @@ TEST(MatrixBase, CastVector) {
 }
 
 TEST(MatrixBase, MatrixMultiplication) {
-  // Stub
-  EXPECT_EQ(0, 1);
+  FasTC::MatrixBase<int, 2, 3> a;
+  a(0, 0) = 1; a(0, 1) = 2; a(0, 2) = 3;
+  a(1, 0) = 4; a(1, 1) = 5; a(1, 2) = 6;
+
+  FasTC::MatrixBase<int, 3, 5> b;
+  b(0, 0) = -1;  b(0, 1) =  2;  b(0, 2) = -4; b(0, 3) =  5; b(0, 4) = 0; 
+  b(1, 0) =  1;  b(1, 1) =  2;  b(1, 2) =  4; b(1, 3) =  6; b(1, 4) = 3; 
+  b(2, 0) = -1;  b(2, 1) = -2;  b(2, 2) = -3; b(2, 3) = -4; b(2, 4) = 5; 
+
+  FasTC::MatrixBase<float, 2, 5> amb = a * b;
+  EXPECT_NEAR(amb(0, 0), -2, kEpsilon);
+  EXPECT_NEAR(amb(0, 1), 0, kEpsilon);
+  EXPECT_NEAR(amb(0, 2), -5, kEpsilon);
+  EXPECT_NEAR(amb(0, 3), 5, kEpsilon);
+  EXPECT_NEAR(amb(0, 4), 21, kEpsilon);
+
+  EXPECT_NEAR(amb(1, 0), -5, kEpsilon);
+  EXPECT_NEAR(amb(1, 1), 6, kEpsilon);
+  EXPECT_NEAR(amb(1, 2), -14, kEpsilon);
+  EXPECT_NEAR(amb(1, 3), 26, kEpsilon);
+  EXPECT_NEAR(amb(1, 4), 45, kEpsilon);
 }
 
 TEST(MatrixBase, VectorMultiplication) {
