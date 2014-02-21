@@ -158,6 +158,13 @@ namespace FasTC {
     static const EVectorType kVectorType = eVectorType_Matrix; \
   }
 
+  #define REGISTER_ONE_TEMPLATE_MATRIX_SIZED_TYPE(TYPE)        \
+  template<typename T, const int SIZE>                         \
+  class VectorTraits< TYPE <T, SIZE> > {                       \
+  public:                                                      \
+    static const EVectorType kVectorType = eVectorType_Matrix; \
+  }
+
   // Define matrix multiplication for * operator
   template<typename TypeOne, typename TypeTwo>
   class MultSwitch<

@@ -59,17 +59,17 @@ namespace FasTC {
 
   template <typename T>
   class Matrix4x4 : public MatrixSquare<T, 4> {
-
    public:
-    
     // Constructors
     Matrix4x4() { }
+    Matrix4x4(const Matrix4x4<T> &other)
+      : MatrixSquare<T, 4>(other) { }
     Matrix4x4(const MatrixSquare<T, 4> &other)
       : MatrixSquare<T, 4>(other) { }
-
     Matrix4x4(const MatrixBase<T, 4, 4> &other)
       : MatrixSquare<T, 4>(other) { }
   };
+  REGISTER_ONE_TEMPLATE_MATRIX_TYPE(Matrix4x4);
 };
 
 #endif  // BASE_INCLUDE_MATRIX3X3_H_

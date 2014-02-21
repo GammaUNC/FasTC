@@ -123,7 +123,13 @@ TEST(MatrixBase, PointerConversion) {
 }
 
 TEST(MatrixBase, CastVector) {
+  srand(time(NULL));
+
   FasTC::MatrixBase<float, 3, 2> v3f;
+  for(int i = 0; i < 6; i++) {
+    v3f[i] = static_cast<float>(rand());
+  }
+
   FasTC::MatrixBase<double, 3, 2> v3d = v3f;
   FasTC::MatrixBase<int, 3, 2> v3i = v3f;
   for(int i = 0; i < 3*2; i++) {
@@ -198,28 +204,137 @@ TEST(MatrixBase, VectorMultiplication) {
   EXPECT_EQ(v[4], 0 + (3 * 2) + (5 * 3));
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+#include "MatrixSquare.h"
+
 TEST(MatrixSquare, Constructors) {
-  // Stub
-  EXPECT_EQ(0, 1);
+  FasTC::MatrixBase<int, 3, 3> m;
+  m(0, 0) = 1; m(0, 1) = 2; m(0, 2) = 3;
+  m(1, 0) = 2; m(1, 1) = 3; m(1, 2) = 4;
+  m(2, 0) = 3; m(2, 1) = 4; m(2, 2) = 5;
+
+  FasTC::MatrixSquare<int, 3> sqm (m);
+  for(int i = 0; i < 9; i++) {
+    EXPECT_EQ(m[i], sqm[i]);
+  }
+
+  FasTC::MatrixSquare<float, 3> fsqm(m);
+  for(int i = 0; i < 9; i++) {
+    EXPECT_NEAR(m[i], fsqm[i], kEpsilon);
+  }
+
+  FasTC::MatrixSquare<float, 3> fcsqm(sqm);
+  for(int i = 0; i < 9; i++) {
+    EXPECT_NEAR(fcsqm[i], sqm[i], kEpsilon);
+  }
 }
 
-TEST(MatrixSquare, EigenvalueCalculation) {
-  // Stub
-  EXPECT_EQ(0, 1);
+TEST(MatrixSquare, PowerMethod) {
+  FasTC::MatrixSquare<double, 2> A;
+  A(0, 0) = 0.8f; A(0, 1) = 0.3f;
+  A(1, 0) = 0.2f; A(1, 1) = 0.7f;
+
+  double e;
+  FasTC::VectorBase<double, 2> x;
+  A.PowerMethod(x, &e, 20, 200);
+
+  EXPECT_NEAR(x[0], 0.83205f, 0.0001);
+  EXPECT_NEAR(x[1], 0.5547f, 0.0001);
+
+  EXPECT_NEAR(e, 1.f, 0.0001);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+#include "Matrix2x2.h"
 
 TEST(Matrix2x2, Constructors) {
-  // Stub
-  EXPECT_EQ(0, 1);
+  FasTC::MatrixBase<int, 2, 2> m;
+  m(0, 0) = 1; m(0, 1) = 2;
+  m(1, 0) = 2; m(1, 1) = 3;
+
+  FasTC::MatrixSquare<int, 2> sqm (m);
+  for(int i = 0; i < 4; i++) {
+    EXPECT_EQ(m[i], sqm[i]);
+  }
+
+  FasTC::Matrix2x2<int> tbtm (m);
+  for(int i = 0; i < 4; i++) {
+    EXPECT_EQ(m[i], tbtm[i]);
+  }
+
+  FasTC::Matrix2x2<float> fsqm(m);
+  for(int i = 0; i < 4; i++) {
+    EXPECT_NEAR(m[i], fsqm[i], kEpsilon);
+  }
+
+  FasTC::Matrix2x2<float> fcsqm(sqm);
+  for(int i = 0; i < 4; i++) {
+    EXPECT_NEAR(fcsqm[i], sqm[i], kEpsilon);
+  }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+#include "Matrix3x3.h"
 
 TEST(Matrix3x3, Constructors) {
-  // Stub
-  EXPECT_EQ(0, 1);
+  FasTC::MatrixBase<int, 3, 3> m;
+  m(0, 0) = 1; m(0, 1) = 2; m(0, 2) = 3;
+  m(1, 0) = 2; m(1, 1) = 3; m(1, 2) = 4;
+  m(2, 0) = 3; m(2, 1) = 4; m(2, 2) = 5;
+
+  FasTC::MatrixSquare<int, 3> sqm (m);
+  for(int i = 0; i < 9; i++) {
+    EXPECT_EQ(m[i], sqm[i]);
+  }
+
+  FasTC::Matrix3x3<int> tbtm (m);
+  for(int i = 0; i < 9; i++) {
+    EXPECT_EQ(m[i], tbtm[i]);
+  }
+
+  FasTC::Matrix3x3<float> fsqm(m);
+  for(int i = 0; i < 9; i++) {
+    EXPECT_NEAR(m[i], fsqm[i], kEpsilon);
+  }
+
+  FasTC::Matrix3x3<float> fcsqm(sqm);
+  for(int i = 0; i < 9; i++) {
+    EXPECT_NEAR(fcsqm[i], sqm[i], kEpsilon);
+  }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+#include "Matrix4x4.h"
+
 TEST(Matrix4x4, Constructors) {
-  // Stub
-  EXPECT_EQ(0, 1);
+  FasTC::MatrixBase<int, 4, 4> m;
+  m(0, 0) = 1; m(0, 1) = 2; m(0, 2) = 3; m(0, 3) = 4;
+  m(1, 0) = 2; m(1, 1) = 3; m(1, 2) = 4; m(1, 3) = 5;
+  m(2, 0) = 3; m(2, 1) = 4; m(2, 2) = 5; m(2, 3) = 6;
+  m(3, 0) = 4; m(3, 1) = 5; m(3, 2) = 6; m(3, 3) = 7;
+
+  FasTC::MatrixSquare<int, 4> sqm (m);
+  for(int i = 0; i < 9; i++) {
+    EXPECT_EQ(m[i], sqm[i]);
+  }
+
+  FasTC::Matrix4x4<int> tbtm (m);
+  for(int i = 0; i < 9; i++) {
+    EXPECT_EQ(m[i], tbtm[i]);
+  }
+
+  FasTC::Matrix4x4<float> fsqm(m);
+  for(int i = 0; i < 9; i++) {
+    EXPECT_NEAR(m[i], fsqm[i], kEpsilon);
+  }
+
+  FasTC::Matrix4x4<float> fcsqm(sqm);
+  for(int i = 0; i < 9; i++) {
+    EXPECT_NEAR(fcsqm[i], sqm[i], kEpsilon);
+  }
 }
 

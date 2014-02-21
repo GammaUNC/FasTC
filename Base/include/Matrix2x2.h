@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012 Pavel Krajcevski
+ * Copyright (c) 2014 Pavel Krajcevski
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -22,26 +22,26 @@
  *
  ******************************************************************************/
 
-#ifndef BASE_INCLUDE_MATRIX3X3_H_
-#define BASE_INCLUDE_MATRIX3X3_H_
+#ifndef BASE_INCLUDE_MATRIX2X2_H_
+#define BASE_INCLUDE_MATRIX2X2_H_
 
 #include "MatrixSquare.h"
 
 namespace FasTC {
 
   template <typename T>
-  class Matrix3x3 : public MatrixSquare<T, 3> {
+  class Matrix2x2 : public MatrixSquare<T, 2> {
    public:
     // Constructors
-    Matrix3x3() { }
-    Matrix3x3(const Matrix3x3<T> &other)
-      : MatrixSquare<T, 3>(other) { }
-    Matrix3x3(const MatrixSquare<T, 3> &other)
-      : MatrixSquare<T, 3>(other) { }
-    Matrix3x3(const MatrixBase<T, 3, 3> &other)
-      : MatrixSquare<T, 3>(other) { }
+    Matrix2x2() { }
+    Matrix2x2(const Matrix2x2<T> &other)
+      : MatrixSquare<T, 2>(other) { }
+    Matrix2x2(const MatrixSquare<T, 2> &other)
+      : MatrixSquare<T, 2>(other) { }
+    Matrix2x2(const MatrixBase<T, 2, 2> &other)
+      : MatrixSquare<T, 2>(other) { }
   };
-  REGISTER_ONE_TEMPLATE_MATRIX_TYPE(Matrix3x3);
+  REGISTER_ONE_TEMPLATE_MATRIX_TYPE(Matrix2x2);
 };
 
-#endif  // BASE_INCLUDE_MATRIX3X3_H_
+#endif  // BASE_INCLUDE_MATRIX2X2_H_

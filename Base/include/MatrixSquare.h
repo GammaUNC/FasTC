@@ -26,6 +26,8 @@
 #define BASE_INCLUDE_MATRIXSQUARE_H_
 
 #include "MatrixBase.h"
+#include <cstdlib>
+#include <ctime>
 
 namespace FasTC {
 
@@ -40,54 +42,82 @@ namespace FasTC {
     MatrixSquare(const MatrixBase<T, N, N> &other)
       : MatrixBase<T, N, N>(other) { }
 
+    MatrixSquare<T, N> Transpose() const {
+      return MatrixBase<T, N, N>::Transpose();
+    }
+
     // Does power iteration to determine the principal eigenvector and eigenvalue.
     // Returns them in eigVec and eigVal after kMaxNumIterations
-    int PowerMethod(VectorBase<T, N> &eigVec, T *eigVal = NULL,
-                    const int kMaxNumIterations = 200) {
+    int PowerMethod(VectorBase<T, N> &eigVec,
+                    T *eigVal = NULL,
+                    const int kMaxNumIterations = 200,
+                    const unsigned int kSeed = time(NULL)) {
+
+      srand(kSeed);
       int numIterations = 0;
 
-      // !SPEED! Find eigenvectors by using the power method. This is good because the
-      // matrix is only 4x4, which allows us to use SIMD...
       VectorBase<T, N> b;
       for(int i = 0; i < N; i++)
-        b[i] = T(1.0);
-      
-      b /= b.Length();
+        b[i] = static_cast<T>(rand());
+      b.Normalize();
 
+      bool badEigenValue = false;
       bool fixed = false;
       numIterations = 0;
       while(!fixed && ++numIterations < kMaxNumIterations) {
 
-        VectorBase<T, N> newB = (*this).operator*(b);
+        VectorBase<T, N> newB = (*this) * b;
 
-        // !HACK! If the principal eigenvector of the covariance matrix
-        // converges to zero, that means that the points lie equally 
-        // spaced on a sphere in this space. In this (extremely rare)
-        // situation, just choose a point and use it as the principal 
-        // direction.
+        // !HACK! If the principal eigenvector of the matrix
+        // converges to zero, that could mean that there is no
+        // principal eigenvector. However, that may be due to
+        // poor initialization of the random vector, so rerandomize
+        // and try again.
         const float newBlen = newB.Length();
         if(newBlen < 1e-10) {
-          eigVec = b;
-          if(eigVal) *eigVal = 0.0;
-          return numIterations;
+          if(badEigenValue) {
+            eigVec = b;
+            if(eigVal) *eigVal = 0.0;
+            return numIterations;
+          }
+
+          VectorBase<T, N> b;
+          for(int i = 0; i < N; i++)
+            b[i] = static_cast<T>(rand());
+
+          b.Normalize();
+          badEigenValue = true;
         }
 
-        T len = newB.Length();
-        newB /= len;
-        if(eigVal)
-          *eigVal = len;
+        // Normalize
+        newB.Normalize();
 
-        if(fabs(1.0f - (b.Dot(newB))) < 1e-5)
+        // If the new eigenvector is close enough to the old one,
+        // then we've converged.
+        if(fabs(1.0f - (b.Dot(newB))) < 1e-8)
           fixed = true;
 
+        // Save and continue.
         b = newB;
       }
 
-      eigVec = b;  
+      // Store the eigenvector in the proper variable.
+      eigVec = b;
+
+      // Store eigenvalue if it was requested
+      if(eigVal) {
+        VectorBase<T, N> result = (*this) * b;
+        *eigVal = result.Length() / b.Length();
+      }
+
       return numIterations;
     }
 
+   private:
+
   };
+  REGISTER_ONE_TEMPLATE_MATRIX_SIZED_TYPE(MatrixSquare);
+
 };
 
 #endif  // BASE_INCLUDE_MATRIXSQUARE_H_
