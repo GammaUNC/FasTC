@@ -198,7 +198,7 @@ namespace FasTC {
     MultSwitch(const TypeOne &a, const TypeTwo &b)
       : m_A(a), m_B(b) { }
 
-    ResultType GetMultiplication() { return m_A * m_B; }
+    ResultType GetMultiplication() const { return m_A * m_B; }
   };
 
   template<typename TypeOne, typename TypeTwo>
@@ -216,7 +216,7 @@ namespace FasTC {
     MultSwitch(const TypeOne &a, const TypeTwo &b)
       : m_A(a), m_B(b) { }
 
-    ResultType GetMultiplication() { return ScalarMultiply(m_B, m_A); }
+    ResultType GetMultiplication() const { return ScalarMultiply(m_B, m_A); }
   };
 
   template<typename TypeOne, typename TypeTwo>
@@ -234,7 +234,7 @@ namespace FasTC {
     MultSwitch(const TypeOne &a, const TypeTwo &b)
       : m_A(a), m_B(b) { }
 
-    ResultType GetMultiplication() { return ScalarMultiply(m_A, m_B); }
+    ResultType GetMultiplication() const { return ScalarMultiply(m_A, m_B); }
   };
 
   template<typename TypeOne, typename TypeTwo>
@@ -252,7 +252,7 @@ namespace FasTC {
     MultSwitch(const TypeOne &a, const TypeTwo &b)
       : m_A(a), m_B(b) { }
 
-    ResultType GetMultiplication() { return m_A.Dot(m_B); }
+    ResultType GetMultiplication() const { return m_A.Dot(m_B); }
   };
 
   template<typename TypeOne, typename TypeTwo>

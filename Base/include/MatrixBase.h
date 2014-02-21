@@ -73,7 +73,7 @@ namespace FasTC {
 
     // Matrix multiplication
     template<typename _T, const int nTarget>
-    MatrixBase<T, nRows, nTarget> operator*(const MatrixBase<_T, nCols, nTarget> &m) {
+    MatrixBase<T, nRows, nTarget> MultiplyMatrix(const MatrixBase<_T, nCols, nTarget> &m) const {
       MatrixBase<T, nRows, nTarget> result;
       for(int r = 0; r < nRows; r++)
         for(int c = 0; c < nTarget; c++) {
