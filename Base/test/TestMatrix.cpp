@@ -158,9 +158,9 @@ TEST(MatrixBase, MatrixMultiplication) {
 
 TEST(MatrixBase, Transposition) {
   FasTC::MatrixBase<int, 3, 5> a;
-  a(0, 0) = -1;  a(0, 1) =  2;  a(0, 2) = -4; a(0, 3) =  5; a(0, 4) = 0; 
-  a(1, 0) =  1;  a(1, 1) =  2;  a(1, 2) =  4; a(1, 3) =  6; a(1, 4) = 3; 
-  a(2, 0) = -1;  a(2, 1) = -2;  a(2, 2) = -3; a(2, 3) = -4; a(2, 4) = 5; 
+  a(0, 0) = -1;  a(0, 1) =  2;  a(0, 2) = -4; a(0, 3) =  5; a(0, 4) = 0;
+  a(1, 0) =  1;  a(1, 1) =  2;  a(1, 2) =  4; a(1, 3) =  6; a(1, 4) = 3;
+  a(2, 0) = -1;  a(2, 1) = -2;  a(2, 2) = -3; a(2, 3) = -4; a(2, 4) = 5;
 
   FasTC::MatrixBase<int, 5, 3> b = a.Transpose();
 
@@ -172,8 +172,30 @@ TEST(MatrixBase, Transposition) {
 }
 
 TEST(MatrixBase, VectorMultiplication) {
-  // Stub
-  EXPECT_EQ(0, 1);
+
+  FasTC::MatrixBase<int, 3, 5> a;
+  a(0, 0) = -1;  a(0, 1) =  2;  a(0, 2) = -4; a(0, 3) =  5; a(0, 4) = 0;
+  a(1, 0) =  1;  a(1, 1) =  2;  a(1, 2) =  4; a(1, 3) =  6; a(1, 4) = 3;
+  a(2, 0) = -1;  a(2, 1) = -2;  a(2, 2) = -3; a(2, 3) = -4; a(2, 4) = 5;
+
+  FasTC::VectorBase<int, 5> v;
+  for(int i = 0; i < 5; i++) v[i] = i + 1;
+
+  FasTC::VectorBase<int, 3> u = a * v;
+  EXPECT_EQ(u[0], -1 + (2 * 2) - (4 * 3) + (5 * 4));
+  EXPECT_EQ(u[1], 1 + (2 * 2) + (4 * 3) + (6 * 4) + (3 * 5));
+  EXPECT_EQ(u[2], -1 + (-2 * 2) - (3 * 3) - (4 * 4) + (5 * 5));
+
+  /////
+
+  for(int i = 0; i < 3; i++) u[i] = i + 1;
+  v = u * a;
+
+  EXPECT_EQ(v[0], -1 + (1 * 2) - (1 * 3));
+  EXPECT_EQ(v[1], 2 + (2 * 2) - (2 * 3));
+  EXPECT_EQ(v[2], -4 + (4 * 2) - (3 * 3));
+  EXPECT_EQ(v[3], 5 + (6 * 2) - (4 * 3));
+  EXPECT_EQ(v[4], 0 + (3 * 2) + (5 * 3));
 }
 
 TEST(MatrixSquare, Constructors) {
