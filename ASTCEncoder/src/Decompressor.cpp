@@ -291,15 +291,65 @@ namespace ASTCC {
     return params;
   }
 
+  void FillError(uint8 *outBuf, uint32 blockWidth, uint32 blockHeight) {
+    for(uint32 j = 0; j < blockHeight; j++)
+    for(uint32 i = 0; i < blockWidth; i++) {
+      reinterpret_cast<uint32 *>(outBuf)[j * blockWidth + i] = 0xFFFF00FF;
+    }
+  }
+
   void DecompressBlock(const uint8 inBuf[16],
                        const uint32 blockWidth, const uint32 blockHeight,
                        uint8 *outBuf) {
     BitStreamReadOnly strm(inBuf);
     TexelWeightParams weightParams = DecodeBlockInfo(strm);
     
-    // Our weights should be smaller than our block size.
-    assert(weightParams.m_Width <= blockWidth);
-    assert(weightParams.m_Height <= blockHeight);
+    if(weightParams.m_Width > blockWidth) {
+      assert(!"Texel weight grid width should be smaller than block width");
+      FillError(outBuf, blockWidth, blockHeight);
+      return;
+    }
+
+    if(weightParams.m_Height > blockHeight) {
+      assert(!"Texel weight grid height should be smaller than block height");
+      FillError(outBuf, blockWidth, blockHeight);
+      return;
+    }
+
+    // Read num partitions
+    uint32 nPartitions = strm.ReadBits(2) + 1;
+    assert(nPartitions <= 4);
+
+    if(nPartitions == 4 && weightParams.m_bDualPlane) {
+      assert(!"Dual plane mode is incompatible with four partition blocks");
+      FillError(outBuf, blockWidth, blockHeight);
+      return;
+    }
+
+    // Based on the number of partitions, read the color endpoint mode for
+    // each partition.
+    uint32 partitionIndex = nPartitions;
+    uint32 colorEndpointMode[4] = {0, 0, 0, 0};
+    if(nPartitions == 1) {
+      colorEndpointMode[0] = strm.ReadBits(4);
+    } else {
+      uint32 restOfPartitionIndex = strm.ReadBits(10);
+      partitionIndex |= restOfPartitionIndex << 2;
+
+      uint32 CEM = strm.ReadBits(2) - 1;
+      for(uint32 i = 0; i < nPartitions; i++) {
+        colorEndpointMode[i] = CEM + strm.ReadBit();
+      }
+
+      for(uint32 i = 0; i < nPartitions; i++) {
+        colorEndpointMode[i] <<= 2;
+        if(i == 0 && nPartitions == 3) {
+          colorEndpointMode[i] += strm.ReadBit();
+        } else {
+          colorEndpointMode[i] += strm.ReadBits(2);
+        }
+      }
+    }
 
     
   }
@@ -310,9 +360,18 @@ namespace ASTCC {
     uint32 blockIdx = 0;
     for(uint32 j = 0; j < dcj.Width(); j++) {
       for(uint32 i = 0; i < dcj.Height(); i++) {
+
         const uint8 *blockPtr = dcj.InBuf() + blockIdx*16;
-        uint8 *dataPtr = dcj.OutBuf() + j*dcj.Width() + i;
+
+        uint32 uncompData[144];
+        uint8 *dataPtr = reinterpret_cast<uint8 *>(uncompData);
         DecompressBlock(blockPtr, blockWidth, blockHeight, dataPtr);
+
+        uint8 *outRow = dcj.OutBuf() + (j*dcj.Width() + i)*4;
+        for(uint32 jj = 0; jj < blockHeight; jj++) {
+          memcpy(outRow + jj*dcj.Width()*4, uncompData + jj*blockWidth, blockWidth*4);
+        }
+
         blockIdx++;
       }
     }
