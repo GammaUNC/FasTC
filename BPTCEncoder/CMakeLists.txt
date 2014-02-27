@@ -48,7 +48,7 @@ INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/BPTCEncoder/include)
 
 IF(NOT "" STREQUAL "${AVPCLLIB_ROOT}")
   INCLUDE_DIRECTORIES(${AVPCLLIB_INCLUDE_DIR})
-  SET(FOUND_NVTT_BC7_EXPORT TRUE)
+  SET(FOUND_NVTT_BPTC_EXPORT TRUE)
 ENDIF()
 
 INCLUDE(CheckCXXSourceRuns)
@@ -58,9 +58,11 @@ IF( NOT HAS_INLINE_ASSEMBLY AND NOT HAS_INLINE_ASSEMBLY_WITH_FLAGS )
 ENDIF()
 
 # Check to see whether or not our compiler supports atomic operations
-IF( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_C_COMPILER_ID}" STREQUAL "Clang" )
+IF( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
+	"${CMAKE_C_COMPILER_ID}" STREQUAL "Clang" )
   SET( COMPILER_CLANG True )
-ELSEIF( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" )
+ELSEIF( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
+		"${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" )
   SET( COMPILER_GNU True )
 ENDIF()
 
@@ -97,19 +99,20 @@ IF( HAS_MSVC_ATOMICS OR HAS_GCC_ATOMICS )
 ENDIF()
 
 CONFIGURE_FILE(
-  "config/BC7Config.h.in"
-  "include/BC7Config.h"
+  "config/BPTCConfig.h.in"
+  "include/BPTCConfig.h"
 )
 
 SET( HEADERS
-  src/BC7CompressionMode.h
-  src/BitStream.h
+  config/BPTCConfig.h.in
+  include/BPTCCompressor.h
+  src/CompressionMode.h
   src/RGBAEndpoints.h
   src/ParallelStage.h
 )
 
 SET( SOURCES
-  src/BC7Compressor.cpp
+  src/Compressor.cpp
   src/RGBAEndpoints.cpp
   src/ParallelStage.cpp
 )
@@ -133,12 +136,12 @@ IF( HAS_SSE_41 )
   SET( HEADERS
 	${HEADERS}
 	src/RGBAEndpointsSIMD.h
-	src/BC7CompressionModeSIMD.h
+	src/CompressionModeSIMD.h
   )
 
   SET( SOURCES
 	${SOURCES}
-	src/BC7CompressorSIMD.cpp
+	src/CompressorSIMD.cpp
 	src/RGBAEndpointsSIMD.cpp
   )
 ENDIF( HAS_SSE_41 )

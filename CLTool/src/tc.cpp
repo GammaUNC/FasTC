@@ -346,7 +346,7 @@ int main(int argc, char **argv) {
     if(decompressedOutput[0] != '\0') {
       memcpy(basename, decompressedOutput, 256);
     } else if(format == FasTC::eCompressionFormat_BPTC) {
-      strcat(basename, "-bc7.png");
+      strcat(basename, "-bptc.png");
     } else if(format == FasTC::eCompressionFormat_PVRTC) {
       strcat(basename, "-pvrtc.png");
     } else if(format == FasTC::eCompressionFormat_DXT1) {

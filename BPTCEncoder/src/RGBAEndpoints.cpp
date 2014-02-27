@@ -1,30 +1,39 @@
 /* FasTC
- * Copyright (c) 2012 University of North Carolina at Chapel Hill. All rights reserved.
+ * Copyright (c) 2014 University of North Carolina at Chapel Hill.
+ * All rights reserved.
  *
- * Permission to use, copy, modify, and distribute this software and its documentation for educational, 
- * research, and non-profit purposes, without fee, and without a written agreement is hereby granted, 
- * provided that the above copyright notice, this paragraph, and the following four paragraphs appear 
- * in all copies.
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for educational, research, and non-profit purposes, without
+ * fee, and without a written agreement is hereby granted, provided that the
+ * above copyright notice, this paragraph, and the following four paragraphs
+ * appear in all copies.
  *
- * Permission to incorporate this software into commercial products may be obtained by contacting the 
- * authors or the Office of Technology Development at the University of North Carolina at Chapel Hill <otd@unc.edu>.
+ * Permission to incorporate this software into commercial products may be
+ * obtained by contacting the authors or the Office of Technology Development
+ * at the University of North Carolina at Chapel Hill <otd@unc.edu>.
  *
- * This software program and documentation are copyrighted by the University of North Carolina at Chapel Hill. 
- * The software program and documentation are supplied "as is," without any accompanying services from the 
- * University of North Carolina at Chapel Hill or the authors. The University of North Carolina at Chapel Hill 
- * and the authors do not warrant that the operation of the program will be uninterrupted or error-free. The 
- * end-user understands that the program was developed for research purposes and is advised not to rely 
- * exclusively on the program for any reason.
+ * This software program and documentation are copyrighted by the University of
+ * North Carolina at Chapel Hill. The software program and documentation are
+ * supplied "as is," without any accompanying services from the University of
+ * North Carolina at Chapel Hill or the authors. The University of North
+ * Carolina at Chapel Hill and the authors do not warrant that the operation of
+ * the program will be uninterrupted or error-free. The end-user understands
+ * that the program was developed for research purposes and is advised not to
+ * rely exclusively on the program for any reason.
  *
- * IN NO EVENT SHALL THE UNIVERSITY OF NORTH CAROLINA AT CHAPEL HILL OR THE AUTHORS BE LIABLE TO ANY PARTY FOR 
- * DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF THE 
- * USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF NORTH CAROLINA AT CHAPEL HILL OR THE 
- * AUTHORS HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * IN NO EVENT SHALL THE UNIVERSITY OF NORTH CAROLINA AT CHAPEL HILL OR THE
+ * AUTHORS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL,
+ * OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF THE USE OF
+ * THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF NORTH CAROLINA
+ * AT CHAPEL HILL OR THE AUTHORS HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH
+ * DAMAGE.
  *
- * THE UNIVERSITY OF NORTH CAROLINA AT CHAPEL HILL AND THE AUTHORS SPECIFICALLY DISCLAIM ANY WARRANTIES, INCLUDING, 
- * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE AND ANY 
- * STATUTORY WARRANTY OF NON-INFRINGEMENT. THE SOFTWARE PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THE UNIVERSITY 
- * OF NORTH CAROLINA AT CHAPEL HILL AND THE AUTHORS HAVE NO OBLIGATIONS TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, 
+ * THE UNIVERSITY OF NORTH CAROLINA AT CHAPEL HILL AND THE AUTHORS SPECIFICALLY
+ * DISCLAIM ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE AND ANY 
+ * STATUTORY WARRANTY OF NON-INFRINGEMENT. THE SOFTWARE PROVIDED HEREUNDER IS ON
+ * AN "AS IS" BASIS, AND THE UNIVERSITY  OF NORTH CAROLINA AT CHAPEL HILL AND
+ * THE AUTHORS HAVE NO OBLIGATIONS TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, 
  * ENHANCEMENTS, OR MODIFICATIONS.
  *
  * Please send all BUG REPORTS to <pavel@cs.unc.edu>.
@@ -46,27 +55,28 @@
 //
 // This code has been modified significantly from the original.
 
-//--------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Copyright 2011 Intel Corporation
 // All Rights Reserved
 //
-// Permission is granted to use, copy, distribute and prepare derivative works of this
-// software for any purpose and without fee, provided, that the above copyright notice
-// and this statement appear in all copies.  Intel makes no representations about the
-// suitability of this software for any purpose.  THIS SOFTWARE IS PROVIDED "AS IS."
-// INTEL SPECIFICALLY DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, AND ALL LIABILITY,
-// INCLUDING CONSEQUENTIAL AND OTHER INDIRECT DAMAGES, FOR THE USE OF THIS SOFTWARE,
-// INCLUDING LIABILITY FOR INFRINGEMENT OF ANY PROPRIETARY RIGHTS, AND INCLUDING THE
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  Intel does not
-// assume any responsibility for any errors which may appear in this software nor any
+// Permission is granted to use, copy, distribute and prepare derivative works
+// of this software for any purpose and without fee, provided, that the above
+// copyright notice and this statement appear in all copies.  Intel makes no
+// representations about the suitability of this software for any purpose.  THIS
+// SOFTWARE IS PROVIDED "AS IS." INTEL SPECIFICALLY DISCLAIMS ALL WARRANTIES,
+// EXPRESS OR IMPLIED, AND ALL LIABILITY, INCLUDING CONSEQUENTIAL AND OTHER
+// INDIRECT DAMAGES, FOR THE USE OF THIS SOFTWARE, INCLUDING LIABILITY FOR
+// INFRINGEMENT OF ANY PROPRIETARY RIGHTS, AND INCLUDING THE WARRANTIES OF
+// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  Intel does not assume
+// any responsibility for any errors which may appear in this software nor any
 // responsibility to update it.
 //
-//--------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
-#include "BC7Config.h"
+#include "BPTCConfig.h"
 #include "RGBAEndpoints.h"
-#include "BC7Compressor.h"
-#include "BC7CompressionMode.h"
+#include "BPTCCompressor.h"
+#include "CompressionMode.h"
 
 #include <cassert>
 #include <cstdlib>
@@ -406,7 +416,11 @@ uint32 RGBACluster::GetPowerMethodIterations() {
   return m_PowerMethodIterations;
 }
 
-double RGBACluster::QuantizedError(const RGBAVector &p1, const RGBAVector &p2, uint8 nBuckets, uint32 bitMask, const RGBAVector &errorMetricVec, const int pbits[2], int *indices) const {
+double RGBACluster::QuantizedError(
+  const RGBAVector &p1, const RGBAVector &p2,
+  uint8 nBuckets, uint32 bitMask, const RGBAVector &errorMetricVec,
+  const int pbits[2], uint8 *indices
+) const {
 
   // nBuckets should be a power of two.
   assert(nBuckets == 3 || !(nBuckets & (nBuckets - 1)));
@@ -415,7 +429,9 @@ double RGBACluster::QuantizedError(const RGBAVector &p1, const RGBAVector &p2, u
   
   typedef uint32 tInterpPair[2];
   typedef tInterpPair tInterpLevel[16];
-  const tInterpLevel *interpVals = (nBuckets == 3)? kBC7InterpolationValues : kBC7InterpolationValues + (indexPrec - 1);
+  const tInterpLevel *interpVals =
+    (nBuckets == 3)? BPTCC::kInterpolationValues 
+    : BPTCC::kInterpolationValues + (indexPrec - 1);
 
   assert(indexPrec >= 2 && indexPrec <= 4);
 
@@ -441,7 +457,7 @@ double RGBACluster::QuantizedError(const RGBAVector &p1, const RGBAVector &p2, u
     const uint8 *pb = (const uint8 *)(&pixel);
 
     float minError = FLT_MAX;
-    int bestBucket = -1;
+    uint8 bestBucket = 0;
     for(int j = 0; j < nBuckets; j++) {
 
       uint32 interp0 = (*interpVals)[j][0];

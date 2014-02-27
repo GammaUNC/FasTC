@@ -1,5 +1,5 @@
 /* FasTC
- * Copyright (c) 2012 University of North Carolina at Chapel Hill.
+ * Copyright (c) 2014 University of North Carolina at Chapel Hill.
  * All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software and its
@@ -73,15 +73,15 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef BPTCENCODER_INCLUDE_BC7COMPRESSOR_H_
-#define BPTCENCODER_INCLUDE_BC7COMPRESSOR_H_
+#ifndef BPTCENCODER_INCLUDE_BPTCCOMPRESSOR_H_
+#define BPTCENCODER_INCLUDE_BPTCCOMPRESSOR_H_
 
-#include "BC7Config.h"
+#include "BPTCConfig.h"
 #include "CompressionJob.h"
 
 #include <iosfwd>
 
-namespace BC7C {
+namespace BPTCC {
   // This is the error metric that is applied to our error measurement algorithm
   // in order to bias calculation towards results that are more in-line with
   // how the Human Visual System works. Uniform error means that each color
@@ -112,7 +112,7 @@ namespace BC7C {
   void SetQualityLevel(int q);
   int GetQualityLevel();
 
-  // Compress the image given as RGBA data to BC7 format. Width and Height are
+  // Compress the image given as RGBA data to BPTC format. Width and Height are
   // the dimensions of the image in pixels.
   void Compress(const FasTC::CompressionJob &);
 
@@ -123,10 +123,10 @@ namespace BC7C {
   void CompressWithStats(const FasTC::CompressionJob &, std::ostream *logStream);
 
 #ifdef HAS_SSE_41
-  // Compress the image given as RGBA data to BC7 format using an algorithm
+  // Compress the image given as RGBA data to BPTC format using an algorithm
   // optimized for SIMD enabled platforms. Width and Height are the dimensions
   // of the image in pixels.
-  void CompressImageBC7SIMD(const unsigned char* inBuf, unsigned char* outBuf,
+  void CompressImageBPTCSIMD(const unsigned char* inBuf, unsigned char* outBuf,
                             unsigned int width, unsigned int height);
 #endif
 
@@ -138,7 +138,7 @@ namespace BC7C {
   void CompressAtomic(FasTC::CompressionJobList &);
 #endif
 
-#ifdef FOUND_NVTT_BC7_EXPORT
+#ifdef FOUND_NVTT_BPTC_EXPORT
   // These functions take the same arguments as Compress and CompressWithStats,
   // but they use the NVTT compressor if it was supplied to CMake.
   void CompressNVTT(const FasTC::CompressionJob &);
@@ -146,9 +146,9 @@ namespace BC7C {
                              std::ostream *logStream);
 #endif
 
-  // Decompress the image given as BC7 data to R8G8B8A8 format. Width and Height
+  // Decompress the image given as BPTC data to R8G8B8A8 format. Width and Height
   // are the dimensions of the image in pixels.
   void Decompress(const FasTC::DecompressionJob &);
-}  // namespace BC7C
+}  // namespace BPTCC
 
-#endif  // BPTCENCODER_INCLUDE_BC7COMPRESSOR_H_
+#endif  // BPTCENCODER_INCLUDE_BPTCCOMPRESSOR_H_

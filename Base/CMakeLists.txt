@@ -80,6 +80,7 @@ SET( SOURCES
 )
 
 SET( HEADERS
+  "include/BitStream.h"
   "include/Color.h"
   "include/CompressionJob.h"
   "config/FasTCBaseConfig.h.in"

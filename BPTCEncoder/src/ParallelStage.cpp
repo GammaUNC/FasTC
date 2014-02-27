@@ -47,7 +47,7 @@
 #include <string.h>
 
 /*
- const BC7ParallelStage stage;
+ const BPTCParallelStage stage;
  
  // This is the stream of data that will be used to read the block data.
  const unsigned char *const m_InBuf;
@@ -65,7 +65,7 @@
  uint32 m_NumBlocks;
  */    
 ParallelStage::ParallelStage(
-  BC7ParallelStage stage,
+  BPTCParallelStage stage,
   const unsigned char *inbuf,
   unsigned char *outbuf,
   uint32 numBlocks,

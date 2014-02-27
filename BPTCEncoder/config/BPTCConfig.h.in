@@ -50,61 +50,16 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "TexCompTypes.h"
+// BPTCConfig.h.in  -- This file contains variables that are introduced
+// explicitly by the CMake build process.
 
-enum BPTCParallelStage {
-  eParallelStage_Uniform,
-  eParallelStage_Partitioned,
-  eParallelStage_Normal,
-  
-  kNumParallelStages
-};
+// Do we have the proper popcnt instruction defined?
+#cmakedefine NO_INLINE_ASSEMBLY
+#cmakedefine HAS_SSE_POPCNT
+#cmakedefine HAS_SSE_41
 
-class ParallelStage {
- public:
-  ParallelStage(
-    BPTCParallelStage stage,
-    const unsigned char *inbuf,
-    unsigned char *outbuf,
-    uint32 numBlocks,
-    uint32 outBlockSz = 16,
-    uint32 inBlockSz = 64
-  );
-  ParallelStage(const ParallelStage &);
-  ParallelStage &operator=(const ParallelStage &);
-  
-  ~ParallelStage();
+#cmakedefine HAS_ATOMICS
+#cmakedefine HAS_GCC_ATOMICS
+#cmakedefine HAS_MSVC_ATOMICS
 
-  const BPTCParallelStage m_Stage;
-
-  // Adds the block number to the list of blocks for this parallel stage
-  void AddBlock(uint32 blockNum);
-
-  // Loads the desired number of blocks into the destination buffer. Returns
-  // the number of blocks loaded.
-  uint32 LoadBlocks(uint32 blockOffset, uint32 numBlocks, unsigned char *dst);
-
-  // Writes the block data from src into numBlocks blocks starting from
-  // the block given by blockOffset.
-  bool WriteBlocks(uint32 blockOffset, uint32 numBlocks, const unsigned char *src);
-
- private:
-
-  // This is the stream of data that will be used to read the block data.
-  const unsigned char *const m_InBuf;
-
-  // This is the destination buffer to which the block data will be written to.
-  unsigned char *const m_OutBuf;
-
-  // This is the array of block offsets that belong to this stage.
-  uint32 *m_Blocks;
-
-  // This is the total number of blocks in the given image.
-  const uint32 m_TotalNumBlocks;
-
-  // This is the total number of blocks in this particular stage.
-  uint32 m_NumBlocks;
-
-  const uint32 m_OutBlockSz;
-  const uint32 m_InBlockSz;
-};
+#cmakedefine FOUND_NVTT_BC7_EXPORT
