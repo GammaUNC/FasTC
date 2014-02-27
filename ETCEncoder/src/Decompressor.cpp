@@ -60,8 +60,8 @@ namespace ETCC {
     uint32 blocksX = cj.Width() / 4;
     uint32 blocksY = cj.Height() / 4;
 
-    for(uint32 j = 0; j < blocksX; j++) {
-      for(uint32 i = 0; i < blocksY; i++) {
+    for(uint32 j = 0; j < blocksY; j++) {
+      for(uint32 i = 0; i < blocksX; i++) {
         uint32 pixels[16];
         uint32 blockIdx = j*blocksX + i;
         rg_etc1::unpack_etc1_block(cj.InBuf() + blockIdx * 8, pixels);

@@ -27,10 +27,8 @@
 
 #include "VectorBase.h"
 
-#ifdef _VEX_ENABLE_SWIZZLE_
 # define _VEX_VEC2_SWIZZLE_DEF(X, Y) \
     Vector2<T> X##Y() const { return Vector2<T>( X(), Y() ); }
-#endif // _VEX_ENABLE_SWIZZLE_
 
 namespace FasTC {
 
@@ -46,6 +44,11 @@ namespace FasTC {
       Y() = y; 
     }
 
+    explicit Vector2(const T *_vec) {
+      for(int i = 0; i < 2; i++)
+        this->vec[i] = _vec[i];
+    }
+
     // Overloaded functions
     template<typename _T>
     Vector2(const Vector2<_T> &v) : VectorBase<T, 2>(v) { }
@@ -53,6 +56,11 @@ namespace FasTC {
     template<typename _T>
     Vector2<T> &operator=(const Vector2<_T> &v) {
       VectorBase<T, 2>::operator=(v);
+      return *this;
+    }
+
+    Vector2<T> &operator=(const T *_vec) {
+      VectorBase<T, 2>::operator=(_vec);
       return *this;
     }
 
@@ -64,12 +72,10 @@ namespace FasTC {
     const T &Y() const { return (*this)[1]; }
 
     // Swizzle
-    #ifdef _VEX_ENABLE_SWIZZLE_
     _VEX_VEC2_SWIZZLE_DEF(X, X)
     _VEX_VEC2_SWIZZLE_DEF(X, Y)
     _VEX_VEC2_SWIZZLE_DEF(Y, X)
     _VEX_VEC2_SWIZZLE_DEF(Y, Y)
-    #endif //_VEX_ENABLE_SWIZZLE_
   };
   REGISTER_ONE_TEMPLATE_VECTOR_TYPE(Vector2);
 

@@ -87,8 +87,8 @@ namespace FasTC {
 
     template<typename OtherPixelType>
     void ConvertTo(Image<OtherPixelType> &other) const {
-      for(uint32 j = 0; j < other.GetWidth(); j++) {
-        for(uint32 i = 0; i < other.GetHeight(); i++) {
+      for(uint32 j = 0; j < other.GetHeight(); j++) {
+        for(uint32 i = 0; i < other.GetWidth(); i++) {
           other(i, j).Unpack((*this)(i, j).Pack());
         }
       }

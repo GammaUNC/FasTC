@@ -28,10 +28,8 @@
 #include "TexCompTypes.h"
 #include "Vector3.h"
 
-#ifdef _VEX_ENABLE_SWIZZLE_
 #define _VEX_VEC4_SWIZZLE_DEF(X, Y, Z, W) \
   Vector4<T> X##Y##Z##W() const { return Vector4<T>( X(), Y(), Z(), W() ); }
-#endif // _VEX_ENABLE_SWIZZLE_
 
 namespace FasTC {
 
@@ -45,6 +43,12 @@ namespace FasTC {
       Z() = z;
       W() = w;
     }
+
+    explicit Vector4(const T *_vec) {
+      for(int i = 0; i < 4; i++) {
+        this->vec[i] = _vec[i];
+      }
+    }
     
     // Overloaded functions
     template<typename _T>
@@ -52,6 +56,12 @@ namespace FasTC {
 
     template<typename _T>
     Vector4<T> &operator=(const Vector4<_T> &v) {
+      VectorBase<T, 4>::operator=(v);
+      return *this;
+    }
+
+    template<typename _T>
+    Vector4<T> &operator=(const _T *v) {
       VectorBase<T, 4>::operator=(v);
       return *this;
     }
@@ -70,7 +80,6 @@ namespace FasTC {
     const T &W() const { return (*this)[3]; }
 
     // Swizzle
-    #ifdef _VEX_ENABLE_SWIZZLE_
     _VEX_VEC2_SWIZZLE_DEF(X, X)
     _VEX_VEC2_SWIZZLE_DEF(X, Y)
     _VEX_VEC2_SWIZZLE_DEF(X, Z)
@@ -409,7 +418,6 @@ namespace FasTC {
     _VEX_VEC4_SWIZZLE_DEF(W, W, W, Y)
     _VEX_VEC4_SWIZZLE_DEF(W, W, W, Z)
     _VEX_VEC4_SWIZZLE_DEF(W, W, W, W)
-    #endif // _VEX_ENABLE_SWIZZLE_
   };
   REGISTER_ONE_TEMPLATE_VECTOR_TYPE(Vector4);
 

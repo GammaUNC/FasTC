@@ -49,6 +49,9 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Base/include )
+INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/Base/include )
+
 SET( SOURCES
 	"src/TexComp.cpp"
 	"src/CompressedImage.cpp"
@@ -74,7 +77,6 @@ ELSE()
 	SET( LINK_FLAGS -lrt ${LINK_FLAGS} )
 ENDIF()
 
-INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Base/include )
 INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR} )
 
 INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/ETCEncoder/include )

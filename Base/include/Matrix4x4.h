@@ -50,70 +50,26 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-// This file contains all of the various platform definitions for fixed width integers
-// on various platforms.
+#ifndef BASE_INCLUDE_MATRIX4X4_H_
+#define BASE_INCLUDE_MATRIX4X4_H_
 
-// !FIXME! Still needs to be tested on Windows platforms.
-#ifndef _TEX_COMP_TYPES_H_
-#define _TEX_COMP_TYPES_H_
+#include "MatrixSquare.h"
 
-#include "FasTCBaseConfig.h"
+namespace FasTC {
 
-// Do we support C++11?
-#ifdef FASTC_BASE_HAS_CPP11_TYPES
-#include <cstdint>
+  template <typename T>
+  class Matrix4x4 : public MatrixSquare<T, 4> {
+   public:
+    // Constructors
+    Matrix4x4() { }
+    Matrix4x4(const Matrix4x4<T> &other)
+      : MatrixSquare<T, 4>(other) { }
+    Matrix4x4(const MatrixSquare<T, 4> &other)
+      : MatrixSquare<T, 4>(other) { }
+    Matrix4x4(const MatrixBase<T, 4, 4> &other)
+      : MatrixSquare<T, 4>(other) { }
+  };
+  REGISTER_ONE_TEMPLATE_MATRIX_TYPE(Matrix4x4);
+};
 
-typedef int8_t int8;
-typedef uint8_t uint8;
-
-typedef int16_t int16;
-typedef uint16_t uint16;
-
-typedef int32_t int32;
-typedef uint32_t uint32;
-
-typedef int64_t int64;
-typedef uint64_t uint64;
-
-typedef char CHAR;
-
-#else
-
-// Windows?
-#ifdef _MSC_VER
-
-typedef __int16 int16;
-typedef unsigned __int16 uint16;
-typedef __int32 int32;
-typedef unsigned __int32 uint32;
-typedef __int8 int8;
-typedef unsigned __int8 uint8;
-
-typedef unsigned __int64 uint64;
-typedef __int64 int64;
-
-#include <tchar.h>
-typedef TCHAR CHAR;
-
-// If not, assume GCC, or at least standard defines...
-#else 
-
-#include <stdint.h>
-
-typedef int8_t int8;
-typedef int16_t int16;
-typedef int32_t int32;
-typedef int64_t int64;
-
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
-
-typedef char CHAR;
-
-#endif // _MSC_VER
-
-#endif // FASTC_BASE_HAS_CPP11_TYPES
-
-#endif // _TEX_COMP_TYPES_H_
+#endif  // BASE_INCLUDE_MATRIX3X3_H_

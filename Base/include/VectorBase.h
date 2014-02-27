@@ -31,6 +31,12 @@
 
 namespace FasTC {
 
+  enum EVectorType {
+    eVectorType_Scalar,
+    eVectorType_Vector,
+    eVectorType_Matrix
+  };
+
   template <typename T, const int N>
   class VectorBase {
    protected:
@@ -46,7 +52,7 @@ namespace FasTC {
       for(int i = 0; i < N; i++) vec[i] = other[i];
     }
 
-    explicit VectorBase(T *_vec) {
+    explicit VectorBase(const T *_vec) {
       for(int i = 0; i < N; i++) {
         vec[i] = _vec[i];
       }
@@ -61,7 +67,7 @@ namespace FasTC {
     const T &operator[](int idx) const { return vec[idx]; }
 
     // Allow casts to the respective array representation...
-    operator T *() const { return vec; }
+    operator const T *() const { return vec; }
     VectorBase<T, N> &operator=(const T *v) {
       for(int i = 0; i < N; i++)
         vec[i] = v[i];
@@ -71,7 +77,11 @@ namespace FasTC {
     // Allows casting to other vector types if the underlying type system does as well...
     template<typename _T>
     operator VectorBase<_T, N>() const { 
-      return VectorBase<_T, N>(vec); 
+      VectorBase<_T, N> ret;
+      for(int i = 0; i < N; i++) {
+        ret[i] = static_cast<_T>(vec[i]);
+      }
+      return ret;
     }
 
     // Vector operations
@@ -85,15 +95,22 @@ namespace FasTC {
 
     T LengthSq() const { return this->Dot(*this); }
     T Length() const { return sqrt(LengthSq()); }
+
+    void Normalize() {
+      T len = Length();
+      for(int i = 0; i < N; i++) {
+        vec[i] /= len;
+      }
+    }
   };
 
   // Operators
   template<typename VectorTypeOne, typename VectorTypeTwo>
   static inline VectorTypeOne VectorAddition(const VectorTypeOne &v1,
                                              const VectorTypeTwo &v2) {
-    VectorTypeOne a;
+    VectorTypeOne a(v1);
     for(int i = 0; i < VectorTypeOne::Size; i++) {
-      a(i) = v1(i) + v2(i);
+      a(i) += v2[i];
     }
     return a;
   }
@@ -113,9 +130,9 @@ namespace FasTC {
   template<typename VectorTypeOne, typename VectorTypeTwo>
   static inline VectorTypeOne VectorSubtraction(const VectorTypeOne &v1,
                                                 const VectorTypeTwo &v2) {
-    VectorTypeOne a;
+    VectorTypeOne a(v1);
     for(int i = 0; i < VectorTypeOne::Size; i++) {
-      a(i) = v1(i) - v2(i);
+      a(i) -= v2[i];
     }
     return a;
   }
@@ -135,99 +152,141 @@ namespace FasTC {
   template<typename T>
   class VectorTraits {
    public:
-    static const bool IsVector = false;
+    static const EVectorType kVectorType = eVectorType_Scalar;
   };
 
   template<typename T, const int N>
   class VectorTraits<VectorBase<T, N> > {
    public:
-    static const bool IsVector = true;
+    static const EVectorType kVectorType = eVectorType_Vector;
   };
 
-  #define REGISTER_VECTOR_TYPE(TYPE) \
-  template<> \
-  class VectorTraits< TYPE > { \
-   public: \
-    static const bool IsVector = true; \
+  #define REGISTER_VECTOR_TYPE(TYPE)                           \
+  template<>                                                   \
+  class VectorTraits< TYPE > {                                 \
+  public:                                                      \
+    static const EVectorType kVectorType = eVectorType_Vector; \
   }
 
-  #define REGISTER_ONE_TEMPLATE_VECTOR_TYPE(TYPE) \
-  template<typename T> \
-  class VectorTraits< TYPE <T> > { \
-   public: \
-    static const bool IsVector = true; \
+  #define REGISTER_ONE_TEMPLATE_VECTOR_TYPE(TYPE)              \
+  template<typename T>                                         \
+  class VectorTraits< TYPE <T> > {                             \
+  public:                                                      \
+    static const EVectorType kVectorType = eVectorType_Vector; \
   }
-
-  template<bool condition, typename TypeOne, typename TypeTwo>
-  class VectorSwitch {
-   private:
-    const TypeOne &m_A;
-    const TypeTwo &m_B;
-   public:
-    typedef TypeOne VectorType;
-    typedef TypeTwo ScalarType;
-
-    VectorSwitch(const TypeOne &a, const TypeTwo &b)
-      : m_A(a), m_B(b) { }
-
-    const TypeOne &GetVector() { return m_A; }
-    const TypeTwo &GetScalar() { return m_B; }
-  };
-
-  template<typename TypeOne, typename TypeTwo>
-  class VectorSwitch<false, TypeOne, TypeTwo> {
-   private:
-    const TypeOne &m_A;
-    const TypeTwo &m_B;
-
-   public:
-    typedef TypeTwo VectorType;
-    typedef TypeOne ScalarType;
-
-    VectorSwitch(const TypeOne &a, const TypeTwo &b)
-      : m_A(a), m_B(b) { }
-
-    const TypeOne &GetVector() { return m_B; }
-    const TypeTwo &GetScalar() { return m_A; }
-  };
 
   template<typename VectorType, typename ScalarType>
   static inline VectorType ScalarMultiply(const VectorType &v, const ScalarType &s) {
-    VectorType a;
+    VectorType a(v);
     for(int i = 0; i < VectorType::Size; i++)
-      a(i) = static_cast<typename VectorType::ScalarType>(v(i) * s);
+      a(i) = static_cast<typename VectorType::ScalarType>(a(i) * s);
     return a;
   }
+
+  template<
+    EVectorType kVectorTypeOne,
+    EVectorType kVectorTypeTwo,
+    typename TypeOne,
+    typename TypeTwo>
+  class MultSwitch {
+   private:
+    const TypeOne &m_A;
+    const TypeTwo &m_B;
+   public:
+    typedef TypeOne ResultType;
+
+    MultSwitch(const TypeOne &a, const TypeTwo &b)
+      : m_A(a), m_B(b) { }
+
+    ResultType GetMultiplication() const { return m_A * m_B; }
+  };
+
+  template<typename TypeOne, typename TypeTwo>
+  class MultSwitch<
+    eVectorType_Scalar,
+    eVectorType_Vector,
+    TypeOne, TypeTwo> {
+   private:
+    const TypeOne &m_A;
+    const TypeTwo &m_B;
+
+   public:
+    typedef TypeTwo ResultType;
+
+    MultSwitch(const TypeOne &a, const TypeTwo &b)
+      : m_A(a), m_B(b) { }
+
+    ResultType GetMultiplication() const { return ScalarMultiply(m_B, m_A); }
+  };
+
+  template<typename TypeOne, typename TypeTwo>
+  class MultSwitch<
+    eVectorType_Vector,
+    eVectorType_Scalar,
+    TypeOne, TypeTwo> {
+   private:
+    const TypeOne &m_A;
+    const TypeTwo &m_B;
+
+   public:
+    typedef TypeOne ResultType;
+
+    MultSwitch(const TypeOne &a, const TypeTwo &b)
+      : m_A(a), m_B(b) { }
+
+    ResultType GetMultiplication() const { return ScalarMultiply(m_A, m_B); }
+  };
+
+  template<typename TypeOne, typename TypeTwo>
+  class MultSwitch<
+    eVectorType_Vector,
+    eVectorType_Vector,
+    TypeOne, TypeTwo> {
+   private:
+    const TypeOne &m_A;
+    const TypeTwo &m_B;
+
+   public:
+    typedef typename TypeOne::ScalarType ResultType;
+
+    MultSwitch(const TypeOne &a, const TypeTwo &b)
+      : m_A(a), m_B(b) { }
+
+    ResultType GetMultiplication() const { return m_A.Dot(m_B); }
+  };
 
   template<typename TypeOne, typename TypeTwo>
   static inline 
-    typename VectorSwitch< VectorTraits<TypeOne>::IsVector, TypeOne, TypeTwo >::VectorType
+    typename MultSwitch<
+      VectorTraits<TypeOne>::kVectorType,
+      VectorTraits<TypeTwo>::kVectorType,
+      TypeOne, TypeTwo
+    >::ResultType
   operator*(const TypeOne &v1, const TypeTwo &v2) {
-    typedef VectorSwitch< VectorTraits<TypeOne>::IsVector, TypeOne, TypeTwo > VSwitch;
-    VSwitch s(v1, v2);
-    return ScalarMultiply(s.GetVector(), s.GetScalar());
-  }
-
-  template<typename VectorType, typename ScalarType>
-  static inline VectorType ScalarDivide(const VectorType &v, const ScalarType &s) {
-    VectorType a;
-    for(int i = 0; i < VectorType::Size; i++)
-      a(i) = static_cast<typename VectorType::ScalarType>(v(i) / s);
-    return a;
-  }
-
-  template<typename TypeOne, typename TypeTwo>
-  static inline
-    typename VectorSwitch< VectorTraits<TypeOne>::IsVector, TypeOne, TypeTwo >::VectorType
-  operator/(const TypeOne &v1, const TypeTwo &v2) {
-    typedef VectorSwitch< VectorTraits<TypeOne>::IsVector, TypeOne, TypeTwo > VSwitch;
-    VSwitch s(v1, v2);
-    return ScalarDivide(s.GetVector(), s.GetScalar());
+    typedef MultSwitch<
+      VectorTraits<TypeOne>::kVectorType,
+      VectorTraits<TypeTwo>::kVectorType,
+      TypeOne, TypeTwo
+    > VSwitch;
+    return VSwitch(v1, v2).GetMultiplication();
   }
 
   template<typename VectorType, typename ScalarType>
   static inline VectorType &operator*=(VectorType &v, const ScalarType &s) {
-    return v = ScalarMultiply(v, s);
+    return v = v * s;
+  }
+
+  template<typename VectorType, typename ScalarType>
+  static inline VectorType ScalarDivide(const VectorType &v, const ScalarType &s) {
+    VectorType a(v);
+    for(int i = 0; i < VectorType::Size; i++)
+      a(i) = static_cast<typename VectorType::ScalarType>(a(i) / s);
+    return a;
+  }
+
+  template<typename TypeOne, typename TypeTwo>
+  static inline TypeOne operator/(const TypeOne &v1, const TypeTwo &v2) {
+    return ScalarDivide(v1, v2);
   }
 
   template<typename VectorType, typename ScalarType>

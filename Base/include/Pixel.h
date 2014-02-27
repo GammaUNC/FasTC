@@ -59,7 +59,7 @@
 namespace FasTC {
 
 class Pixel : public Vector4<uint16> {
- private:
+ protected:
   typedef uint16 ChannelType;
   typedef Vector4<ChannelType> VectorType;
   uint8 m_BitDepth[4];
@@ -143,45 +143,43 @@ class Pixel : public Vector4<uint16> {
   uint32 Pack() const;
   void Unpack(uint32 rgba);
 
+  // Shuffles the pixel values around so that they change their ordering based
+  // on the passed mask. The values are chosen such that each two bits from the
+  // least significant bit define a value from 0-3. From LSB to MSB, the values
+  // are labelled a, b, c, d. From these labels, we store:
+  // m_Pixels[0] = m_Pixels[a]
+  // m_Pixels[1] = m_Pixels[b]
+  // m_Pixels[2] = m_Pixels[c]
+  // m_Pixels[3] = m_Pixels[d]
+  // hence, 0xE4 (11 10 01 00) represents a no-op.
+  void Shuffle(uint8 shuffleMask = 0xE4);
+
   // Tests for equality by comparing the values and the bit depths.
   bool operator==(const Pixel &) const;
 };
 REGISTER_VECTOR_TYPE(Pixel);
 
-// Overload operators so that we can preserve bit depths...
-template<typename ScalarType>
-static inline Pixel ScalarMultiply(const Pixel &p, const ScalarType &s) {
-  Pixel a(p);
-  for(int i = 0; i < Pixel::Size; i++)
-    a(i) = p(i) * s;
-  return a;
-}
+class YCoCgPixel : public Pixel {
+ private:
+  void ToYCoCg();
 
-template<typename ScalarType>
-static inline Pixel ScalarDivide(const Pixel &p, const ScalarType &s) {
-  Pixel a(p);
-  for(int i = 0; i < Pixel::Size; i++)
-    a(i) = p(i) / s;
-  return a;
-}
+ public:
+  YCoCgPixel() : Pixel() { }
+  explicit YCoCgPixel(uint32 rgba) : Pixel(rgba) { ToYCoCg(); }
+  explicit YCoCgPixel(const Pixel &p) : Pixel(p) { ToYCoCg(); }
 
-template<typename VectorType>
-static inline Pixel VectorAddition(const Pixel &p, const VectorType &v) {
-  Pixel a(p);
-  for(int i = 0; i < Pixel::Size; i++) {
-    a(i) += v(i);
-  }
-  return a;
-}
+  Pixel ToRGBA() const;
 
-template<typename VectorType>
-static inline Pixel VectorSubtraction(const Pixel &p, const VectorType &v) {
-  Pixel a(p);
-  for(int i = 0; i < Pixel::Size; i++) {
-    a(i) -= v(i);
-  }
-  return a;
-}
+  float ToIntensity() const { return ConvertChannelToFloat(R(), 8); }
+  uint32 Pack() const { return ToRGBA().Pack(); }
+  void Unpack(uint32 rgba) { Pixel::Unpack(rgba); ToYCoCg(); }
+
+  const ChannelType &Co() const { return Z(); }
+  ChannelType &Co() { return Z(); }
+  const ChannelType &Cg() const { return W(); }
+  ChannelType &Cg() { return W(); }  
+};
+REGISTER_VECTOR_TYPE(YCoCgPixel);
 
 }  // namespace FasTC
 
