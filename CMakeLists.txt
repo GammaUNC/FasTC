@@ -94,7 +94,7 @@ FIND_PACKAGE(PVRTexLib)
 FIND_PACKAGE(BC7Export)
 
 SET(FASTC_DIRECTORIES
-  Base Core IO BPTCEncoder PVRTCEncoder DXTEncoder ETCEncoder
+  Base Core IO BPTCEncoder PVRTCEncoder DXTEncoder ETCEncoder ASTCEncoder
 )
 
 FOREACH(DIR ${FASTC_DIRECTORIES})
