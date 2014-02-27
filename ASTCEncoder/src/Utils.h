@@ -50,39 +50,57 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#ifndef ASTCENCODER_INCLUDE_ASTCCOMPRESSOR_H_
-#define ASTCENCODER_INCLUDE_ASTCCOMPRESSOR_H_
+#ifndef ASTCENCODER_SRC_UTILS_H_
+#define ASTCENCODER_SRC_UTILS_H_
 
-#include "CompressionJob.h"
+#include "ASTCCompressor.h"
+
+#include "TexCompTypes.h"
 
 namespace ASTCC {
 
-  // The size of the block for the ASTC data. This needs to be supplied
-  // for every block stream, since ASTC defines texel weights to be less
-  // than or equal to the block size in order to save bits when decompressing
-  enum EASTCBlockSize {
-    eASTCBlockSize_4x4,
-    eASTCBlockSize_5x4,
-    eASTCBlockSize_5x5,
-    eASTCBlockSize_6x5,
-    eASTCBlockSize_6x6,
-    eASTCBlockSize_8x5,
-    eASTCBlockSize_8x6,
-    eASTCBlockSize_8x8,
-    eASTCBlockSize_10x5,
-    eASTCBlockSize_10x6,
-    eASTCBlockSize_10x8,
-    eASTCBlockSize_10x10,
-    eASTCBlockSize_12x10,
-    eASTCBlockSize_12x12,
+  uint32 GetBlockHeight(EASTCBlockSize blockSize) {
+    switch(blockSize) {
+    case eASTCBlockSize_4x4: return 4;
+    case eASTCBlockSize_5x4: return 4;
+    case eASTCBlockSize_5x5: return 5;
+    case eASTCBlockSize_6x5: return 5;
+    case eASTCBlockSize_6x6: return 6;
+    case eASTCBlockSize_8x5: return 5;
+    case eASTCBlockSize_8x6: return 6;
+    case eASTCBlockSize_8x8: return 8;
+    case eASTCBlockSize_10x5: return 5;
+    case eASTCBlockSize_10x6: return 6;
+    case eASTCBlockSize_10x8: return 8;
+    case eASTCBlockSize_10x10: return 10;
+    case eASTCBlockSize_12x10: return 10;
+    case eASTCBlockSize_12x12: return 12;
+    }
+    assert(false);
+    return -1;
   };
 
-  // Takes a stream of compressed ASTC data and decompresses it into R8G8B8A8
-  // format. The block size must be specified in order to properly
-  // decompress the data.
-  void Decompress(const FasTC::DecompressionJob &,
-                  EASTCBlockSize blockSize);
+  uint32 GetBlockWidth(EASTCBlockSize blockSize) {
+    switch(blockSize) {
+    case eASTCBlockSize_4x4: return 4;
+    case eASTCBlockSize_5x4: return 5;
+    case eASTCBlockSize_5x5: return 5;
+    case eASTCBlockSize_6x5: return 6;
+    case eASTCBlockSize_6x6: return 6;
+    case eASTCBlockSize_8x5: return 8;
+    case eASTCBlockSize_8x6: return 8;
+    case eASTCBlockSize_8x8: return 8;
+    case eASTCBlockSize_10x5: return 10;
+    case eASTCBlockSize_10x6: return 10;
+    case eASTCBlockSize_10x8: return 10;
+    case eASTCBlockSize_10x10: return 10;
+    case eASTCBlockSize_12x10: return 12;
+    case eASTCBlockSize_12x12: return 12;
+    }
+    assert(false);
+    return -1;
+  };
 
 }  // namespace ASTCC
 
-#endif  // ASTCENCODER_INCLUDE_ASTCCOMPRESSOR_H_
+#endif  // ASTCENCODER_SRC_UTILS_H_
