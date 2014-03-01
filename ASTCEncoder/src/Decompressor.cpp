@@ -304,6 +304,13 @@ namespace ASTCC {
     BitStreamReadOnly strm(inBuf);
     TexelWeightParams weightParams = DecodeBlockInfo(strm);
     
+    // Was there an error?
+    if(weightParams.m_bError) {
+      assert(!"Invalid block mode");
+      FillError(outBuf, blockWidth, blockHeight);
+      return;
+    }
+
     if(weightParams.m_Width > blockWidth) {
       assert(!"Texel weight grid width should be smaller than block width");
       FillError(outBuf, blockWidth, blockHeight);
