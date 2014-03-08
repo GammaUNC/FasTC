@@ -80,6 +80,7 @@ SET( SOURCES
 )
 
 SET( HEADERS
+  "include/Bits.h"
   "include/BitStream.h"
   "include/Color.h"
   "include/CompressionJob.h"
