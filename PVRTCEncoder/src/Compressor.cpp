@@ -486,11 +486,11 @@ namespace PVRTCC {
           minHighDist = ::std::min<uint32>(minHighDist, labels[cidx].highLabel.distance);
       }
 
-      if(minLowDist != labels[idx].lowLabel.distance - 1) {
+      if(static_cast<int32>(minLowDist) != labels[idx].lowLabel.distance - 1) {
         labels[idx].lowLabel.nLabels = 0;
       }
 
-      if(minHighDist != labels[idx].highLabel.distance - 1) {
+      if(static_cast<int32>(minHighDist) != labels[idx].highLabel.distance - 1) {
         labels[idx].highLabel.nLabels = 0;
       }
 
