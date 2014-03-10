@@ -58,43 +58,16 @@
 #include <vector>
 
 #include "Utils.h"
+#include "IntegerEncoding.h"
 
 #include "TexCompTypes.h"
-
-#include "Bits.h"
-using FasTC::Bits;
 
 #include "BitStream.h"
 using FasTC::BitStreamReadOnly;
 
 namespace ASTCC {
 
-  // According to table C.2.7
-  void GetBitEncoding(uint8 &nQuints, uint8 &nTrits, uint8 &nBits,
-                      const uint32 maxWeight) {
-    nQuints = nTrits = nBits = 0;
-    switch(maxWeight) {
-    case 1: nBits = 1; return;
-    case 2: nTrits = 1; return;
-    case 3: nBits = 2; return;
-    case 4: nQuints = 1; return;
-    case 5: nTrits = 1; nBits = 1; return;
-    case 7: nBits = 3; return;
-    case 9: nQuints = 1; nBits = 1; return;
-    case 11: nTrits = 1; nBits = 2; return;
-    case 15: nBits = 4; return;
-    case 19: nQuints = 1; nBits = 2; return;
-    case 23: nTrits = 1; nBits = 3; return;
-    case 31: nBits = 5; return;
-
-    default:
-      assert(!"Invalid maximum weight");
-      return;
-    }
-  }
-
-  class TexelWeightParams {
-   public:
+  struct TexelWeightParams {
     uint32 m_Width;
     uint32 m_Height;
     bool m_bDualPlane;
@@ -113,19 +86,7 @@ namespace ASTCC {
         nIdxs *= 2;
       }
 
-      // How are they encoded?
-      uint8 nQuints, nTrits, nBits;
-      GetBitEncoding(nQuints, nTrits, nBits, m_MaxWeight);
-
-      // nQuints and nTrits are mutually exclusive values of one.
-      assert(nQuints != 1 || nTrits == 0);
-      assert(nTrits != 1 || nQuints == 0);
-
-      // each index has at least as many bits per index as described.
-      uint32 totalBits = nBits * nIdxs;
-      totalBits += (nIdxs * 8 * nTrits + 4) / 5;
-      totalBits += (nIdxs * 7 * nQuints + 2) / 3;
-      return totalBits;
+      return IntegerEncodedValue::CreateEncoding(m_MaxWeight).GetBitLength(nIdxs);
     }
   };
 
@@ -326,140 +287,192 @@ namespace ASTCC {
     }
   }
 
-  void DecodeTritBlock(BitStreamReadOnly &bits,
-                       std::vector<uint32> &result,
-                       uint32 nBitsPerValue) {
-    // Implement the algorithm in section C.2.12
-    uint32 m[5];
-    uint32 t[5];
-    uint32 T;
+  void DecodeColorValues(uint32 *out, uint8 *data, uint32 *modes, const uint32 nBitsForColorData) {
+    // First figure out how many color values we have
+    uint32 nValues = 0;
+    for(uint32 i = 0; i < 4; i++) {
+      nValues += ((modes[i]>>2) + 1) << 1;
+    }
 
-    // Read the trit encoded block according to
-    // table C.2.14
-    m[0] = bits.ReadBits(nBitsPerValue);
-    T = bits.ReadBits(2);
-    m[1] = bits.ReadBits(nBitsPerValue);
-    T |= bits.ReadBits(2) << 2;
-    m[2] = bits.ReadBits(nBitsPerValue);
-    T |= bits.ReadBit() << 4;
-    m[3] = bits.ReadBits(nBitsPerValue);
-    T |= bits.ReadBits(2) << 5;
-    m[4] = bits.ReadBits(nBitsPerValue);
-    T |= bits.ReadBit() << 7;
+    // Then based on the number of values and the remaining number of bits,
+    // figure out the max value for each of them...
+    uint32 range = 255;
+    while(range > 0) {
+      IntegerEncodedValue val = IntegerEncodedValue::CreateEncoding(range);
+      uint32 bitLength = val.GetBitLength(nValues);
+      if(bitLength < nBitsForColorData) {
+        // Find the smallest possible range that matches the given encoding
+        while(--range > 0) {
+          IntegerEncodedValue newval = IntegerEncodedValue::CreateEncoding(range);
+          if(!newval.MatchesEncoding(val)) {
+            break;
+          }
+        }
 
-    uint32 C = 0;
-
-    Bits<uint32> Tb(T);
-    if(Tb(2, 4) == 7) {
-      C = (Tb(5, 7) << 2) | Tb(0, 1);
-      t[4] = t[3] = 2;
-    } else {
-      C = Tb(0, 4);
-      if(Tb(5, 6) == 3) {
-        t[4] = 2;
-        t[3] = Tb[7];
-      } else {
-        t[4] = Tb[7];
-        t[3] = Tb(5, 6);
+        // Return to last matching range.
+        range++;
+        break;
       }
     }
 
-    Bits<uint32> Cb(C);
-    if(Cb(0, 1) == 3) {
-      t[2] = 2;
-      t[1] = Cb[4];
-      t[0] = (Cb[3] << 1) | (Cb[2] & ~Cb[3]);
-    } else if(Cb(2, 3) == 3) {
-      t[2] = 2;
-      t[1] = 2;
-      t[0] = Cb(0, 1);
-    } else {
-      t[2] = Cb[4];
-      t[1] = Cb(2, 3);
-      t[0] = (Cb[1] << 1) | (Cb[0] & ~Cb[1]);
-    }
+    // We now have enough to decode our integer sequence.
+    std::vector<IntegerEncodedValue> decodedColorValues;
+    FasTC::BitStreamReadOnly colorStream (data);
+    IntegerEncodedValue::
+      DecodeIntegerSequence(decodedColorValues, colorStream, range, nValues);
+    assert(nValues == decodedColorValues.size());
 
-    for(uint32 i = 0; i < 5; i++) {
-      assert(t[i] < 3);
-      uint32 val = (t[i] << nBitsPerValue) + m[i];
-      result.push_back(val);
-    }
-  }
+    // Once we have the decoded values, we need to dequantize them to the 0-255 range
+    // This procedure is outlined in ASTC spec C.2.13
+    uint32 outIdx = 0;
+    std::vector<IntegerEncodedValue>::const_iterator itr;
+    for(itr = decodedColorValues.begin(); itr != decodedColorValues.end(); itr++) {
+      const IntegerEncodedValue &val = *itr;
+      uint32 bitlen = val.BaseBitLength();
+      uint32 bitval = val.GetBitValue();
 
-  void DecodeQuintBlock(BitStreamReadOnly &bits,
-                        std::vector<uint32> &result,
-                        uint32 nBitsPerValue) {
-    // Implement the algorithm in section C.2.12
-    uint32 m[3];
-    uint32 q[3];
-    uint32 Q;
+      assert(bitlen >= 1);
 
-    // Read the trit encoded block according to
-    // table C.2.15
-    m[0] = bits.ReadBits(nBitsPerValue);
-    Q = bits.ReadBits(3);
-    m[1] = bits.ReadBits(nBitsPerValue);
-    Q |= bits.ReadBits(2) << 3;
-    m[2] = bits.ReadBits(nBitsPerValue);
-    Q |= bits.ReadBits(2) << 5;
-
-    Bits<uint32> Qb(Q);
-    if(Qb(1, 2) == 3 && Qb(5, 6) == 0) {
-      q[0] = q[1] = 4;
-      q[2] = (Qb[0] << 2) | ((Qb[4] & ~Qb[0]) << 1) | (Qb[3] & ~Qb[0]);
-    } else {
-      uint32 C = 0;
-      if(Qb(1, 2) == 3) {
-        q[2] = 4;
-        C = (Qb(3, 4) << 3) | ((~Qb(5, 6) & 3) << 1) | Qb[0];
-      } else {
-        q[2] = Qb(5, 6);
-        C = Qb(0, 4);
+      uint32 A = 0, B = 0, C = 0, D = 0;
+      // A is just the lsb replicated 8 times.
+      for(uint32 i = 0; i < 9; i++) {
+        A |= bitval & 1;
+        A <<= 1;
       }
 
-      Bits<uint32> Cb(C);
-      if(Cb(0, 2) == 5) {
-        q[1] = 4;
-        q[0] = Cb(3, 4);
-      } else {
-        q[1] = Cb(3, 4);
-        q[0] = Cb(0, 2);
+      switch(val.GetEncoding()) {
+        // Replicate bits
+        case eIntegerEncoding_JustBits: {
+          uint32 result = bitval;
+          uint32 resultLen = bitlen;
+          while(resultLen < 8) {
+            result <<= bitlen;
+            result |= bitval & ((1 << std::min(8 - bitlen, bitlen)) - 1);
+            resultLen += bitlen;
+          }
+          out[outIdx++] = result;
+        }
+        break;
+
+        // Use algorithm in C.2.13
+        case eIntegerEncoding_Trit: {
+
+          D = val.GetTritValue();
+
+          switch(bitlen) {
+            case 1: {
+              C = 204;
+            }
+            break;
+
+            case 2: {
+              C = 93;
+              // B = b000b0bb0
+              uint32 b = (bitval >> 1) & 1;
+              B = (b << 8) | (b << 4) | (b << 2) | (b << 1);
+            }
+            break;
+
+            case 3: {
+              C = 44;
+              // B = cb000cbcb
+              uint32 cb = (bitval >> 1) & 3;
+              B = (cb << 7) | (cb << 2) | cb;
+            }
+            break;
+
+            case 4: {
+              C = 22;
+              // B = dcb000dcb
+              uint32 dcb = (bitval >> 1) & 7;
+              B = (dcb << 6) | dcb;
+            }
+            break;
+
+            case 5: {
+              C = 11;
+              // B = edcb000ed
+              uint32 edcb = (bitval >> 1) & 0xF;
+              B = (edcb << 5) | (edcb >> 2);
+            }
+            break;
+
+            case 6: {
+              C = 5;
+              // B = fedcb000f
+              uint32 fedcb = (bitval >> 1) & 0x1F;
+              B = (fedcb << 4) | (fedcb >> 4);
+            }
+            break;
+
+            default:
+              assert(!"Unsupported trit encoding for color values!");
+              break;
+          }  // switch(bitlen)
+        }  // case eIntegerEncoding_Trit
+        break;
+
+        case eIntegerEncoding_Quint: {
+
+          D = val.GetQuintValue();
+
+          switch(bitlen) {
+            case 1: {
+              C = 113;
+            }
+            break;
+
+            case 2: {
+              C = 54;
+              // B = b0000bb00
+              uint32 b = (bitval >> 1) & 1;
+              B = (b << 8) | (b << 3) | (b << 2);
+            }
+            break;
+
+            case 3: {
+              C = 26;
+              // B = cb0000cbc
+              uint32 cb = (bitval >> 1) & 3;
+              B = (cb << 7) | (cb << 1) | (cb >> 1);
+            }
+            break;
+
+            case 4: {
+              C = 13;
+              // B = dcb000dcb
+              uint32 dcb = (bitval >> 1) & 7;
+              B = (dcb << 6) | dcb;
+            }
+            break;
+
+            case 5: {
+              C = 6;
+              // B = edcb0000e
+              uint32 edcb = (bitval >> 1) & 0xF;
+              B = (edcb << 5) | (edcb >> 3);
+            }
+            break;
+
+            default:
+              assert(!"Unsupported quint encoding for color values!");
+              break;
+          }  // switch(bitlen)
+        }  // case eIntegerEncoding_Quint
+        break;
+      }  // switch(val.GetEncoding())
+
+      if(val.GetEncoding() != eIntegerEncoding_JustBits) {
+        uint32 T = D * C + B;
+        T ^= A;
+        T = (A & 0x80) | (T >> 2);
+        out[outIdx++] = T;
       }
     }
 
-    for(uint32 i = 0; i < 3; i++) {
-      assert(q[i] < 5);
-      uint32 val = (q[i] << nBitsPerValue) + m[i];
-      result.push_back(val);
-    }
-  }
-
-  void DecodeIntegerSequence(BitStreamReadOnly &bits,
-                             std::vector<uint32> &result,
-                             uint32 maxRange,
-                             uint32 nValues) {
-    // Clean our result vector
-    result.clear();
-    result.reserve(nValues);
-
-    // Determine encoding parameters
-    uint8 nQuints, nTrits, nBits;
-    GetBitEncoding(nQuints, nTrits, nBits, maxRange);
-
-    // Start decoding
-    uint32 nValsDecoded = 0;
-    while(nValsDecoded < nValues) {
-      if(nQuints) {
-        DecodeQuintBlock(bits, result, nBits);
-        nValsDecoded += 3;
-      } else if(nTrits) {
-        DecodeTritBlock(bits, result, nBits);
-        nValsDecoded += 5;
-      } else {
-        // Decode bit by bit
-        result.push_back(bits.ReadBits(nBits));
-        nValsDecoded++;
-      }
+    // Make sure that each of our values is in the proper range...
+    for(uint32 i = 0; i < nValues; i++) {
+      assert(out[i] <= 255);
     }
   }
 
@@ -546,6 +559,7 @@ namespace ASTCC {
     remainingBits -= planeSelectorBits;
 
     // Read color data...
+    uint32 colorDataBits = remainingBits;
     while(remainingBits > 0) {
       uint32 nb = std::min(remainingBits, 8);
       uint32 b = strm.ReadBits(nb);
@@ -588,16 +602,37 @@ namespace ASTCC {
       }
     }
 
-#ifndef NDEBUG
     // Make sure everything up till here is sane.
     for(uint32 i = 0; i < nPartitions; i++) {
       assert(colorEndpointMode[i] < 16);
     }
     assert(strm.GetBitsRead() + weightParams.GetPackedBitSize() == 128);
-#endif
 
     // Read the texel weight data..
+    uint8 texelWeightData[16];
+    memset(texelWeightData, 0, sizeof(texelWeightData));
+    FasTC::BitStream texelWeightStream (texelWeightData, 16*8, 0);
     
+    int32 texelWeightBits = weightParams.GetPackedBitSize();
+    while(texelWeightBits > 0) {
+      uint32 nb = std::min(texelWeightBits, 8);
+      uint32 b = strm.ReadBits(nb);
+      texelWeightStream.WriteBits(b, nb);
+      texelWeightBits -= 8;
+    }
+
+    assert(strm.GetBitsRead() == 128);
+
+    // Decode both color data and texel weight data
+    uint32 colorValues[32]; // Four values, two endpoints, four maximum paritions
+    DecodeColorValues(colorValues, colorEndpointData, colorEndpointMode, colorDataBits);
+
+    std::vector<IntegerEncodedValue> texelWeightValues;
+    FasTC::BitStreamReadOnly weightStream (texelWeightData);
+    IntegerEncodedValue::
+      DecodeIntegerSequence(texelWeightValues, weightStream,
+                            weightParams.m_MaxWeight,
+                            weightParams.m_Width * weightParams.m_Height);
   }
 
   void Decompress(const FasTC::DecompressionJob &dcj, EASTCBlockSize blockSize) {

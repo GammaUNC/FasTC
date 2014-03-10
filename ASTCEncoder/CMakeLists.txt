@@ -57,10 +57,12 @@ INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/Base/include)
 
 SET( HEADERS
   include/ASTCCompressor.h
+  src/IntegerEncoding.h
 )
 
 SET( SOURCES
   src/Decompressor.cpp
+  src/IntegerEncoding.cpp
 )
 
 #CONFIGURE_FILE(
