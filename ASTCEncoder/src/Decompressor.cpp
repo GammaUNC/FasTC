@@ -62,6 +62,7 @@
 
 #include "TexCompTypes.h"
 
+#include "Bits.h"
 #include "BitStream.h"
 using FasTC::BitStreamReadOnly;
 
@@ -334,25 +335,14 @@ namespace ASTCC {
       assert(bitlen >= 1);
 
       uint32 A = 0, B = 0, C = 0, D = 0;
-      // A is just the lsb replicated 8 times.
-      for(uint32 i = 0; i < 9; i++) {
-        A |= bitval & 1;
-        A <<= 1;
-      }
+      // A is just the lsb replicated 9 times.
+      A = FasTC::Replicate(bitval & 1, 1, 9);
 
       switch(val.GetEncoding()) {
         // Replicate bits
-        case eIntegerEncoding_JustBits: {
-          uint32 result = bitval;
-          uint32 resultLen = bitlen;
-          while(resultLen < 8) {
-            result <<= bitlen;
-            result |= bitval & ((1 << std::min(8 - bitlen, bitlen)) - 1);
-            resultLen += bitlen;
-          }
-          out[outIdx++] = result;
-        }
-        break;
+        case eIntegerEncoding_JustBits: 
+          out[outIdx++] = FasTC::Replicate(bitval, bitlen, 8);
+          break;
 
         // Use algorithm in C.2.13
         case eIntegerEncoding_Trit: {
