@@ -55,7 +55,7 @@ INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/Base/include )
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/GTest/include)
 
 SET(TESTS
-  Vector Matrix Pixel Image Color
+  Vector Matrix Pixel Image Color Bits
 )
 
 FOREACH(TEST ${TESTS})

@@ -56,6 +56,8 @@
 #include <cassert>
 #include <algorithm>
 
+#include "Bits.h"
+
 template<typename T>
 static inline T Clamp(const T &v, const T &_min, const T &_max) {
   return std::max(_min, std::min(v, _max));
@@ -161,16 +163,7 @@ namespace FasTC {
     } else if(oldDepth == 0 && newDepth != 0) {
       return (1 << newDepth) - 1;
     } else if(newDepth > oldDepth) {
-      uint8 bitsLeft = newDepth;
-      uint8 ret = 0;
-      while(bitsLeft > oldDepth) {
-        ret |= val;
-        bitsLeft -= oldDepth;
-        ret <<= std::min(bitsLeft, oldDepth);
-      }
-
-      return ret | (val >> (oldDepth - bitsLeft));
-
+      return Replicate(val, oldDepth, newDepth);
     } else {
       // oldDepth > newDepth
       if(newDepth == 0) {

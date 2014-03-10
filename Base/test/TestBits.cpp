@@ -50,66 +50,20 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#ifndef __BASE_INCLUDE_BITS_H__
-#define __BASE_INCLUDE_BITS_H__
+#include "gtest/gtest.h"
+#include "Bits.h"
 
-#include "TexCompTypes.h"
+TEST(Bits, Replicate) {
+  uint32 xv = 3;
+  EXPECT_EQ(FasTC::Replicate(xv, 2, 8), 0xFF);
+  EXPECT_EQ(FasTC::Replicate(xv, 0, 7), 0);
+  EXPECT_EQ(FasTC::Replicate(xv, 3, 4), 0x06);
 
-namespace FasTC {
+  xv = 0;
+  EXPECT_EQ(FasTC::Replicate(xv, 1, 0), 0);
+  EXPECT_EQ(FasTC::Replicate(xv, 0, 7), 0);
 
-  template<typename IntType>
-  class Bits {
-   private:
-    const IntType &m_Bits;
-
-    // Don't copy
-    Bits() { }
-    Bits(const Bits &) { }
-    Bits &operator=(const Bits &) { }
-
-   public:
-    explicit Bits(IntType &v) : m_Bits(v) { }
-
-    bool operator[](uint32 bitPos) {
-      return (m_Bits >> bitPos) & 1;
-    }
-
-    IntType operator()(uint32 start, uint32 end) {
-      if(start == end) {
-        return (*this)[start];
-      } else if(start > end) {
-        uint32 t = start;
-        start = end;
-        end = t;
-      }
-
-      uint64 mask = (1 << (end - start + 1)) - 1;
-      return (m_Bits >> start) & mask;
-    }
-  };
-
-  // Replicates low numBits such that [(toBit - 1):(toBit - 1 - fromBit)]
-  // is the same as [(numBits - 1):0] and repeats all the way down.
-  template<typename IntType>
-  IntType Replicate(const IntType &val, uint32 numBits, uint32 toBit) {
-    if(numBits == 0) return 0;
-    if(toBit == 0) return 0;
-    IntType v = val & ((1 << numBits) - 1);
-    IntType res = v;
-    uint32 reslen = numBits;
-    while(reslen < toBit) {
-      uint32 comp = 0;
-      if(numBits > toBit - reslen) {
-        uint32 newshift = toBit - reslen;
-        comp = numBits - newshift;
-        numBits = newshift;
-      }
-      res <<= numBits;
-      res |= v >> comp;
-      reslen += numBits;
-    }
-    return res;
-  }
-
-}  // namespace FasTC
-#endif // __BASE_INCLUDE_BITS_H__
+  xv = 5;
+  EXPECT_EQ(FasTC::Replicate(xv, 2, 0), 0);
+  EXPECT_EQ(FasTC::Replicate(xv, 3, 6), 0x2D);
+}
