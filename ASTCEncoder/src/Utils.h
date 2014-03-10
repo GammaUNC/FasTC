@@ -101,6 +101,14 @@ namespace ASTCC {
     return -1;
   };
 
+  // Count the number of bits set in a number.
+  Popcnt(uint32 n) {
+    uint32 c;
+    for(c = 0; n; c++) {
+      n &= n-1;
+    }
+    return c;
+  }
 }  // namespace ASTCC
 
 #endif  // ASTCENCODER_SRC_UTILS_H_
