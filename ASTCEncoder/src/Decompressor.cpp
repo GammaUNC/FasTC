@@ -466,6 +466,125 @@ namespace ASTCC {
     }
   }
 
+  uint32 UnquantizeTexelWeight(const IntegerEncodedValue &val) {
+    uint32 bitval = val.GetBitValue();
+    uint32 bitlen = val.BaseBitLength();
+
+    uint32 A = FasTC::Replicate(bitval & 1, 1, 7);
+    uint32 B = 0, C = 0, D = 0;
+
+    uint32 result = 0;
+    switch(val.GetEncoding()) {
+      case eIntegerEncoding_JustBits:
+        result = FasTC::Replicate(bitval, bitlen, 6);
+      break;
+
+      case eIntegerEncoding_Trit: {
+        D = val.GetTritValue();
+        assert(D < 3);
+
+        switch(bitlen) {
+          case 0: {
+            uint32 results[3] = { 0, 32, 63 };
+            result = results[D];
+          }
+          break;
+
+          case 1: {
+            C = 50;
+          }
+          break;
+
+          case 2: {
+            C = 23;
+            uint32 b = (bitval >> 1) & 1;
+            B = (b << 6) | (b << 2) | b;
+          }
+          break;
+
+          case 3: {
+            C = 11;
+            uint32 cb = (bitval >> 1) & 3;
+            B = (cb << 5) | cb;
+          }
+          break;
+
+          default:
+            assert(!"Invalid trit encoding for texel weight");
+            break;
+        }
+      }
+      break;
+
+      case eIntegerEncoding_Quint: {
+        D = val.GetQuintValue();
+        assert(D < 5);
+
+        switch(bitlen) {
+          case 0: {
+            uint32 results[5] = { 0, 16, 32, 47, 63 };
+            result = results[D];
+          }
+          break;
+
+          case 1: {
+            C = 28;
+          }
+          break;
+
+          case 2: {
+            C = 13;
+            uint32 b = (bitval >> 1) & 1;
+            B = (b << 6) | (b << 1);
+          }
+          break;
+
+          default:
+            assert(!"Invalid quint encoding for texel weight");
+            break;
+        }
+      }
+      break;
+    }
+
+    if(val.GetEncoding() != eIntegerEncoding_JustBits && bitlen > 0) {
+      // Decode the value...
+      result = D * C + B;
+      result ^= A;
+      result = (A & 0x20) | (result >> 2);
+    }
+
+    // Change from [0,63] to [0,64]
+    if(result > 32) {
+      result += 1;
+    }
+
+    return result;
+  }
+
+  void UnquantizeTexelWeights(uint32 out[2][144],
+                              std::vector<IntegerEncodedValue> &weights,
+                              const TexelWeightParams &params,
+                              const uint32 blockWidth, const uint32 blockHeight) {
+    uint32 weightIdx = 0;
+    uint32 unquantized[2][144];
+    std::vector<IntegerEncodedValue>::const_iterator itr;
+    for(itr = weights.begin(); itr != weights.end(); itr++) {
+      unquantized[0][weightIdx] = UnquantizeTexelWeight(*itr);
+      assert(unquantized[0][weightIdx] <= 64);
+
+      if(params.m_bDualPlane) {
+        itr++;
+        unquantized[1][weightIdx] = UnquantizeTexelWeight(*itr);
+        assert(unquantized[1][weightIdx] <= 64);
+      }
+
+      weightIdx++;
+    }
+
+    // Do infill if necessary...
+  }
+
   void DecompressBlock(const uint8 inBuf[16],
                        const uint32 blockWidth, const uint32 blockHeight,
                        uint8 *outBuf) {
@@ -623,6 +742,10 @@ namespace ASTCC {
       DecodeIntegerSequence(texelWeightValues, weightStream,
                             weightParams.m_MaxWeight,
                             weightParams.m_Width * weightParams.m_Height);
+
+    // Blocks can be at most 12x12, so we can have as many as 144 weights
+    uint32 weights[2][144];
+    UnquantizeTexelWeights(weights, texelWeightValues, weightParams, blockWidth, blockHeight);
   }
 
   void Decompress(const FasTC::DecompressionJob &dcj, EASTCBlockSize blockSize) {
