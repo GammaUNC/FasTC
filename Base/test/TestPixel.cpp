@@ -68,6 +68,33 @@ TEST(Pixel, DefaultConstructor) {
   }
 }
 
+TEST(Pixel, FourWideConstructor) {
+  FasTC::Pixel p(1, 2, 3, 4);
+  EXPECT_EQ(p.R(), 2);
+  EXPECT_EQ(p.G(), 3);
+  EXPECT_EQ(p.B(), 4);
+  EXPECT_EQ(p.A(), 1);
+
+  uint8 depth[4];
+  p.GetBitDepth(depth);
+
+  for(int i = 0; i < 4; i++) {
+    EXPECT_EQ(depth[i], 8);
+  }
+
+  FasTC::Pixel q(static_cast<uint16>(1 << 16), 6, -2, 5, 4);
+  EXPECT_EQ(q.R(), 6);
+  EXPECT_EQ(q.G(), static_cast<uint16>(-2));
+  EXPECT_EQ(q.B(), 5);
+  EXPECT_EQ(q.A(), 0);
+
+  q.GetBitDepth(depth);
+
+  for(int i = 0; i < 4; i++) {
+    EXPECT_EQ(depth[i], 4);
+  }
+}
+
 TEST(Pixel, FromBitsAndAssociatedConstructor) {
   const uint8 bits[8] = { 0xA8, 0xB3, 0x7C, 0x21, 0xBD, 0xD4, 0x09, 0x92 };
   FasTC::Pixel ps[2];

@@ -70,6 +70,13 @@ class Pixel : public Vector4<uint16> {
       m_BitDepth[i] = 8;
   }
 
+  Pixel(ChannelType a, ChannelType r, ChannelType g, ChannelType b, unsigned bitDepth = 8)
+    : VectorType(a, r, g, b)
+  {
+    for(int i = 0; i < 4; i++)
+      m_BitDepth[i] = bitDepth;
+  }
+
   explicit Pixel(uint32 rgba) : VectorType() {
     for(int i = 0; i < 4; i++)
       m_BitDepth[i] = 8;
