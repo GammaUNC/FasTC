@@ -48,6 +48,7 @@
 #include <limits.h>
 #include <assert.h>
 
+#include "Image.h"
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Static helper functions
@@ -166,15 +167,17 @@ bool ImageLoader::LoadFromPixelBuffer(const uint32 *data, bool flipY) {
   return true;
 }
 
-bool ImageLoader::LoadImage() {
+FasTC::Image<> *ImageLoader::LoadImage() {
 
   // Do we already have pixel data?
-  if(m_PixelData)
-    return true;
+  if(m_PixelData) {
+    uint32 *pixels = reinterpret_cast<uint32 *>(m_PixelData);
+    return new FasTC::Image<>(m_Width, m_Height, pixels);
+  }
 
   // Read the image data!
   if(!ReadData())
-    return false;
+    return NULL;
 
   m_Width = GetWidth();
   m_Height = GetHeight();
@@ -201,7 +204,7 @@ bool ImageLoader::LoadImage() {
 
       unsigned int redVal = GetChannelForPixel(i, j, 0);
       if(redVal == INT_MAX)
-        return false;
+        return NULL;
 
       unsigned int greenVal = redVal;
       unsigned int blueVal = redVal;
@@ -209,20 +212,20 @@ bool ImageLoader::LoadImage() {
       if(GetGreenChannelPrecision() > 0) {
         greenVal = GetChannelForPixel(i, j, 1);
         if(greenVal == INT_MAX)
-          return false;
+          return NULL;
       }
 
       if(GetBlueChannelPrecision() > 0) {
         blueVal = GetChannelForPixel(i, j, 2);
         if(blueVal == INT_MAX)
-          return false;
+          return NULL;
       }
 
       unsigned int alphaVal = 0xFF;
       if(GetAlphaChannelPrecision() > 0) {
         alphaVal = GetChannelForPixel(i, j, 3);
         if(alphaVal == INT_MAX)
-          return false;
+          return NULL;
       }
 
       // Red channel
@@ -239,5 +242,6 @@ bool ImageLoader::LoadImage() {
     }
   }
 
-  return true;
+  uint32 *pixels = reinterpret_cast<uint32 *>(m_PixelData);
+  return new FasTC::Image<>(m_Width, m_Height, pixels);
 }
