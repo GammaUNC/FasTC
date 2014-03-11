@@ -66,6 +66,8 @@
 #include "BitStream.h"
 using FasTC::BitStreamReadOnly;
 
+#include "Pixel.h"
+
 namespace ASTCC {
 
   struct TexelWeightParams {
@@ -151,7 +153,7 @@ namespace ASTCC {
         // layout is in [7-9]
         if(modeBits & 0x80) {
           // layout is in [7-8]
-          assert(modeBits & 0x40 == 0);
+          assert((modeBits & 0x40) == 0U);
           if(modeBits & 0x20) {
             layout = 8;
           } else {
@@ -554,6 +556,8 @@ namespace ASTCC {
       result = (A & 0x20) | (result >> 2);
     }
 
+    assert(result < 64);
+
     // Change from [0,63] to [0,64]
     if(result > 32) {
       result += 1;
@@ -571,18 +575,187 @@ namespace ASTCC {
     std::vector<IntegerEncodedValue>::const_iterator itr;
     for(itr = weights.begin(); itr != weights.end(); itr++) {
       unquantized[0][weightIdx] = UnquantizeTexelWeight(*itr);
-      assert(unquantized[0][weightIdx] <= 64);
 
       if(params.m_bDualPlane) {
         itr++;
         unquantized[1][weightIdx] = UnquantizeTexelWeight(*itr);
-        assert(unquantized[1][weightIdx] <= 64);
       }
 
       weightIdx++;
     }
 
-    // Do infill if necessary...
+    // Do infill if necessary (Section C.2.18) ...
+    uint32 Ds = (1024 + (blockWidth/2)) / (blockWidth - 1);
+    uint32 Dt = (1024 + (blockHeight/2)) / (blockHeight - 1);
+
+    for(uint32 plane = 0; plane < (params.m_bDualPlane? 2 : 1); plane++)
+    for(uint32 t = 0; t < blockHeight; t++)
+    for(uint32 s = 0; s < blockWidth; s++) {
+      uint32 cs = Ds * s;
+      uint32 ct = Dt * t;
+
+      uint32 gs = (cs * (params.m_Width - 1) + 32) >> 6;
+      uint32 gt = (ct * (params.m_Height - 1) + 32) >> 6;
+
+      uint32 js = gs >> 4;
+      uint32 fs = gs & 0xF;
+
+      uint32 jt = gt >> 4;
+      uint32 ft = gt & 0x0F;
+
+      uint32 v0 = js + jt * params.m_Width;
+
+      assert(v0 < (params.m_Width * params.m_Height));
+      uint32 p00 = unquantized[plane][v0];
+
+      assert((v0 + 1) < (params.m_Width * params.m_Height));
+      uint32 p01 = unquantized[plane][v0 + 1];
+
+      assert((v0 + params.m_Width) < (params.m_Width * params.m_Height));
+      uint32 p10 = unquantized[plane][v0 + params.m_Width];
+
+      assert((v0 + params.m_Width + 1) < (params.m_Width * params.m_Height));
+      uint32 p11 = unquantized[plane][v0 + params.m_Width + 1];
+
+      uint32 w11 = (fs * ft + 8) >> 4;
+      uint32 w10 = ft - w11;
+      uint32 w01 = fs - w11;
+      uint32 w00 = 16 - fs - ft + w11;
+
+      out[plane][t*blockWidth + s] = (p00*w00 + p01*w01 + p10*w10 + p11*w11 + 8) >> 4;
+    }
+  }
+
+  // Section C.2.14
+  void ComputeEndpoints(FasTC::Pixel &ep1, FasTC::Pixel &ep2,
+                        const uint32* &colorValues, uint32 colorEndpointMode) {
+    #define READ_UINT_VALUES(N)                 \
+      uint32 v[N];                              \
+      for(uint32 i = 0; i < N; i++) {           \
+        v[i] = *(colorValues++);                \
+      }
+
+    #define READ_INT_VALUES(N)                          \
+      int32 v[N];                                       \
+      for(uint32 i = 0; i < N; i++) {                   \
+        v[i] = static_cast<int32>(*(colorValues++));    \
+      }
+    
+    switch(colorEndpointMode) {
+      case 0: {
+        READ_UINT_VALUES(2)
+        ep1 = FasTC::Pixel(0xFF, v[0], v[0], v[0]);
+        ep2 = FasTC::Pixel(0xFF, v[1], v[1], v[1]);
+      }
+      break;
+
+      case 1: {
+        READ_UINT_VALUES(2)
+        uint32 L0 = (v[0] >> 2) | (v[1] & 0xC0);
+        uint32 L1 = std::max(L0 + (v[1] & 0x3F), 0xFFU);
+        ep1 = FasTC::Pixel(0xFF, L0, L0, L0);
+        ep2 = FasTC::Pixel(0xFF, L1, L1, L1);
+      }
+      break;
+
+      case 4: {
+        READ_UINT_VALUES(4)
+        ep1 = FasTC::Pixel(v[2], v[0], v[0], v[0]);
+        ep2 = FasTC::Pixel(v[3], v[1], v[1], v[1]);
+      }
+      break;
+
+      case 5: {
+        READ_INT_VALUES(4)
+        BitTransferSigned(v[1], v[0]);
+        BitTransferSigned(v[3], v[2]);
+        ep1 = FasTC::Pixel(v[2], v[0], v[0], v[0]);
+        ep2 = FasTC::Pixel(v[2]+v[3], v[0]+v[1], v[0]+v[1], v[0]+v[1]);
+        ep1.ClampByte();
+        ep2.ClampByte();
+      }
+      break;
+
+      case 6: {
+        READ_UINT_VALUES(4)
+        ep1 = FasTC::Pixel(0xFF, v[0]*v[3] >> 8, v[1]*v[3] >> 8, v[2]*v[3] >> 8);
+        ep2 = FasTC::Pixel(0xFF, v[0], v[1], v[2]);
+      }
+      break;
+
+      case 8: {
+        READ_UINT_VALUES(6)
+        if(v[1]+v[3]+v[5] >= v[0]+v[2]+v[4]) {
+          ep1 = FasTC::Pixel(0xFF, v[0], v[2], v[4]);
+          ep2 = FasTC::Pixel(0xFF, v[1], v[3], v[5]);
+        } else {
+          ep1 = BlueContract(0xFF, v[1], v[3], v[5]);
+          ep2 = BlueContract(0xFF, v[0], v[2], v[4]);
+        }
+      }
+      break;
+
+      case 9: {
+        READ_INT_VALUES(6)
+        BitTransferSigned(v[1], v[0]);
+        BitTransferSigned(v[3], v[2]);
+        BitTransferSigned(v[5], v[4]);
+        if(v[1]+v[3]+v[5] >= 0) {
+          ep1 = FasTC::Pixel(0xFF, v[0], v[2], v[4]);
+          ep2 = FasTC::Pixel(0xFF, v[0]+v[1], v[2]+v[3], v[4]+v[5]);
+        } else {
+          ep1 = BlueContract(0xFF, v[0]+v[1], v[2]+v[3], v[4]+v[5]);
+          ep2 = BlueContract(0xFF, v[0], v[2], v[4]);
+        }
+        ep1.ClampByte();
+        ep2.ClampByte();
+      }
+      break;
+
+      case 10: {
+        READ_UINT_VALUES(6)
+        ep1 = FasTC::Pixel(v[4], v[0]*v[3] >> 8, v[1]*v[3] >> 8, v[2]*v[3] >> 8);
+        ep2 = FasTC::Pixel(v[5], v[0], v[1], v[2]);
+      }
+      break;
+
+      case 12: {
+        READ_UINT_VALUES(8)
+        if(v[1]+v[3]+v[5] >= v[0]+v[2]+v[4]) {
+          ep1 = FasTC::Pixel(v[6], v[0], v[2], v[4]);
+          ep2 = FasTC::Pixel(v[7], v[1], v[3], v[5]);
+        } else {
+          ep1 = BlueContract(v[7], v[1], v[3], v[5]);
+          ep2 = BlueContract(v[6], v[0], v[2], v[4]);
+        }
+      }
+      break;
+
+      case 13: {
+        READ_INT_VALUES(8)
+        BitTransferSigned(v[1], v[0]);
+        BitTransferSigned(v[3], v[2]);
+        BitTransferSigned(v[5], v[4]);
+        BitTransferSigned(v[7], v[6]);
+        if(v[1]+v[3]+v[5] >= 0) {
+          ep1 = FasTC::Pixel(v[6], v[0], v[2], v[4]);
+          ep2 = FasTC::Pixel(v[7]+v[6], v[0]+v[1], v[2]+v[3], v[4]+v[5]);
+        } else {
+          ep1 = BlueContract(v[6]+v[7], v[0]+v[1], v[2]+v[3], v[4]+v[5]);
+          ep2 = BlueContract(v[6], v[0], v[2], v[4]);
+        }
+        ep1.ClampByte();
+        ep2.ClampByte();
+      }
+      break;
+
+      default:
+        assert(!"Unsupported color endpoint mode (is it HDR?)");
+        break;
+    }
+
+    #undef READ_UINT_VALUES
+    #undef READ_INT_VALUES
   }
 
   void DecompressBlock(const uint8 inBuf[16],
@@ -743,9 +916,48 @@ namespace ASTCC {
                             weightParams.m_MaxWeight,
                             weightParams.m_Width * weightParams.m_Height);
 
+    FasTC::Pixel endpoints[4][2];
+    const uint32 *colorValuesPtr = colorValues;
+    for(uint32 i = 0; i < nPartitions; i++) {
+      ComputeEndpoints(endpoints[i][0], endpoints[i][1],
+                       colorValuesPtr, colorEndpointMode[i]);
+    }
+
     // Blocks can be at most 12x12, so we can have as many as 144 weights
     uint32 weights[2][144];
     UnquantizeTexelWeights(weights, texelWeightValues, weightParams, blockWidth, blockHeight);
+
+    // Now that we have endpoints and weights, we can interpolate and generate
+    // the proper decoding...
+    for(uint32 j = 0; j < blockHeight; j++)
+    for(uint32 i = 0; i < blockWidth; i++) {
+      uint32 partition = Select2DPartition(
+        partitionIndex, i, j, nPartitions, (blockHeight * blockWidth) < 32
+      );
+      if(nPartitions == 1) {
+        partition = 0;
+      }
+      assert(partition < nPartitions);
+
+      FasTC::Pixel p;
+      for(uint32 c = 0; c < 4; c++) {
+        uint32 C0 = endpoints[partition][0].Component(c);
+        C0 = FasTC::Replicate(C0, 8, 16);
+        uint32 C1 = endpoints[partition][1].Component(c);
+        C1 = FasTC::Replicate(C1, 8, 16);
+
+        uint32 plane = 0;
+        if(weightParams.m_bDualPlane && (((planeIdx + 1) & 3) == c)) {
+          plane = 1;
+        }
+
+        uint32 weight = weights[plane][j * blockWidth + i];
+        uint32 C = (C0 * (64 - weight) + C1 * weight + 32) / 64;
+        p.Component(c) = C >> 8;
+      }
+
+      outBuf[j * blockWidth + i] = p.Pack();
+    }
   }
 
   void Decompress(const FasTC::DecompressionJob &dcj, EASTCBlockSize blockSize) {
@@ -757,6 +969,7 @@ namespace ASTCC {
 
         const uint8 *blockPtr = dcj.InBuf() + blockIdx*16;
 
+        // Blocks can be at most 12x12
         uint32 uncompData[144];
         uint8 *dataPtr = reinterpret_cast<uint8 *>(uncompData);
         DecompressBlock(blockPtr, blockWidth, blockHeight, dataPtr);
