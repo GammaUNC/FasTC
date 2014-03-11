@@ -306,6 +306,16 @@ TEST(Pixel, ScaleColor) {
   }
 }
 
+TEST(Pixel, ByteClamp) {
+  FasTC::Pixel p(256, 3, -2, 10);
+  p.ClampByte();
+  EXPECT_EQ(p.A(), 255);
+  EXPECT_EQ(p.R(), 3);
+  EXPECT_EQ(p.G(), 255);
+  EXPECT_EQ(p.B(), 10);
+}
+
+
 TEST(YCoCgPixel, Conversion) {
 
   FasTC::Pixel p;

@@ -163,6 +163,13 @@ class Pixel : public Vector4<uint16> {
 
   // Tests for equality by comparing the values and the bit depths.
   bool operator==(const Pixel &) const;
+
+  // Clamps the pixel to the range [0,255]
+  void ClampByte() {
+    for(uint32 i = 0; i < 4; i++) {
+      vec[i] = (vec[i] < 0)? 0 : ((vec[i] > 255)? 255 : vec[i]);
+    }
+  }
 };
 REGISTER_VECTOR_TYPE(Pixel);
 
