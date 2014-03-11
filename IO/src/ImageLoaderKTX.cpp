@@ -99,6 +99,7 @@ class IntLoader {
     data.Advance(4);
     return true;
   }
+  virtual ~IntLoader() { }
 };
 
 class BigEndianIntLoader : public IntLoader {
