@@ -81,21 +81,89 @@
 
 #endif  // GL_VERTSION_4_2
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// PVRTC definitions
+//
+////////////////////////////////////////////////////////////////////////////////
 
 #ifndef COMPRESSED_RGB_PVRTC_4BPPV1_IMG
-#define COMPRESSED_RGB_PVRTC_4BPPV1_IMG                   0x8C00
-#endif  // COMPRESSED_RGB_PVRTC_4BPPV1_IMG
+#define COMPRESSED_RGB_PVRTC_4BPPV1_IMG 0x8C00
+#endif
 
 #ifndef COMPRESSED_RGB_PVRTC_2BPPV1_IMG
-#define COMPRESSED_RGB_PVRTC_2BPPV1_IMG                   0x8C01
-#endif  // COMPRESSED_RGB_PVRTC_2BPPV1_IMG
+#define COMPRESSED_RGB_PVRTC_2BPPV1_IMG 0x8C01
+#endif
 
 #ifndef COMPRESSED_RGBA_PVRTC_4BPPV1_IMG
-#define COMPRESSED_RGBA_PVRTC_4BPPV1_IMG                  0x8C02
-#endif  // COMPRESSED_RGBA_PVRTC_4BPPV1_IMG
+#define COMPRESSED_RGBA_PVRTC_4BPPV1_IMG 0x8C02
+#endif
 
 #ifndef COMPRESSED_RGBA_PVRTC_2BPPV1_IMG
-#define COMPRESSED_RGBA_PVRTC_2BPPV1_IMG                  0x8C03
-#endif  // COMPRESSED_RGBA_PVRTC_2BPPV1_IMG
+#define COMPRESSED_RGBA_PVRTC_2BPPV1_IMG 0x8C03
+#endif
 
-#endif  // _IO_SRC_GL_DEFINES_H_
+////////////////////////////////////////////////////////////////////////////////
+//
+// ASTC definitions
+//
+////////////////////////////////////////////////////////////////////////////////
+
+#ifndef COMPRESSED_RGBA_ASTC_4x4_KHR
+#define COMPRESSED_RGBA_ASTC_4x4_KHR 0x93B0
+#endif
+
+#ifndef COMPRESSED_RGBA_ASTC_5x4_KHR
+#define COMPRESSED_RGBA_ASTC_5x4_KHR 0x93B1
+#endif
+
+#ifndef COMPRESSED_RGBA_ASTC_5x5_KHR
+#define COMPRESSED_RGBA_ASTC_5x5_KHR 0x93B2
+#endif
+
+#ifndef COMPRESSED_RGBA_ASTC_6x5_KHR
+#define COMPRESSED_RGBA_ASTC_6x5_KHR 0x93B3
+#endif
+
+#ifndef COMPRESSED_RGBA_ASTC_6x6_KHR
+#define COMPRESSED_RGBA_ASTC_6x6_KHR 0x93B4
+#endif
+
+#ifndef COMPRESSED_RGBA_ASTC_8x5_KHR
+#define COMPRESSED_RGBA_ASTC_8x5_KHR 0x93B5
+#endif
+
+#ifndef COMPRESSED_RGBA_ASTC_8x6_KHR
+#define COMPRESSED_RGBA_ASTC_8x6_KHR 0x93B6
+#endif
+
+#ifndef COMPRESSED_RGBA_ASTC_8x8_KHR
+#define COMPRESSED_RGBA_ASTC_8x8_KHR 0x93B7
+#endif
+
+#ifndef COMPRESSED_RGBA_ASTC_10x5_KHR
+#define COMPRESSED_RGBA_ASTC_10x5_KHR 0x93B8
+#endif
+
+#ifndef COMPRESSED_RGBA_ASTC_10x6_KHR
+#define COMPRESSED_RGBA_ASTC_10x6_KHR 0x93B9
+#endif
+
+#ifndef COMPRESSED_RGBA_ASTC_10x8_KHR
+#define COMPRESSED_RGBA_ASTC_10x8_KHR 0x93BA
+#endif
+
+#ifndef COMPRESSED_RGBA_ASTC_10x10_KHR
+#define COMPRESSED_RGBA_ASTC_10x10_KHR 0x93BB
+#endif
+
+#ifndef COMPRESSED_RGBA_ASTC_12x10_KHR
+#define COMPRESSED_RGBA_ASTC_12x10_KHR 0x93BC
+#endif
+
+#ifndef COMPRESSED_RGBA_ASTC_12x12_KHR
+#define COMPRESSED_RGBA_ASTC_12x12_KHR 0x93BD
+#endif
+
+#endif
+  // _IO_SRC_GL_DEFINES_H_
