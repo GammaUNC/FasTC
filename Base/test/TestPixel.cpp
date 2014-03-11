@@ -84,7 +84,7 @@ TEST(Pixel, FourWideConstructor) {
 
   FasTC::Pixel q(static_cast<uint16>(1 << 16), 6, -2, 5, 4);
   EXPECT_EQ(q.R(), 6);
-  EXPECT_EQ(q.G(), static_cast<uint16>(-2));
+  EXPECT_EQ(q.G(), -2);
   EXPECT_EQ(q.B(), 5);
   EXPECT_EQ(q.A(), 0);
 
@@ -311,7 +311,7 @@ TEST(Pixel, ByteClamp) {
   p.ClampByte();
   EXPECT_EQ(p.A(), 255);
   EXPECT_EQ(p.R(), 3);
-  EXPECT_EQ(p.G(), 255);
+  EXPECT_EQ(p.G(), 0);
   EXPECT_EQ(p.B(), 10);
 }
 

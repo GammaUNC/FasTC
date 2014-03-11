@@ -58,9 +58,9 @@
 
 namespace FasTC {
 
-class Pixel : public Vector4<uint16> {
+class Pixel : public Vector4<int16> {
  protected:
-  typedef uint16 ChannelType;
+  typedef int16 ChannelType;
   typedef Vector4<ChannelType> VectorType;
   uint8 m_BitDepth[4];
 
