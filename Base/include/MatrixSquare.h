@@ -73,7 +73,7 @@ namespace FasTC {
         // principal eigenvector. However, that may be due to
         // poor initialization of the random vector, so rerandomize
         // and try again.
-        const float newBlen = newB.Length();
+        const T newBlen = newB.Length();
         if(newBlen < 1e-10) {
           if(badEigenValue) {
             eigVec = b;

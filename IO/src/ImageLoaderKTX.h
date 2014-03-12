@@ -54,6 +54,7 @@
 #define _IO_SRC_IMAGE_LOADER_KTX_H_
 
 #include "ImageLoader.h"
+#include "CompressionFormat.h"
 
 class ImageLoaderKTX : public ImageLoader {
  public:
@@ -68,8 +69,12 @@ class ImageLoaderKTX : public ImageLoader {
     m_Processor = proc;
   }
 
+  virtual FasTC::Image<> *LoadImage();
  private:
   KTXKeyValueProcessor m_Processor;
+  
+  bool m_bIsCompressed;
+  FasTC::ECompressionFormat m_Format;
 };
 
 #endif // _IO_SRC_IMAGE_LOADER_KTX_H_

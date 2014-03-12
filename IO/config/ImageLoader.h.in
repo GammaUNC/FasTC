@@ -46,6 +46,7 @@
 
 #include "ImageFileFormat.h"
 #include "TexCompTypes.h"
+#include "ImageFwd.h"
 
 class ImageLoader {
 
@@ -142,7 +143,7 @@ class ImageLoader {
   uint32 GetHeight() const { return m_Height; }
   uint32 GetImageDataSz() const { return m_Width * m_Height * 4; }
 
-  bool LoadImage();
+  virtual FasTC::Image<> *LoadImage();
   const uint8 *GetImageData() const { return m_PixelData; }
 };
 

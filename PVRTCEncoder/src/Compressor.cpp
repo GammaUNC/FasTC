@@ -465,9 +465,11 @@ namespace PVRTCC {
   }
 
 #if 0
-  static void DilateImage(CompressionLabel *labels, uint32 w, uint32 h) {
+  static void DilateImage(CompressionLabel *labels, const uint8 *inBuf, uint32 w, uint32 h) {
     for(uint32 j = 0; j < h; j++)
     for(uint32 i = 0; i < w; i++) {
+      ComputeLocalExtrema(labels, inBuf, i, j, w, h);
+
       uint32 idx = j*w + i;
 
       uint32 minLowDist = labels[idx].lowLabel.distance == 0? 5 : labels[idx].lowLabel.distance - 1;
@@ -484,11 +486,11 @@ namespace PVRTCC {
           minHighDist = ::std::min<uint32>(minHighDist, labels[cidx].highLabel.distance);
       }
 
-      if(minLowDist != labels[idx].lowLabel.distance - 1) {
+      if(static_cast<int32>(minLowDist) != labels[idx].lowLabel.distance - 1) {
         labels[idx].lowLabel.nLabels = 0;
       }
 
-      if(minHighDist != labels[idx].highLabel.distance - 1) {
+      if(static_cast<int32>(minHighDist) != labels[idx].highLabel.distance - 1) {
         labels[idx].highLabel.nLabels = 0;
       }
 
@@ -963,6 +965,27 @@ namespace PVRTCC {
 
     DebugOutputImage("HighImg", labels, width, height, HighPixel);
     DebugOutputImage("LowImg", labels, width, height, LowPixel);
+
+    Image outputHigh(width, height);
+    Image outputLow(width, height);
+    for(uint32 j = 0; j < height; j++)
+    for(uint32 i = 0; i < width; i++) {
+      uint32 idx = j*width + i;
+      if(labels[idx].highLabel.distance == 1) {
+        outputHigh(i, j).Unpack(gDbgPixels[idx]);
+      } else {
+        outputHigh(i, j).Unpack(0xFF000000U);
+      }
+
+      if(labels[idx].lowLabel.distance == 1) {
+        outputLow(i, j).Unpack(gDbgPixels[idx]);
+      } else {
+        outputLow(i, j).Unpack(0xFF000000U);
+      }
+    }
+    
+    outputHigh.DebugOutput("HighPixels");
+    outputLow.DebugOutput("LowPixels");
 #endif
 
     // Then combine everything...

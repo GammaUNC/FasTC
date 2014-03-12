@@ -62,6 +62,8 @@
 #include "ScopedAllocator.h"
 
 #include "GLDefines.h"
+#include "Image.h"
+#include "CompressedImage.h"
 
 class ByteReader {
  private:
@@ -73,7 +75,7 @@ class ByteReader {
   { }
 
   bool Advance(uint32 nBytes) {
-    if(nBytes < m_BytesLeft) {
+    if(nBytes > m_BytesLeft) {
       assert(!"Cannot read any more, unexpected bytes!");
       return false;
     }
@@ -99,6 +101,7 @@ class IntLoader {
     data.Advance(4);
     return true;
   }
+  virtual ~IntLoader() { }
 };
 
 class BigEndianIntLoader : public IntLoader {
@@ -137,7 +140,30 @@ ImageLoaderKTX::ImageLoaderKTX(const uint8 *rawData, const int32 rawDataSz)
 
 ImageLoaderKTX::~ImageLoaderKTX() { }
 
+FasTC::Image<> *ImageLoaderKTX::LoadImage() {
+
+  // Get rid of the pixel data if it exists...
+  if(m_PixelData) {
+    delete m_PixelData;
+    m_PixelData = NULL;
+  }
+
+  if(!ReadData()) {
+    return NULL;
+  }
+
+  if(!m_bIsCompressed) {
+    uint32 *pixels = reinterpret_cast<uint32 *>(m_PixelData);
+    return new FasTC::Image<>(m_Width, m_Height, pixels);
+  }
+
+  return new CompressedImage(m_Width, m_Height, m_Format, m_PixelData);
+}
+
 bool ImageLoaderKTX::ReadData() {
+
+  // Default is uncompressed
+  m_bIsCompressed = false;
 
   ByteReader rdr (m_RawData, m_NumRawDataBytes);
 
@@ -245,13 +271,25 @@ bool ImageLoaderKTX::ReadData() {
     return false;
   }
 
-  if(glType == 0 &&
-     glFormat == 0 &&
-     glInternalFormat == GL_COMPRESSED_RGBA_BPTC_UNORM) {
-    fprintf(stderr, "KTX loader - BPTC compressed textures unsupported!\n");
-    return false;
-    // Load compressed texture...
-    // rdr.Advance(pixelWidth * pixelHeight);
+  m_Width = pixelWidth;
+  m_Height = pixelHeight;
+
+  if(glType == 0 && glFormat == 0) {
+    switch(glInternalFormat) {
+      case GL_COMPRESSED_RGBA_BPTC_UNORM:
+        m_Format = FasTC::eCompressionFormat_BPTC;
+        break;
+      default:
+        fprintf(stderr, "KTX loader - texture format (0x%x) unsupported!\n", glInternalFormat);
+        return false;
+    }
+
+    uint32 dataSize = CompressedImage::GetCompressedSize(pixelWidth * pixelHeight * 4, m_Format);
+    m_PixelData = new uint8[dataSize];
+    memcpy(m_PixelData, rdr.GetData(), dataSize);
+    rdr.Advance(dataSize);
+
+    m_bIsCompressed = true;
   } else {
 
     if(glType != GL_BYTE) {
@@ -266,10 +304,10 @@ bool ImageLoaderKTX::ReadData() {
 
     // We should have RGBA8 data here so we can simply load it
     // as we normally would.
-    m_Width = pixelWidth;
-    m_Height = pixelHeight;
-    LoadFromPixelBuffer(reinterpret_cast<const uint32 *>(rdr.GetData()));
-    rdr.Advance(pixelWidth * pixelHeight * 4);
+    uint32 pixelDataSz = m_Width * m_Height * 4;
+    m_PixelData = new uint8[pixelDataSz];
+    memcpy(m_PixelData, rdr.GetData(), pixelDataSz);
+    rdr.Advance(pixelDataSz);
   }
   return rdr.GetBytesLeft() == 0;
 }

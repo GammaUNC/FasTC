@@ -59,12 +59,7 @@
 #include "TexComp.h"
 #include "ThreadSafeStreambuf.h"
 
-#ifdef _MSC_VER
-int _tmain(int argc, _TCHAR* argv[]) {
-#else
 int main(int argc, char **argv) {
-#endif
-
   if(argc != 3) {
     fprintf(stderr, "Usage: compare <img1> <img2>\n");
     return 1;
@@ -82,8 +77,8 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  FasTC::Image<> img1(*img1f.GetImage());
-  FasTC::Image<> img2(*img2f.GetImage());
+  FasTC::Image<> &img1 = *img1f.GetImage();
+  FasTC::Image<> &img2 = *img2f.GetImage();
 
   double PSNR = img1.ComputePSNR(&img2);
   if(PSNR > 0.0) {

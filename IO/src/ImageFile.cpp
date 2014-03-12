@@ -221,28 +221,13 @@ FasTC::Image<> *ImageFile::LoadImage() const {
   if(!loader)
     return NULL;
 
-  if(!(loader->LoadImage())) {
+  FasTC::Image<> *i = loader->LoadImage();
+  if(i == NULL) {
     fprintf(stderr, "Unable to load image!\n");
-    delete loader;
-    return NULL;
   }
-
-  uint8 *pixelData = NULL;
-  if(loader->GetImageData()) {
-    pixelData = new uint8[ loader->GetImageDataSz() ];
-    if(!pixelData) { fprintf(stderr, "%s\n", "Out of memory!"); exit(1); }
-    memcpy(pixelData, loader->GetImageData(), loader->GetImageDataSz());
-  }
-  else {
-    fprintf(stderr, "%s\n", "Failed to get data from image loader!");
-  }
-
-  uint32 *pixels = reinterpret_cast<uint32 *>(pixelData);
-  FasTC::Image<> *i = new FasTC::Image<>(loader->GetWidth(), loader->GetHeight(), pixels);
 
   // Cleanup
   delete loader;
-  delete [] pixelData;
 
   return i;
 }

@@ -53,13 +53,19 @@
 #include "gtest/gtest.h"
 #include "VectorBase.h"
 
-static const float kEpsilon = 1e-6;
+static const float kEpsilon = 1e-6f;
 
 TEST(VectorBase, Constructors) {
   FasTC::VectorBase<float, 3> v3f;
+  v3f[0] = 1.1f; v3f[1] = 1.2f; v3f[2] = 1.3f;
   FasTC::VectorBase<double, 1> v1d;
+  v1d[0] = 1.1;
   FasTC::VectorBase<int, 7> v7i;
+  for(int i = 0; i < 7; i++)
+	v7i[i] = -i;
   FasTC::VectorBase<unsigned, 16> v16u;
+  for(int i = 0; i < 7; i++)
+	v16u[i] = i;
 
 #define TEST_VECTOR_COPY_CONS(v, t, n)          \
   do {                                          \
@@ -118,6 +124,10 @@ TEST(VectorBase, PointerConversion) {
 
 TEST(VectorBase, CastVector) {
   FasTC::VectorBase<float, 3> v3f;
+  v3f[0] = 1000000.0f;
+  v3f[1] = -2.0f;
+  v3f[2] = -1.1f;
+
   FasTC::VectorBase<double, 3> v3d = v3f;
   FasTC::VectorBase<int, 3> v3i = v3f;
   for(int i = 0; i < 3; i++) {
@@ -133,11 +143,11 @@ TEST(VectorBase, DotProduct) {
   unsigned uv[5] = { 1, 2, 3, 4, 5 };
   FasTC::VectorBase<unsigned, 5> v5u(uv);
 
-  EXPECT_EQ(v5i.Dot(v5u), 10);
-  EXPECT_EQ(v5u.Dot(v5i), 10);
+  EXPECT_EQ(v5i.Dot(v5u), static_cast<int>(10));
+  EXPECT_EQ(v5u.Dot(v5i), static_cast<unsigned>(10));
 
-  EXPECT_EQ(v5i * v5u, 10);
-  EXPECT_EQ(v5u * v5i, 10);
+  EXPECT_EQ(v5i * v5u, static_cast<int>(10));
+  EXPECT_EQ(v5u * v5i, static_cast<unsigned>(10));
 }
 
 TEST(VectorBase, Length) {
@@ -166,10 +176,10 @@ TEST(VectorBase, Normalization) {
   unsigned uv[2] = {2, 2};
   FasTC::VectorBase<unsigned, 2> v2u (uv);
   v2u.Normalize();
-  EXPECT_EQ(v2u[0], 1);
-  EXPECT_EQ(v2u[1], 1);
+  EXPECT_EQ(v2u[0], static_cast<unsigned>(1));
+  EXPECT_EQ(v2u[1], static_cast<unsigned>(1));
 
-  const float sqrt2 = sqrt(2)/2.0f;
+  const double sqrt2 = sqrt(2.0f)/2.0f;
   for(int i = 2; i < 10; i++) {
     v2f[0] = static_cast<float>(i);
     v2f[1] = static_cast<float>(i);
@@ -197,12 +207,12 @@ TEST(VectorBase, Scaling) {
   unsigned uv[2] = {1, 3};
   FasTC::VectorBase<unsigned, 2> v2u (uv);
   FasTC::VectorBase<unsigned, 2> v2ud = v2u * 0.5;
-  EXPECT_EQ(v2ud[0], 0);
-  EXPECT_EQ(v2ud[1], 1);
+  EXPECT_EQ(v2ud[0], static_cast<unsigned>(0));
+  EXPECT_EQ(v2ud[1], static_cast<unsigned>(1));
 
   v2ud = v2u / 0.5f;
-  EXPECT_EQ(v2ud[0], 2);
-  EXPECT_EQ(v2ud[1], 6);  
+  EXPECT_EQ(v2ud[0], static_cast<unsigned>(2));
+  EXPECT_EQ(v2ud[1], static_cast<unsigned>(6));  
 }
 
 TEST(VectorBase, Addition) {
@@ -225,7 +235,7 @@ TEST(VectorBase, Addition) {
   EXPECT_NEAR(af[1], 5.2f, kEpsilon);
 
   au = v2u - v2f;
-  EXPECT_EQ(au[0], 3);
+  EXPECT_EQ(au[0], 4);
   EXPECT_EQ(au[1], -1);
 
   af = v2f - v2u;
@@ -244,10 +254,12 @@ TEST(VectorBase, Addition) {
 TEST(Vector2, BaseFunctionality) {
   FasTC::Vec2f v2f;
   FasTC::Vec2d v2d;
+  v2d.X() = 3.0;
+  v2d.Y() = -10.0;
 
   v2f = v2d;
-  EXPECT_NEAR(v2f[0], v2d[0], kEpsilon);
-  EXPECT_NEAR(v2f[1], v2d[1], kEpsilon);
+  EXPECT_EQ(v2f[0], v2d[0]);
+  EXPECT_EQ(v2f[1], v2d[1]);
 }
 
 TEST(Vector2, Accessors) {
@@ -300,10 +312,13 @@ TEST(Vector2, Swizzle) {
 TEST(Vector3, BaseFunctionality) {
   FasTC::Vec3f vf;
   FasTC::Vec3d vd;
+  vd.X() = 3.0;
+  vd.Y() = -10.0;
+  vd.Z() = 0.0;
 
   vf = vd;
   for(int i = 0; i < 3; i++) {
-    EXPECT_NEAR(vf[i], vd[i], kEpsilon);
+    EXPECT_EQ(vf[i], vd[i]);
   }
 }
 
@@ -383,10 +398,14 @@ TEST(Vector3, CrossProduct) {
 TEST(Vector4, BaseFunctionality) {
   FasTC::Vec4f vf;
   FasTC::Vec4d vd;
+  vd.X() = 3.0;
+  vd.Y() = -10.0;
+  vd.Z() = 0.0;
+  vd.W() = 100000000.0;
 
   vf = vd;
   for(int i = 0; i < 4; i++) {
-    EXPECT_NEAR(vf[i], vd[i], kEpsilon);
+    EXPECT_EQ(vf[i], vd[i]);
   }
 }
 

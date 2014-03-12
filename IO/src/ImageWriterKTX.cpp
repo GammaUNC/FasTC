@@ -110,10 +110,12 @@ bool ImageWriterKTX::WriteImage() {
   wtr.Write(0x04030201);
 
   const char *orientationKey = "KTXorientation";
-  const char *orientationValue = "S=r,T=u";
-  const uint32 kvSz =
-    strlen(orientationKey) + 1 // key
-    + strlen(orientationValue) + 1; // value
+  uint32 oKeyLen = static_cast<uint32>(strlen(orientationKey));
+
+  const char *orientationValue = "S=r,T=d";
+  uint32 oValLen = static_cast<uint32>(strlen(orientationValue));
+
+  const uint32 kvSz = oKeyLen + 1 + oValLen + 1;
   uint32 tkvSz = kvSz + 4; // total kv size
   tkvSz = (tkvSz + 3) & ~0x3; // 4-byte aligned
 
@@ -121,7 +123,7 @@ bool ImageWriterKTX::WriteImage() {
   if(ci) {
     wtr.Write(0);  // glType
     wtr.Write(1);  // glTypeSize
-    wtr.Write(GL_RGBA);  // glFormat
+    wtr.Write(0);  // glFormat must be zero for compressed images...
     switch(ci->GetFormat()) {
     case FasTC::eCompressionFormat_BPTC:
       wtr.Write(GL_COMPRESSED_RGBA_BPTC_UNORM);  // glInternalFormat
@@ -153,8 +155,8 @@ bool ImageWriterKTX::WriteImage() {
   wtr.Write(1);        // numberOfMipmapLevels
   wtr.Write(tkvSz);    // total key value size
   wtr.Write(kvSz);     // key value size
-  wtr.Write(orientationKey, strlen(orientationKey) + 1); // key
-  wtr.Write(orientationValue, strlen(orientationValue) + 1); // value
+  wtr.Write(orientationKey, oKeyLen + 1); // key
+  wtr.Write(orientationValue, oValLen + 1); // value
   wtr.Write(orientationKey, tkvSz - kvSz - 4); // padding
 
   if(ci && ci->GetFormat() == FasTC::eCompressionFormat_BPTC) {
