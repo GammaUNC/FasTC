@@ -99,6 +99,11 @@ SET( HEADERS ${HEADERS} "src/ImageLoaderKTX.h" )
 SET( SOURCES ${SOURCES} "src/ImageWriterKTX.cpp" )
 SET( HEADERS ${HEADERS} "src/ImageWriterKTX.h" )
 
+# Add ASTC loader
+# This supports the Mali ASTC evaluation codec.
+SET( SOURCES ${SOURCES} "src/ImageLoaderASTC.cpp" )
+SET( HEADERS ${HEADERS} "src/ImageLoaderASTC.h" )
+
 FIND_PACKAGE( OpenGL )
 IF(OPENGL_FOUND)
   INCLUDE_DIRECTORIES( ${OPENGL_INCLUDE_DIRS} )

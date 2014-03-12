@@ -66,6 +66,7 @@
 #endif
 
 #include "ImageLoaderTGA.h"
+#include "ImageLoaderASTC.h"
 
 #include "ImageLoaderKTX.h"
 #include "ImageWriterKTX.h"
@@ -213,6 +214,10 @@ FasTC::Image<> *ImageFile::LoadImage() const {
       loader = new ImageLoaderKTX(m_FileData, m_FileDataSz);
       break;
 
+    case eFileFormat_ASTC:
+      loader = new ImageLoaderASTC(m_FileData, m_FileDataSz);
+      break;
+
     default:
       fprintf(stderr, "Unable to load image: unknown file format.\n");
       return NULL;
@@ -263,6 +268,9 @@ EImageFileFormat ImageFile::DetectFileFormat(const CHAR *filename) {
   }
   else if(strcmp(ext, ".ktx") == 0) {
     return eFileFormat_KTX;
+  }
+  else if(strcmp(ext, ".astc") == 0) {
+    return eFileFormat_ASTC;
   }
 
   return kNumImageFileFormats;

@@ -49,6 +49,7 @@ enum EImageFileFormat {
   eFileFormat_PVR,
   eFileFormat_TGA,
   eFileFormat_KTX,
+  eFileFormat_ASTC,
 
   kNumImageFileFormats
 };
