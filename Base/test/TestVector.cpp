@@ -57,7 +57,7 @@ static const float kEpsilon = 1e-6f;
 
 TEST(VectorBase, Constructors) {
   FasTC::VectorBase<float, 3> v3f;
-  v3f[0] = 1.1f; v3f[1] = 1.2f; v3f[2] = 1.3;
+  v3f[0] = 1.1f; v3f[1] = 1.2f; v3f[2] = 1.3f;
   FasTC::VectorBase<double, 1> v1d;
   v1d[0] = 1.1;
   FasTC::VectorBase<int, 7> v7i;
@@ -143,8 +143,8 @@ TEST(VectorBase, DotProduct) {
   unsigned uv[5] = { 1, 2, 3, 4, 5 };
   FasTC::VectorBase<unsigned, 5> v5u(uv);
 
-  EXPECT_EQ(v5i.Dot(v5u), 10);
-  EXPECT_EQ(v5u.Dot(v5i), 10);
+  EXPECT_EQ(v5i.Dot(v5u), static_cast<int>(10));
+  EXPECT_EQ(v5u.Dot(v5i), static_cast<unsigned>(10));
 
   EXPECT_EQ(v5i * v5u, 10);
   EXPECT_EQ(v5u * v5i, 10);
