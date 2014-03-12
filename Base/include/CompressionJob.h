@@ -189,7 +189,7 @@ namespace FasTC {
     uint8 *OutBuf() const { return m_OutBuf; }
     uint32 Width() const { return m_Width; }
     uint32 Height() const { return m_Height; }
-    uint32 Format() const { return m_Format; }
+    ECompressionFormat Format() const { return m_Format; }
 
     DecompressionJob(
       ECompressionFormat _fmt,
