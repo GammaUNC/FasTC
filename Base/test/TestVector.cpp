@@ -176,8 +176,8 @@ TEST(VectorBase, Normalization) {
   unsigned uv[2] = {2, 2};
   FasTC::VectorBase<unsigned, 2> v2u (uv);
   v2u.Normalize();
-  EXPECT_EQ(v2u[0], 1);
-  EXPECT_EQ(v2u[1], 1);
+  EXPECT_EQ(v2u[0], static_cast<unsigned>(1));
+  EXPECT_EQ(v2u[1], static_cast<unsigned>(1));
 
   const double sqrt2 = sqrt(2)/2.0f;
   for(int i = 2; i < 10; i++) {
@@ -207,12 +207,12 @@ TEST(VectorBase, Scaling) {
   unsigned uv[2] = {1, 3};
   FasTC::VectorBase<unsigned, 2> v2u (uv);
   FasTC::VectorBase<unsigned, 2> v2ud = v2u * 0.5;
-  EXPECT_EQ(v2ud[0], 0);
-  EXPECT_EQ(v2ud[1], 1);
+  EXPECT_EQ(v2ud[0], static_cast<unsigned>(0));
+  EXPECT_EQ(v2ud[1], static_cast<unsigned>(1));
 
   v2ud = v2u / 0.5f;
-  EXPECT_EQ(v2ud[0], 2);
-  EXPECT_EQ(v2ud[1], 6);  
+  EXPECT_EQ(v2ud[0], static_cast<unsigned>(2));
+  EXPECT_EQ(v2ud[1], static_cast<unsigned>(6));  
 }
 
 TEST(VectorBase, Addition) {
