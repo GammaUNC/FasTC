@@ -1,4 +1,6 @@
 language: cpp
+git:
+  submodules: false
 
 compiler:
   - gcc
