@@ -56,54 +56,57 @@
 #include "ASTCCompressor.h"
 
 #include "TexCompTypes.h"
+#include "CompressionFormat.h"
 #include "Pixel.h"
 
 namespace ASTCC {
 
-  uint32 GetBlockHeight(EASTCBlockSize blockSize) {
-    switch(blockSize) {
-    case eASTCBlockSize_4x4: return 4;
-    case eASTCBlockSize_5x4: return 4;
-    case eASTCBlockSize_5x5: return 5;
-    case eASTCBlockSize_6x5: return 5;
-    case eASTCBlockSize_6x6: return 6;
-    case eASTCBlockSize_8x5: return 5;
-    case eASTCBlockSize_8x6: return 6;
-    case eASTCBlockSize_8x8: return 8;
-    case eASTCBlockSize_10x5: return 5;
-    case eASTCBlockSize_10x6: return 6;
-    case eASTCBlockSize_10x8: return 8;
-    case eASTCBlockSize_10x10: return 10;
-    case eASTCBlockSize_12x10: return 10;
-    case eASTCBlockSize_12x12: return 12;
+  static inline uint32 GetBlockHeight(FasTC::ECompressionFormat fmt) {
+    switch(fmt) {
+      case FasTC::eCompressionFormat_ASTC4x4: return 4;
+      case FasTC::eCompressionFormat_ASTC5x4: return 4;
+      case FasTC::eCompressionFormat_ASTC5x5: return 5;
+      case FasTC::eCompressionFormat_ASTC6x5: return 5;
+      case FasTC::eCompressionFormat_ASTC6x6: return 6;
+      case FasTC::eCompressionFormat_ASTC8x5: return 5;
+      case FasTC::eCompressionFormat_ASTC8x6: return 6;
+      case FasTC::eCompressionFormat_ASTC8x8: return 8;
+      case FasTC::eCompressionFormat_ASTC10x5: return 5;
+      case FasTC::eCompressionFormat_ASTC10x6: return 6;
+      case FasTC::eCompressionFormat_ASTC10x8: return 8;
+      case FasTC::eCompressionFormat_ASTC10x10: return 10;
+      case FasTC::eCompressionFormat_ASTC12x10: return 10;
+      case FasTC::eCompressionFormat_ASTC12x12: return 12;
+      default: assert(false); return -1;
     }
     assert(false);
     return -1;
   };
 
-  uint32 GetBlockWidth(EASTCBlockSize blockSize) {
-    switch(blockSize) {
-    case eASTCBlockSize_4x4: return 4;
-    case eASTCBlockSize_5x4: return 5;
-    case eASTCBlockSize_5x5: return 5;
-    case eASTCBlockSize_6x5: return 6;
-    case eASTCBlockSize_6x6: return 6;
-    case eASTCBlockSize_8x5: return 8;
-    case eASTCBlockSize_8x6: return 8;
-    case eASTCBlockSize_8x8: return 8;
-    case eASTCBlockSize_10x5: return 10;
-    case eASTCBlockSize_10x6: return 10;
-    case eASTCBlockSize_10x8: return 10;
-    case eASTCBlockSize_10x10: return 10;
-    case eASTCBlockSize_12x10: return 12;
-    case eASTCBlockSize_12x12: return 12;
+  static inline uint32 GetBlockWidth(FasTC::ECompressionFormat fmt) {
+    switch(fmt) {
+      case FasTC::eCompressionFormat_ASTC4x4: return 4;
+      case FasTC::eCompressionFormat_ASTC5x4: return 5;
+      case FasTC::eCompressionFormat_ASTC5x5: return 5;
+      case FasTC::eCompressionFormat_ASTC6x5: return 6;
+      case FasTC::eCompressionFormat_ASTC6x6: return 6;
+      case FasTC::eCompressionFormat_ASTC8x5: return 8;
+      case FasTC::eCompressionFormat_ASTC8x6: return 8;
+      case FasTC::eCompressionFormat_ASTC8x8: return 8;
+      case FasTC::eCompressionFormat_ASTC10x5: return 10;
+      case FasTC::eCompressionFormat_ASTC10x6: return 10;
+      case FasTC::eCompressionFormat_ASTC10x8: return 10;
+      case FasTC::eCompressionFormat_ASTC10x10: return 10;
+      case FasTC::eCompressionFormat_ASTC12x10: return 12;
+      case FasTC::eCompressionFormat_ASTC12x12: return 12;
+      default: assert(false); return -1;
     }
     assert(false);
     return -1;
   };
 
   // Count the number of bits set in a number.
-  Popcnt(uint32 n) {
+  static inline Popcnt(uint32 n) {
     uint32 c;
     for(c = 0; n; c++) {
       n &= n-1;
@@ -112,7 +115,7 @@ namespace ASTCC {
   }
 
   // Transfers a bit as described in C.2.14
-  void BitTransferSigned(int32 &a, int32 &b) {
+  static inline void BitTransferSigned(int32 &a, int32 &b) {
     b >>= 1;
     b |= a & 0x80;
     a >>= 1;
@@ -123,21 +126,21 @@ namespace ASTCC {
 
   // Adds more precision to the blue channel as described
   // in C.2.14
-  FasTC::Pixel BlueContract(int32 a, int32 r, int32 g, int32 b) {
+  static inline FasTC::Pixel BlueContract(int32 a, int32 r, int32 g, int32 b) {
     return FasTC::Pixel(a, (r + b) >> 1, (g + b) >> 1, b);
   }
 
   // Partition selection functions as specified in
   // C.2.21
-  uint32 hash52(uint32 p) {
+  static inline uint32 hash52(uint32 p) {
     p ^= p >> 15;  p -= p << 17;  p += p << 7; p += p << 4;
     p ^= p >>  5;  p += p << 16;  p ^= p >> 7; p ^= p >> 3;
     p ^= p <<  6;  p ^= p >> 17;
     return p;
   }
 
-  int32 SelectPartition(int32 seed, int32 x, int32 y, int32 z,
-                      int32 partitionCount, int32 smallBlock) {
+  static int32 SelectPartition(int32 seed, int32 x, int32 y, int32 z,
+                               int32 partitionCount, int32 smallBlock) {
     if(smallBlock) {
       x <<= 1;
       y <<= 1;
@@ -197,18 +200,18 @@ namespace ASTCC {
     return 3;
   }
 
-  int32 Select2DPartition(int32 seed, int32 x, int32 y,
-                          int32 partitionCount, int32 smallBlock) {
+  static inline int32 Select2DPartition(int32 seed, int32 x, int32 y,
+                                        int32 partitionCount, int32 smallBlock) {
     return SelectPartition(seed, x, y, 0, partitionCount, smallBlock);
   }
 
-  int32 SelectSmall2DPartition(int32 seed, int32 x, int32 y,
-                               int32 partitionCount) {
+  static inline int32 SelectSmall2DPartition(int32 seed, int32 x, int32 y,
+                                             int32 partitionCount) {
     return Select2DPartition(seed, x, y, partitionCount, 1);
   }
 
-  int32 SelectLarge2DPartition(int32 seed, int32 x, int32 y,
-                               int32 partitionCount) {
+  static inline int32 SelectLarge2DPartition(int32 seed, int32 x, int32 y,
+                                             int32 partitionCount) {
     return Select2DPartition(seed, x, y, partitionCount, 0);
   }
 }  // namespace ASTCC

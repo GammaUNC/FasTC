@@ -57,31 +57,11 @@
 
 namespace ASTCC {
 
-  // The size of the block for the ASTC data. This needs to be supplied
-  // for every block stream, since ASTC defines texel weights to be less
-  // than or equal to the block size in order to save bits when decompressing
-  enum EASTCBlockSize {
-    eASTCBlockSize_4x4,
-    eASTCBlockSize_5x4,
-    eASTCBlockSize_5x5,
-    eASTCBlockSize_6x5,
-    eASTCBlockSize_6x6,
-    eASTCBlockSize_8x5,
-    eASTCBlockSize_8x6,
-    eASTCBlockSize_8x8,
-    eASTCBlockSize_10x5,
-    eASTCBlockSize_10x6,
-    eASTCBlockSize_10x8,
-    eASTCBlockSize_10x10,
-    eASTCBlockSize_12x10,
-    eASTCBlockSize_12x12,
-  };
-
   // Takes a stream of compressed ASTC data and decompresses it into R8G8B8A8
   // format. The block size must be specified in order to properly
-  // decompress the data.
-  void Decompress(const FasTC::DecompressionJob &,
-                  EASTCBlockSize blockSize);
+  // decompress the data, but it is included in the format descriptor passed
+  // by FasTC::DecompressionJob
+  void Decompress(const FasTC::DecompressionJob &);
 
 }  // namespace ASTCC
 

@@ -960,9 +960,9 @@ namespace ASTCC {
     }
   }
 
-  void Decompress(const FasTC::DecompressionJob &dcj, EASTCBlockSize blockSize) {
-    uint32 blockWidth = GetBlockWidth(blockSize);
-    uint32 blockHeight = GetBlockHeight(blockSize);
+  void Decompress(const FasTC::DecompressionJob &dcj) {
+    uint32 blockWidth = GetBlockWidth(dcj.Format());
+    uint32 blockHeight = GetBlockHeight(dcj.Format());
     uint32 blockIdx = 0;
     for(uint32 j = 0; j < dcj.Width(); j++) {
       for(uint32 i = 0; i < dcj.Height(); i++) {
