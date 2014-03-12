@@ -63,7 +63,11 @@ namespace FasTC {
     eCompressionFormat_DXT5,
     eCompressionFormat_ETC1,
     eCompressionFormat_BPTC,
-    eCompressionFormat_PVRTC,
+
+    eCompressionFormat_PVRTC2,
+    eCompressionFormat_PVRTC4,
+    COMPRESSION_FORMAT_PVRTC_BEGIN = eCompressionFormat_PVRTC2,
+    COMPRESSION_FORMAT_PVRTC_END = eCompressionFormat_PVRTC4,
 
     kNumCompressionFormats
   };
@@ -75,9 +79,14 @@ namespace FasTC {
       case eCompressionFormat_DXT1:
       case eCompressionFormat_DXT5:
       case eCompressionFormat_BPTC:
-      case eCompressionFormat_PVRTC:
+      case eCompressionFormat_PVRTC4:
       case eCompressionFormat_ETC1:
         outSz[0] = 4;
+        outSz[1] = 4;
+        break;
+
+      case eCompressionFormat_PVRTC2:
+        outSz[0] = 8;
         outSz[1] = 4;
         break;
     }
@@ -88,7 +97,8 @@ namespace FasTC {
     switch(fmt) {
       default:
       case eCompressionFormat_DXT1:
-      case eCompressionFormat_PVRTC:
+      case eCompressionFormat_PVRTC4:
+      case eCompressionFormat_PVRTC2:
       case eCompressionFormat_ETC1:
         return 8;
         break;

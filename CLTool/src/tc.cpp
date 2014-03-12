@@ -159,9 +159,9 @@ int main(int argc, char **argv) {
         exit(1);
       } else {
         if(!strcmp(argv[fileArg], "PVRTC")) {
-          format = FasTC::eCompressionFormat_PVRTC;
+          format = FasTC::eCompressionFormat_PVRTC4;
         } else if(!strcmp(argv[fileArg], "PVRTCLib")) {
-          format = FasTC::eCompressionFormat_PVRTC;
+          format = FasTC::eCompressionFormat_PVRTC4;
           bUsePVRTexLib = true;
         } else if(!strcmp(argv[fileArg], "BPTCLib")) {
           format = FasTC::eCompressionFormat_BPTC;
@@ -347,8 +347,8 @@ int main(int argc, char **argv) {
       memcpy(basename, decompressedOutput, 256);
     } else if(format == FasTC::eCompressionFormat_BPTC) {
       strcat(basename, "-bptc.png");
-    } else if(format == FasTC::eCompressionFormat_PVRTC) {
-      strcat(basename, "-pvrtc.png");
+    } else if(format == FasTC::eCompressionFormat_PVRTC4) {
+      strcat(basename, "-pvrtc-4bpp.png");
     } else if(format == FasTC::eCompressionFormat_DXT1) {
       strcat(basename, "-dxt1.png");
     } else if(format == FasTC::eCompressionFormat_ETC1) {

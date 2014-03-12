@@ -130,7 +130,7 @@ bool ImageWriterKTX::WriteImage() {
       wtr.Write(GL_RGBA);  // glBaseFormat
       break;
 
-    case FasTC::eCompressionFormat_PVRTC:
+    case FasTC::eCompressionFormat_PVRTC4:
       wtr.Write(COMPRESSED_RGBA_PVRTC_4BPPV1_IMG);  // glInternalFormat
       wtr.Write(GL_RGBA);  // glBaseFormat
       break;
@@ -163,7 +163,7 @@ bool ImageWriterKTX::WriteImage() {
     static const uint32 kImageSize = m_Width * m_Height;
     wtr.Write(kImageSize); // imageSize
     wtr.Write(ci->GetCompressedData(), kImageSize); // imagedata...
-  } else if(ci && ci->GetFormat() == FasTC::eCompressionFormat_PVRTC) {
+  } else if(ci && ci->GetFormat() == FasTC::eCompressionFormat_PVRTC4) {
     static const uint32 kImageSize = m_Width * m_Height >> 1;
     wtr.Write(kImageSize); // imageSize
     wtr.Write(ci->GetCompressedData(), kImageSize); // imagedata...

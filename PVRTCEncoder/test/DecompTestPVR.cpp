@@ -81,12 +81,17 @@ class ImageTester {
 
     uint32 *outPixels = new uint32[w * h];
 
-    FasTC::DecompressionJob dcj(FasTC::eCompressionFormat_PVRTC,
-                                data, reinterpret_cast<uint8 *>(outPixels), w, h);
+    FasTC::ECompressionFormat fmt = FasTC::eCompressionFormat_PVRTC4;
+    if(twobpp) {
+      fmt = FasTC::eCompressionFormat_PVRTC2;
+    }
+
+    uint8 *outBuf = reinterpret_cast<uint8 *>(outPixels);
+    FasTC::DecompressionJob dcj(fmt, data, outBuf, w, h);
 #ifdef OUTPUT_DEBUG_IMAGE
-    PVRTCC::Decompress(dcj, twobpp, PVRTCC::eWrapMode_Wrap, true);
+    PVRTCC::Decompress(dcj, PVRTCC::eWrapMode_Wrap, true);
 #else
-    PVRTCC::Decompress(dcj, twobpp, PVRTCC::eWrapMode_Wrap);
+    PVRTCC::Decompress(dcj, PVRTCC::eWrapMode_Wrap);
 #endif
 
     bool result = pvrtexture::Transcode(pvrTex,

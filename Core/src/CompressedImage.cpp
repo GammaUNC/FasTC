@@ -123,37 +123,23 @@ bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBuf
 
   uint8 *byteData = reinterpret_cast<uint8 *>(m_CompressedData);
   DecompressionJob dj (m_Format, byteData, outBuf, GetWidth(), GetHeight());
-  switch(m_Format) {
-    case FasTC::eCompressionFormat_DXT1:
-      DXTC::DecompressDXT1(dj);
-      break;
-
-    case FasTC::eCompressionFormat_ETC1:
-      ETCC::Decompress(dj);
-      break;
-
-    case FasTC::eCompressionFormat_PVRTC:
-    {
+  if(m_Format == FasTC::eCompressionFormat_DXT1) {
+    DXTC::DecompressDXT1(dj);
+  } else if(m_Format == FasTC::eCompressionFormat_ETC1) {
+    ETCC::Decompress(dj);
+  } else if(FasTC::COMPRESSION_FORMAT_PVRTC_BEGIN <= m_Format &&
+            FasTC::COMPRESSION_FORMAT_PVRTC_END >= m_Format) {
 #ifndef NDEBUG
-      PVRTCC::Decompress(dj, false, PVRTCC::eWrapMode_Wrap, true);
+    PVRTCC::Decompress(dj, PVRTCC::eWrapMode_Wrap, true);
 #else
-      PVRTCC::Decompress(dj);
+    PVRTCC::Decompress(dj);
 #endif
-    }
-    break;
-
-    case FasTC::eCompressionFormat_BPTC: 
-    { 
-      BPTCC::Decompress(dj);
-    }
-    break;
-
-    default:
-    {
-      const char *errStr = "Have not implemented decompression method.";
-      fprintf(stderr, "%s\n", errStr);
-      assert(!errStr);
-    }
+  } else if(m_Format == FasTC::eCompressionFormat_BPTC) {
+    BPTCC::Decompress(dj);
+  } else {
+    const char *errStr = "Have not implemented decompression method.";
+    fprintf(stderr, "%s\n", errStr);
+    assert(!errStr);
     return false;
   }
 

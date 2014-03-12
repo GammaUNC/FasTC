@@ -274,9 +274,9 @@ namespace PVRTCC {
   }
 
   void Decompress(const FasTC::DecompressionJob &dcj,
-                  const bool bTwoBitMode,
                   const EWrapMode wrapMode,
                   bool bDebugImages) {
+    const bool bTwoBitMode = dcj.Format() == FasTC::eCompressionFormat_PVRTC2;
     const uint32 w = dcj.Width();
     const uint32 h = dcj.Height();
 

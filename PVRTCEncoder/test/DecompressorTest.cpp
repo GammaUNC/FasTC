@@ -56,7 +56,7 @@
 
 #include "PVRTCCompressor.h"
 
-static const FasTC::ECompressionFormat kFmt = FasTC::eCompressionFormat_PVRTC;
+static const FasTC::ECompressionFormat kFmt = FasTC::eCompressionFormat_PVRTC4;
 
 TEST(Decompressor, DecompressWhite) {
   const uint32 kWidth = 32;

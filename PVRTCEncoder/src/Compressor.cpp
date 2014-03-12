@@ -919,9 +919,12 @@ namespace PVRTCC {
   }
 #endif
 
-  void Compress(const FasTC::CompressionJob &cj, bool bTwoBit, EWrapMode wrapMode) {
+  void Compress(const FasTC::CompressionJob &cj, EWrapMode wrapMode) {
     const uint32 width = cj.Width();
     const uint32 height = cj.Height();
+
+    // We only support 4bpp currently
+    assert(cj.Format() == FasTC::eCompressionFormat_PVRTC4);
 
     // Make sure that width and height are a power of two.
     assert((width & (width - 1)) == 0);

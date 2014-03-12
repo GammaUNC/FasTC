@@ -70,7 +70,6 @@ namespace PVRTCC {
   // format. The width and height must be specified in order to properly
   // decompress the data.
   void Decompress(const FasTC::DecompressionJob &,
-                  bool bTwoBitMode = false,
                   const EWrapMode wrapMode = eWrapMode_Wrap,
                   bool bDebugImages = false);
 
@@ -78,7 +77,6 @@ namespace PVRTCC {
   // version one. The width and height must be specified in order to properly
   // decompress the data.
   void Compress(const FasTC::CompressionJob &,
-                bool bTwoBitMode = false,
                 const EWrapMode wrapMode = eWrapMode_Wrap);
 
 #ifdef PVRTEXLIB_FOUND

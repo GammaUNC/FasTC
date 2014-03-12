@@ -113,15 +113,6 @@ static  CompressionFuncWithStats ChooseFuncFromSettingsWithStats(const SCompress
     }
     break;
     
-    case FasTC::eCompressionFormat_ETC1:
-    case FasTC::eCompressionFormat_DXT1:
-    case FasTC::eCompressionFormat_DXT5:
-    case FasTC::eCompressionFormat_PVRTC:
-    {
-      // !FIXME! actually implement one of these methods...
-      return NULL;
-    }
-
     default:
     {
       assert(!"Not implemented!");
@@ -157,7 +148,7 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
     case FasTC::eCompressionFormat_DXT5:
       return DXTC::CompressImageDXT5;
 
-    case FasTC::eCompressionFormat_PVRTC:
+    case FasTC::eCompressionFormat_PVRTC4:
     {
       if(s.bUsePVRTexLib) {
         return CompressPVRTCLib;
@@ -458,7 +449,7 @@ bool CompressImageData(
   }
 
   uint32 numThreads = settings.iNumThreads;
-  if(settings.format == FasTC::eCompressionFormat_PVRTC &&
+  if(settings.format == FasTC::eCompressionFormat_PVRTC4 &&
      (settings.iNumThreads > 1 || settings.logStream)) {
     if(settings.iNumThreads > 1) {
       ReportError("WARNING - PVRTC compressor does not support multithreading.");
