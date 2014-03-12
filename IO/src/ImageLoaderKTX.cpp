@@ -279,6 +279,63 @@ bool ImageLoaderKTX::ReadData() {
       case GL_COMPRESSED_RGBA_BPTC_UNORM:
         m_Format = FasTC::eCompressionFormat_BPTC;
         break;
+
+      case COMPRESSED_RGBA_ASTC_4x4_KHR:
+        m_Format = FasTC::eCompressionFormat_ASTC4x4;
+        break;
+
+      case COMPRESSED_RGBA_ASTC_5x4_KHR:
+        m_Format = FasTC::eCompressionFormat_ASTC5x4;
+        break;
+
+      case COMPRESSED_RGBA_ASTC_5x5_KHR:
+        m_Format = FasTC::eCompressionFormat_ASTC5x5;
+        break;
+
+      case COMPRESSED_RGBA_ASTC_6x5_KHR:
+        m_Format = FasTC::eCompressionFormat_ASTC6x5;
+        break;
+
+      case COMPRESSED_RGBA_ASTC_6x6_KHR:
+        m_Format = FasTC::eCompressionFormat_ASTC6x6;
+        break;
+
+      case COMPRESSED_RGBA_ASTC_8x5_KHR:
+        m_Format = FasTC::eCompressionFormat_ASTC8x5;
+        break;
+
+      case COMPRESSED_RGBA_ASTC_8x6_KHR:
+        m_Format = FasTC::eCompressionFormat_ASTC8x6;
+        break;
+
+      case COMPRESSED_RGBA_ASTC_8x8_KHR:
+        m_Format = FasTC::eCompressionFormat_ASTC8x8;
+        break;
+
+      case COMPRESSED_RGBA_ASTC_10x5_KHR:
+        m_Format = FasTC::eCompressionFormat_ASTC10x5;
+        break;
+
+      case COMPRESSED_RGBA_ASTC_10x6_KHR:
+        m_Format = FasTC::eCompressionFormat_ASTC10x6;
+        break;
+
+      case COMPRESSED_RGBA_ASTC_10x8_KHR:
+        m_Format = FasTC::eCompressionFormat_ASTC10x8;
+        break;
+
+      case COMPRESSED_RGBA_ASTC_10x10_KHR:
+        m_Format = FasTC::eCompressionFormat_ASTC10x10;
+        break;
+
+      case COMPRESSED_RGBA_ASTC_12x10_KHR:
+        m_Format = FasTC::eCompressionFormat_ASTC12x10;
+        break;
+
+      case COMPRESSED_RGBA_ASTC_12x12_KHR:
+        m_Format = FasTC::eCompressionFormat_ASTC12x12;
+        break;
+
       default:
         fprintf(stderr, "KTX loader - texture format (0x%x) unsupported!\n", glInternalFormat);
         return false;
