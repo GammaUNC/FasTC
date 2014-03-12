@@ -57,6 +57,11 @@
 # ifdef __APPLE__
 #  include <OpenGL/gl.h>
 # else
+#  ifdef _MSC_VER
+#    define WIN32_LEAN_AND_MEAN
+#    include "Windows.h"
+#    undef LoadImage
+#  endif
 #  include <GL/gl.h>
 # endif
 #endif

@@ -183,9 +183,10 @@ namespace FasTC {
     return a;
   }
 
+  // !WTF! MSVC bug with enums in template parameters =(
   template<
-    EVectorType kVectorTypeOne,
-    EVectorType kVectorTypeTwo,
+    /* EVectorType */unsigned kVectorTypeOne,
+    /* EVectorType */unsigned kVectorTypeTwo,
     typename TypeOne,
     typename TypeTwo>
   class MultSwitch {

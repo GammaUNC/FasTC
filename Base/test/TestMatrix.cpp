@@ -53,7 +53,7 @@
 #include "gtest/gtest.h"
 #include "MatrixBase.h"
 
-static const float kEpsilon = 1e-6;
+static const float kEpsilon = 1e-6f;
 
 TEST(MatrixBase, Constructors) {
   FasTC::MatrixBase<float, 3, 4> m3f;
@@ -123,7 +123,7 @@ TEST(MatrixBase, PointerConversion) {
 }
 
 TEST(MatrixBase, CastVector) {
-  srand(time(NULL));
+  srand(static_cast<unsigned>(time(NULL)));
 
   FasTC::MatrixBase<float, 3, 2> v3f;
   for(int i = 0; i < 6; i++) {

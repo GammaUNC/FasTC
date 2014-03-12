@@ -53,7 +53,7 @@
 #include "gtest/gtest.h"
 #include "VectorBase.h"
 
-static const float kEpsilon = 1e-6;
+static const float kEpsilon = 1e-6f;
 
 TEST(VectorBase, Constructors) {
   FasTC::VectorBase<float, 3> v3f;
@@ -173,7 +173,7 @@ TEST(VectorBase, Normalization) {
   EXPECT_EQ(v2u[0], 1);
   EXPECT_EQ(v2u[1], 1);
 
-  const float sqrt2 = sqrt(2)/2.0f;
+  const double sqrt2 = sqrt(2)/2.0f;
   for(int i = 2; i < 10; i++) {
     v2f[0] = static_cast<float>(i);
     v2f[1] = static_cast<float>(i);

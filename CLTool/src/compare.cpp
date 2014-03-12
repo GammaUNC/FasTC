@@ -59,12 +59,7 @@
 #include "TexComp.h"
 #include "ThreadSafeStreambuf.h"
 
-#ifdef _MSC_VER
-int _tmain(int argc, _TCHAR* argv[]) {
-#else
 int main(int argc, char **argv) {
-#endif
-
   if(argc != 3) {
     fprintf(stderr, "Usage: compare <img1> <img2>\n");
     return 1;
