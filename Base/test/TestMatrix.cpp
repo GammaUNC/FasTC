@@ -57,9 +57,24 @@ static const float kEpsilon = 1e-6f;
 
 TEST(MatrixBase, Constructors) {
   FasTC::MatrixBase<float, 3, 4> m3f;
+  for(int j = 0; j < 3; j++)
+  for(int i = 0; i < 4; i++)
+    m3f[j*4+i] = static_cast<float>(i) / static_cast<float>(j+1);
+
   FasTC::MatrixBase<double, 1, 1> m1d;
+  for(int j = 0; j < 1; j++)
+  for(int i = 0; i < 1; i++)
+    m1d[j*1+i] = 0.0;
+
   FasTC::MatrixBase<int, 7, 200> m7i;
+  for(int j = 0; j < 7; j++)
+  for(int i = 0; i < 200; i++)
+    m7i[j*200+i] = i*j;
+
   FasTC::MatrixBase<unsigned, 16, 16> m16u;
+  for(int j = 0; j < 16; j++)
+  for(int i = 0; i < 16; i++)
+    m16u[j*16+i] = j-i;
 
 #define TEST_VECTOR_COPY_CONS(mat, t, n, m)     \
   do {                                          \

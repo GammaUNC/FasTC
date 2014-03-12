@@ -57,9 +57,15 @@ static const float kEpsilon = 1e-6f;
 
 TEST(VectorBase, Constructors) {
   FasTC::VectorBase<float, 3> v3f;
+  v3f[0] = 1.1f; v3f[1] = 1.2f;
   FasTC::VectorBase<double, 1> v1d;
+  v1d[0] = 1.1;
   FasTC::VectorBase<int, 7> v7i;
+  for(int i = 0; i < 7; i++)
+	v7i[i] = -i;
   FasTC::VectorBase<unsigned, 16> v16u;
+  for(int i = 0; i < 7; i++)
+	v16u[i] = i;
 
 #define TEST_VECTOR_COPY_CONS(v, t, n)          \
   do {                                          \
