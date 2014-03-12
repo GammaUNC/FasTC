@@ -118,7 +118,7 @@ TEST(VectorBase, PointerConversion) {
 
 TEST(VectorBase, CastVector) {
   FasTC::VectorBase<float, 3> v3f;
-  v3f[0] = 100000000000.0f;
+  v3f[0] = 1000000.0f;
   v3f[1] = -2.0f;
   v3f[2] = -1.1f;
 
