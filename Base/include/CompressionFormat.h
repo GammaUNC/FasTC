@@ -69,6 +69,23 @@ namespace FasTC {
     COMPRESSION_FORMAT_PVRTC_BEGIN = eCompressionFormat_PVRTC2,
     COMPRESSION_FORMAT_PVRTC_END = eCompressionFormat_PVRTC4,
 
+    eCompressionFormat_ASTC4x4,
+    eCompressionFormat_ASTC5x4,
+    eCompressionFormat_ASTC5x5,
+    eCompressionFormat_ASTC6x5,
+    eCompressionFormat_ASTC6x6,
+    eCompressionFormat_ASTC8x5,
+    eCompressionFormat_ASTC8x6,
+    eCompressionFormat_ASTC8x8,
+    eCompressionFormat_ASTC10x5,
+    eCompressionFormat_ASTC10x6,
+    eCompressionFormat_ASTC10x8,
+    eCompressionFormat_ASTC10x10,
+    eCompressionFormat_ASTC12x10,
+    eCompressionFormat_ASTC12x12,
+    COMPRESSION_FORMAT_ASTC_BEGIN = eCompressionFormat_ASTC4x4,
+    COMPRESSION_FORMAT_ASTC_END = eCompressionFormat_ASTC12x12,
+
     kNumCompressionFormats
   };
 
@@ -81,6 +98,7 @@ namespace FasTC {
       case eCompressionFormat_BPTC:
       case eCompressionFormat_PVRTC4:
       case eCompressionFormat_ETC1:
+      case eCompressionFormat_ASTC4x4:
         outSz[0] = 4;
         outSz[1] = 4;
         break;
@@ -89,6 +107,65 @@ namespace FasTC {
         outSz[0] = 8;
         outSz[1] = 4;
         break;
+
+      case eCompressionFormat_ASTC5x4:
+        outSz[0] = 5;
+        outSz[1] = 4;
+        break;
+
+      case eCompressionFormat_ASTC5x5:
+        outSz[0] = 5;
+        outSz[1] = 5;
+        break;
+
+      case eCompressionFormat_ASTC6x5:
+        outSz[0] = 6;
+        outSz[1] = 5;
+        break;
+
+      case eCompressionFormat_ASTC6x6:
+        outSz[0] = 6;
+        outSz[1] = 6;
+        break;
+
+      case eCompressionFormat_ASTC8x5:
+        outSz[0] = 8;
+        outSz[1] = 5;
+        break;
+
+      case eCompressionFormat_ASTC8x6:
+        outSz[0] = 8;
+        outSz[1] = 6;
+        break;
+
+      case eCompressionFormat_ASTC8x8:
+        outSz[0] = 8;
+        outSz[1] = 8;
+        break;
+
+      case eCompressionFormat_ASTC10x5:
+        outSz[0] = 10;
+        outSz[1] = 5;
+
+      case eCompressionFormat_ASTC10x6:
+        outSz[0] = 10;
+        outSz[1] = 6;
+
+      case eCompressionFormat_ASTC10x8:
+        outSz[0] = 10;
+        outSz[1] = 8;
+
+      case eCompressionFormat_ASTC10x10:
+        outSz[0] = 10;
+        outSz[1] = 10;
+
+      case eCompressionFormat_ASTC12x10:
+        outSz[0] = 12;
+        outSz[1] = 10;
+
+      case eCompressionFormat_ASTC12x12:
+        outSz[0] = 12;
+        outSz[1] = 12;
     }
   }
 
@@ -101,10 +178,25 @@ namespace FasTC {
       case eCompressionFormat_PVRTC2:
       case eCompressionFormat_ETC1:
         return 8;
-        break;
 
       case eCompressionFormat_DXT5:
+
       case eCompressionFormat_BPTC:
+
+      case eCompressionFormat_ASTC4x4:
+      case eCompressionFormat_ASTC5x4:
+      case eCompressionFormat_ASTC5x5:
+      case eCompressionFormat_ASTC6x5:
+      case eCompressionFormat_ASTC6x6:
+      case eCompressionFormat_ASTC8x5:
+      case eCompressionFormat_ASTC8x6:
+      case eCompressionFormat_ASTC8x8:
+      case eCompressionFormat_ASTC10x5:
+      case eCompressionFormat_ASTC10x6:
+      case eCompressionFormat_ASTC10x8:
+      case eCompressionFormat_ASTC10x10:
+      case eCompressionFormat_ASTC12x10:
+      case eCompressionFormat_ASTC12x12:
         return 16;
     }
   }
