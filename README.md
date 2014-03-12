@@ -1,4 +1,4 @@
-FasTC
+FasTC [![Build Status](https://travis-ci.org/Mokosha/FasTC.png)](https://travis-ci.org/Mokosha/FasTC)
 =======
 
 A **Fas**t **T**exture **C**ompressor for a variety of formats. This compressor 
