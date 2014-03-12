@@ -94,7 +94,7 @@ namespace FasTC {
     }
 
     T LengthSq() const { return this->Dot(*this); }
-    T Length() const { return sqrt(LengthSq()); }
+    T Length() const { return static_cast<T>(sqrt(LengthSq())); }
 
     void Normalize() {
       T len = Length();
@@ -110,7 +110,7 @@ namespace FasTC {
                                              const VectorTypeTwo &v2) {
     VectorTypeOne a(v1);
     for(int i = 0; i < VectorTypeOne::Size; i++) {
-      a(i) += v2[i];
+      a(i) += static_cast<VectorTypeOne::ScalarType>(v2[i]);
     }
     return a;
   }
@@ -132,7 +132,7 @@ namespace FasTC {
                                                 const VectorTypeTwo &v2) {
     VectorTypeOne a(v1);
     for(int i = 0; i < VectorTypeOne::Size; i++) {
-      a(i) -= v2[i];
+      a(i) -= static_cast<VectorTypeOne::ScalarType>(v2[i]);
     }
     return a;
   }

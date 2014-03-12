@@ -225,7 +225,7 @@ TEST(VectorBase, Addition) {
   EXPECT_NEAR(af[1], 5.2f, kEpsilon);
 
   au = v2u - v2f;
-  EXPECT_EQ(au[0], 3);
+  EXPECT_EQ(au[0], 4);
   EXPECT_EQ(au[1], -1);
 
   af = v2f - v2u;
