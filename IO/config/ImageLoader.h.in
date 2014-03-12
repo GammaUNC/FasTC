@@ -53,7 +53,7 @@ class ImageLoader {
  protected:
 
   const uint8 *const m_RawData;
-  const int32 m_NumRawDataBytes;
+  const uint32 m_NumRawDataBytes;
   uint8 *m_PixelData;
 
   uint32 m_Width;
