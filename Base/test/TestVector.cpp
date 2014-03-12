@@ -179,7 +179,7 @@ TEST(VectorBase, Normalization) {
   EXPECT_EQ(v2u[0], static_cast<unsigned>(1));
   EXPECT_EQ(v2u[1], static_cast<unsigned>(1));
 
-  const double sqrt2 = sqrt(2)/2.0f;
+  const double sqrt2 = sqrt(2.0f)/2.0f;
   for(int i = 2; i < 10; i++) {
     v2f[0] = static_cast<float>(i);
     v2f[1] = static_cast<float>(i);

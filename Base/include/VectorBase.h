@@ -94,7 +94,8 @@ namespace FasTC {
     }
 
     T LengthSq() const { return this->Dot(*this); }
-    T Length() const { return static_cast<T>(sqrt(LengthSq())); }
+    T Length() const { return static_cast<T>(
+      sqrt(static_cast<long double>(LengthSq())));}
 
     void Normalize() {
       T len = Length();
