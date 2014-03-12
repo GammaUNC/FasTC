@@ -118,6 +118,10 @@ TEST(VectorBase, PointerConversion) {
 
 TEST(VectorBase, CastVector) {
   FasTC::VectorBase<float, 3> v3f;
+  v3f[0] = 100000000000.0f;
+  v3f[1] = -2.0f;
+  v3f[2] = -1.1f;
+
   FasTC::VectorBase<double, 3> v3d = v3f;
   FasTC::VectorBase<int, 3> v3i = v3f;
   for(int i = 0; i < 3; i++) {
@@ -244,10 +248,12 @@ TEST(VectorBase, Addition) {
 TEST(Vector2, BaseFunctionality) {
   FasTC::Vec2f v2f;
   FasTC::Vec2d v2d;
+  v2d.X() = 3.0;
+  v2d.Y() = -10.0;
 
   v2f = v2d;
-  EXPECT_NEAR(v2f[0], v2d[0], kEpsilon);
-  EXPECT_NEAR(v2f[1], v2d[1], kEpsilon);
+  EXPECT_EQ(v2f[0], v2d[0]);
+  EXPECT_EQ(v2f[1], v2d[1]);
 }
 
 TEST(Vector2, Accessors) {
@@ -300,10 +306,13 @@ TEST(Vector2, Swizzle) {
 TEST(Vector3, BaseFunctionality) {
   FasTC::Vec3f vf;
   FasTC::Vec3d vd;
+  vd.X() = 3.0;
+  vd.Y() = -10.0;
+  vd.Z() = 0.0;
 
   vf = vd;
   for(int i = 0; i < 3; i++) {
-    EXPECT_NEAR(vf[i], vd[i], kEpsilon);
+    EXPECT_EQ(vf[i], vd[i]);
   }
 }
 
@@ -383,10 +392,14 @@ TEST(Vector3, CrossProduct) {
 TEST(Vector4, BaseFunctionality) {
   FasTC::Vec4f vf;
   FasTC::Vec4d vd;
+  vd.X() = 3.0;
+  vd.Y() = -10.0;
+  vd.Z() = 0.0;
+  vd.W() = 100000000.0;
 
   vf = vd;
   for(int i = 0; i < 4; i++) {
-    EXPECT_NEAR(vf[i], vd[i], kEpsilon);
+    EXPECT_EQ(vf[i], vd[i]);
   }
 }
 
