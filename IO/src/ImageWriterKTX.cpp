@@ -123,7 +123,7 @@ bool ImageWriterKTX::WriteImage() {
   if(ci) {
     wtr.Write(0);  // glType
     wtr.Write(1);  // glTypeSize
-    wtr.Write(GL_RGBA);  // glFormat
+    wtr.Write(0);  // glFormat must be zero for compressed images...
     switch(ci->GetFormat()) {
     case FasTC::eCompressionFormat_BPTC:
       wtr.Write(GL_COMPRESSED_RGBA_BPTC_UNORM);  // glInternalFormat

@@ -75,7 +75,7 @@ class ByteReader {
   { }
 
   bool Advance(uint32 nBytes) {
-    if(nBytes < m_BytesLeft) {
+    if(nBytes > m_BytesLeft) {
       assert(!"Cannot read any more, unexpected bytes!");
       return false;
     }
@@ -278,6 +278,7 @@ bool ImageLoaderKTX::ReadData() {
     switch(glInternalFormat) {
       case GL_COMPRESSED_RGBA_BPTC_UNORM:
         m_Format = FasTC::eCompressionFormat_BPTC;
+        break;
       default:
         fprintf(stderr, "KTX loader - texture format (0x%x) unsupported!\n", glInternalFormat);
         return false;
