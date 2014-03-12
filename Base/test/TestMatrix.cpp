@@ -239,8 +239,8 @@ TEST(MatrixSquare, PowerMethod) {
   FasTC::VectorBase<double, 2> x;
   A.PowerMethod(x, &e, 20, 200);
 
-  EXPECT_NEAR(x[0], 0.83205f, 0.0001);
-  EXPECT_NEAR(x[1], 0.5547f, 0.0001);
+  EXPECT_NEAR(x[0], 0.83205f, 0.0002);
+  EXPECT_NEAR(x[1], 0.5547f, 0.0002);
 
   EXPECT_NEAR(e, 1.f, 0.0001);
 }
