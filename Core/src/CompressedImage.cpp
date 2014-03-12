@@ -64,6 +64,7 @@
 #include "PVRTCCompressor.h"
 #include "DXTCompressor.h"
 #include "ETCCompressor.h"
+#include "ASTCCompressor.h"
 
 using FasTC::CompressionJob;
 using FasTC::DecompressionJob;
@@ -136,6 +137,9 @@ bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBuf
 #endif
   } else if(m_Format == FasTC::eCompressionFormat_BPTC) {
     BPTCC::Decompress(dj);
+  } else if(FasTC::COMPRESSION_FORMAT_ASTC_BEGIN <= m_Format &&
+            FasTC::COMPRESSION_FORMAT_ASTC_END >= m_Format) {
+    ASTCC::Decompress(dj);
   } else {
     const char *errStr = "Have not implemented decompression method.";
     fprintf(stderr, "%s\n", errStr);
