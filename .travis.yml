@@ -10,3 +10,5 @@ before_script:
   - cmake .. -DCMAKE_BUILD_TYPE=Release
 
 script: make && make test
+
+after_failure: if [ -d Testing ]; then cat Testing/Temporary/LastTest.log; fi
