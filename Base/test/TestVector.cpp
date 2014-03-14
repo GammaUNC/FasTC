@@ -64,7 +64,7 @@ TEST(VectorBase, Constructors) {
   for(int i = 0; i < 7; i++)
 	v7i[i] = -i;
   FasTC::VectorBase<unsigned, 16> v16u;
-  for(int i = 0; i < 7; i++)
+  for(int i = 0; i < 16; i++)
 	v16u[i] = i;
 
 #define TEST_VECTOR_COPY_CONS(v, t, n)          \
