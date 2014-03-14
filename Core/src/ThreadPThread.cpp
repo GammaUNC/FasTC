@@ -140,6 +140,8 @@ void TCThread::Yield() {
 uint64 TCThread::ThreadID() {
 #ifdef __MINGW32__
   return static_cast<uint64>(pthread_self().x);
+#elif defined __APPLE__
+  return reinterpret_cast<uint64>(pthread_self());
 #else
   return static_cast<uint64>(pthread_self());
 #endif
