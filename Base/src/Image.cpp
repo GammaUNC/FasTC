@@ -93,7 +93,9 @@ Image<PixelType>::Image(const Image<PixelType> &other)
   , m_Height(other.m_Height)
   , m_Pixels(new PixelType[GetNumPixels()])
 {
-  memcpy(m_Pixels, other.m_Pixels, GetNumPixels() * sizeof(PixelType));
+  if(other.m_Pixels) {
+    memcpy(m_Pixels, other.m_Pixels, GetNumPixels() * sizeof(PixelType));
+  }
 }
 
 template<typename PixelType>
