@@ -106,14 +106,14 @@ namespace ASTCC {
     }
 
     // First check if the last four bits are zero
-    if((modeBits & 0xF) != 0) {
+    if((modeBits & 0xF) == 0) {
       params.m_bError = true;
       return params;
     }
 
     // If the last two bits are zero, then if bits
     // [6-8] are all ones, this is also reserved.
-    if((modeBits & 0x3) != 0 &&
+    if((modeBits & 0x3) == 0 &&
        (modeBits & 0x1C0) == 0x1C0) {
       params.m_bError = true;
       return params;
@@ -290,17 +290,18 @@ namespace ASTCC {
     }
   }
 
-  void DecodeColorValues(uint32 *out, uint8 *data, uint32 *modes, const uint32 nBitsForColorData) {
+  void DecodeColorValues(uint32 *out, uint8 *data, uint32 *modes,
+                         const uint32 nPartitions, const uint32 nBitsForColorData) {
     // First figure out how many color values we have
     uint32 nValues = 0;
-    for(uint32 i = 0; i < 4; i++) {
+    for(uint32 i = 0; i < nPartitions; i++) {
       nValues += ((modes[i]>>2) + 1) << 1;
     }
 
     // Then based on the number of values and the remaining number of bits,
     // figure out the max value for each of them...
-    uint32 range = 255;
-    while(range > 0) {
+    uint32 range = 256;
+    while(--range > 0) {
       IntegerEncodedValue val = IntegerEncodedValue::CreateEncoding(range);
       uint32 bitLength = val.GetBitLength(nValues);
       if(bitLength < nBitsForColorData) {
@@ -323,13 +324,17 @@ namespace ASTCC {
     FasTC::BitStreamReadOnly colorStream (data);
     IntegerEncodedValue::
       DecodeIntegerSequence(decodedColorValues, colorStream, range, nValues);
-    assert(nValues == decodedColorValues.size());
 
     // Once we have the decoded values, we need to dequantize them to the 0-255 range
     // This procedure is outlined in ASTC spec C.2.13
     uint32 outIdx = 0;
     std::vector<IntegerEncodedValue>::const_iterator itr;
     for(itr = decodedColorValues.begin(); itr != decodedColorValues.end(); itr++) {
+      // Have we already decoded all that we need?
+      if(outIdx >= nValues) {
+        break;
+      }
+
       const IntegerEncodedValue &val = *itr;
       uint32 bitlen = val.BaseBitLength();
       uint32 bitval = val.GetBitValue();
@@ -603,24 +608,29 @@ namespace ASTCC {
       uint32 jt = gt >> 4;
       uint32 ft = gt & 0x0F;
 
-      uint32 v0 = js + jt * params.m_Width;
-
-      assert(v0 < (params.m_Width * params.m_Height));
-      uint32 p00 = unquantized[plane][v0];
-
-      assert((v0 + 1) < (params.m_Width * params.m_Height));
-      uint32 p01 = unquantized[plane][v0 + 1];
-
-      assert((v0 + params.m_Width) < (params.m_Width * params.m_Height));
-      uint32 p10 = unquantized[plane][v0 + params.m_Width];
-
-      assert((v0 + params.m_Width + 1) < (params.m_Width * params.m_Height));
-      uint32 p11 = unquantized[plane][v0 + params.m_Width + 1];
-
       uint32 w11 = (fs * ft + 8) >> 4;
       uint32 w10 = ft - w11;
       uint32 w01 = fs - w11;
       uint32 w00 = 16 - fs - ft + w11;
+
+      uint32 v0 = js + jt * params.m_Width;
+
+      #define FIND_TEXEL(tidx, bidx)                            \
+      uint32 p##bidx = 0;                                       \
+      do {                                                      \
+        if(w##bidx > 0) {                                       \
+          assert((tidx) < (params.m_Width * params.m_Height));  \
+          p##bidx = unquantized[plane][(tidx)];                 \
+        }                                                       \
+      }                                                         \
+      while(0)
+
+      FIND_TEXEL(v0, 00);
+      FIND_TEXEL(v0 + 1, 01);
+      FIND_TEXEL(v0 + params.m_Width, 10);
+      FIND_TEXEL(v0 + params.m_Width + 1, 11);
+
+      #undef FIND_TEXEL
 
       out[plane][t*blockWidth + s] = (p00*w00 + p01*w01 + p10*w10 + p11*w11 + 8) >> 4;
     }
@@ -907,7 +917,8 @@ namespace ASTCC {
 
     // Decode both color data and texel weight data
     uint32 colorValues[32]; // Four values, two endpoints, four maximum paritions
-    DecodeColorValues(colorValues, colorEndpointData, colorEndpointMode, colorDataBits);
+    DecodeColorValues(colorValues, colorEndpointData, colorEndpointMode,
+                      nPartitions, colorDataBits);
 
     std::vector<IntegerEncodedValue> texelWeightValues;
     FasTC::BitStreamReadOnly weightStream (texelWeightData);
@@ -964,8 +975,8 @@ namespace ASTCC {
     uint32 blockWidth = GetBlockWidth(dcj.Format());
     uint32 blockHeight = GetBlockHeight(dcj.Format());
     uint32 blockIdx = 0;
-    for(uint32 j = 0; j < dcj.Width(); j++) {
-      for(uint32 i = 0; i < dcj.Height(); i++) {
+    for(uint32 j = 0; j < dcj.Width(); j+=blockHeight) {
+      for(uint32 i = 0; i < dcj.Height(); i+=blockWidth) {
 
         const uint8 *blockPtr = dcj.InBuf() + blockIdx*16;
 
