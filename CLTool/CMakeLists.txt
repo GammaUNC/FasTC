@@ -56,11 +56,17 @@ ADD_EXECUTABLE(
   "src/compare.cpp"
 )
 
+ADD_EXECUTABLE(
+  decomp
+  "src/decomp.cpp"
+)
+
 # Add flag for link time code generation. This was used to build the libpng
 # libraries, so we should probably also include it for this project as well...
 IF( MSVC )
   SET_TARGET_PROPERTIES(tc PROPERTIES LINK_FLAGS "/LTCG")
   SET_TARGET_PROPERTIES(compare PROPERTIES LINK_FLAGS "/LTCG")
+  SET_TARGET_PROPERTIES(decomp PROPERTIES LINK_FLAGS "/LTCG")
 ENDIF()
 
 TARGET_LINK_LIBRARIES( tc FasTCBase )
@@ -69,3 +75,6 @@ TARGET_LINK_LIBRARIES( tc FasTCCore )
 
 TARGET_LINK_LIBRARIES( compare FasTCBase )
 TARGET_LINK_LIBRARIES( compare FasTCIO )
+
+TARGET_LINK_LIBRARIES( compare FasTCBase )
+TARGET_LINK_LIBRARIES( decomp FasTCIO )
