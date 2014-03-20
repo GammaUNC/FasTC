@@ -106,7 +106,7 @@ namespace ASTCC {
   };
 
   // Count the number of bits set in a number.
-  static inline Popcnt(uint32 n) {
+  static inline uint32 Popcnt(uint32 n) {
     uint32 c;
     for(c = 0; n; c++) {
       n &= n-1;
