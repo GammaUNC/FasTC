@@ -77,6 +77,16 @@ namespace FasTC {
       return ret;
     }
 
+    // Equality operator 
+    template<typename _T>
+    bool operator==(MatrixBase<_T, nRows, nCols> &other) const { 
+      bool result = true;
+      for(int i = 0; i < Size; i++) {
+        result = result && (mat[i] == other[i]);
+      }
+      return result;
+    }
+
     // Matrix multiplication
     template<typename _T, const int nTarget>
     MatrixBase<T, nRows, nTarget> MultiplyMatrix(const MatrixBase<_T, nCols, nTarget> &m) const {
