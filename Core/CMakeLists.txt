@@ -64,7 +64,7 @@ SET( HEADERS
 )
 
 # Make sure to add the appropriate stopwatch files...
-SET( HEADERS	${HEADERS} "src/StopWatch.h" )
+SET( HEADERS	${HEADERS} "include/StopWatch.h" )
 
 IF( WIN32 )
 	SET( SOURCES ${SOURCES} "src/StopWatchWin32.cpp" )
