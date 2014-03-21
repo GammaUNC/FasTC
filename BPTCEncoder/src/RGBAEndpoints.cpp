@@ -237,102 +237,14 @@ uint8 QuantizeChannel(const uint8 val, const uint8 mask, const int pBit) {
 
 uint32 RGBAVector::ToPixel(const uint32 channelMask, const int pBit) const {
 
-  const uint8 pRet0 = QuantizeChannel(uint32(r + 0.5) & 0xFF, channelMask & 0xFF, pBit);
-  const uint8 pRet1 = QuantizeChannel(uint32(g + 0.5) & 0xFF, (channelMask >> 8) & 0xFF, pBit);
-  const uint8 pRet2 = QuantizeChannel(uint32(b + 0.5) & 0xFF, (channelMask >> 16) & 0xFF, pBit);
-  const uint8 pRet3 = QuantizeChannel(uint32(a + 0.5) & 0xFF, (channelMask >> 24) & 0xFF, pBit);
+  const uint8 pRet0 = QuantizeChannel(uint32(R() + 0.5) & 0xFF, channelMask & 0xFF, pBit);
+  const uint8 pRet1 = QuantizeChannel(uint32(G() + 0.5) & 0xFF, (channelMask >> 8) & 0xFF, pBit);
+  const uint8 pRet2 = QuantizeChannel(uint32(B() + 0.5) & 0xFF, (channelMask >> 16) & 0xFF, pBit);
+  const uint8 pRet3 = QuantizeChannel(uint32(A() + 0.5) & 0xFF, (channelMask >> 24) & 0xFF, pBit);
 
   const uint32 ret = pRet0 | (pRet1 << 8) | (pRet2 << 16) | (pRet3 << 24);
 
   return ret;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// RGBAMatrix implementation
-//
-///////////////////////////////////////////////////////////////////////////////
-
-RGBAMatrix &RGBAMatrix::operator *=(const RGBAMatrix &mat) {
-  *this = ((*this) * mat);
-  return (*this);
-}
-
-RGBAMatrix RGBAMatrix::operator *(const RGBAMatrix &mat) const {
-
-  RGBAMatrix result;
-
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
-
-      result(i, j) = 0.0f;
-      for(int k = 0; k < 4; k++) {
-        result(i, j) += m[i*4 + k] * mat.m[k*4 + j];
-      }
-    }
-  }
-
-  return result;
-}
-
-RGBAVector RGBAMatrix::operator *(const RGBAVector &p) const {
-  return RGBAVector (
-    p.x * m1 + p.y * m2 + p.z * m3 + p.w * m4,
-    p.x * m5 + p.y * m6 + p.z * m7 + p.w * m8,
-    p.x * m9 + p.y * m10 + p.z * m11 + p.w * m12,
-    p.x * m13 + p.y * m14 + p.z * m15 + p.w * m16
-  );
-}
-
-RGBAMatrix RGBAMatrix::RotateX(float rad) {
-  RGBAMatrix result;
-  result.m6 = result.m11 = cos(rad);
-  result.m10 = sin(rad);
-  result.m7 = -result.m10;
-  return result;
-}
-
-RGBAMatrix RGBAMatrix::RotateY(float rad) {
-  RGBAMatrix result;
-  result.m1 = result.m11 = cos(rad);
-  result.m3 = sin(rad);
-  result.m9 = -result.m3;
-  return result;
-}
-
-RGBAMatrix RGBAMatrix::RotateZ(float rad) {
-  RGBAMatrix result;
-  result.m1 = result.m6 = cos(rad);
-  result.m5 = sin(rad);
-  result.m2 = -result.m5;
-  return result;
-}
-
-RGBAMatrix RGBAMatrix::Translate(const RGBAVector &t) {
-  RGBAMatrix result;
-  result.m4 = t.x;
-  result.m8 = t.y;
-  result.m12 = t.z;
-  result.m16 = t.w;
-  return result;
-}
-
-bool RGBAMatrix::Identity() {
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
-
-      if(i == j) {
-        if(fabs(m[i*4 + j] - 1.0f) > 1e-5)
-          return false;
-      }
-      else {
-        if(fabs(m[i*4 + j]) > 1e-5)
-          return false;
-      }
-    }
-  }
-
-  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -347,8 +259,6 @@ RGBACluster::RGBACluster(const RGBACluster &left, const RGBACluster &right) {
     const RGBAVector &p = right.m_DataPoints[i];
     AddPoint(p);
   }
-
-  m_PrincipalAxisCached = false;
 }  
 
 void RGBACluster::AddPoint(const RGBAVector &p) {
@@ -358,62 +268,9 @@ void RGBACluster::AddPoint(const RGBAVector &p) {
   m_PointBitString |= 1 << p.GetIdx();
 
   for(uint32 i = 0; i < kNumColorChannels; i++) {
-    m_Min.c[i] = min(p.c[i], m_Min.c[i]);
-    m_Max.c[i] = max(p.c[i], m_Max.c[i]);
+    m_Min[i] = min(p[i], m_Min[i]);
+    m_Max[i] = max(p[i], m_Max[i]);
   }
-}
-
-void RGBACluster::GetPrincipalAxis(RGBADir &axis) {
-
-  if(m_PrincipalAxisCached) {
-    axis = m_PrincipalAxis;
-    return;
-  }
-
-  m_PowerMethodIterations = ::GetPrincipalAxis(
-    m_NumPoints, 
-    m_DataPoints, 
-    m_PrincipalAxis, 
-    m_PrincipalEigenvalue, 
-    &m_SecondEigenvalue
-  );
-
-  m_PrincipalAxisCached = true;
-
-  GetPrincipalAxis(axis);
-}
-
-double RGBACluster::GetPrincipalEigenvalue() {
-
-  if(!m_PrincipalAxisCached) {
-    RGBADir dummy;
-    GetPrincipalAxis(dummy);
-  }
-  
-  assert(m_PrincipalAxisCached);
-  return m_PrincipalEigenvalue;
-}
-
-double RGBACluster::GetSecondEigenvalue() {
-
-  if(!m_PrincipalAxisCached) {
-    RGBADir dummy;
-    GetPrincipalAxis(dummy);
-  }
-  
-  assert(m_PrincipalAxisCached);
-  return m_SecondEigenvalue;
-}
-
-uint32 RGBACluster::GetPowerMethodIterations() {
-
-  if(!m_PrincipalAxisCached) {
-    RGBADir dummy;
-    GetPrincipalAxis(dummy);
-  }
-  
-  assert(m_PrincipalAxisCached);
-  return m_PowerMethodIterations;
 }
 
 double RGBACluster::QuantizedError(
@@ -467,7 +324,7 @@ double RGBACluster::QuantizedError(
       for(uint32 k = 0; k < kNumColorChannels; k++) {
         const uint8 ip = (((uint32(pqp1[k]) * interp0) + (uint32(pqp2[k]) * interp1) + 32) >> 6) & 0xFF;
         const uint8 dist = sad(pb[k], ip);
-        errorVec.c[k] = kFloatConversion[dist] * metric.c[k];
+        errorVec[k] = kFloatConversion[dist] * metric[k];
       }
       
       float error = errorVec * errorVec;
@@ -501,68 +358,13 @@ double RGBACluster::QuantizedError(
 ///////////////////////////////////////////////////////////////////////////////
 
 void ClampEndpoints(RGBAVector &p1, RGBAVector &p2) {
-  clamp(p1.r, 0.0f, 255.0f);
-  clamp(p1.g, 0.0f, 255.0f);
-  clamp(p1.b, 0.0f, 255.0f);
-  clamp(p1.a, 0.0f, 255.0f);
-
-  clamp(p2.r, 0.0f, 255.0f);
-  clamp(p2.g, 0.0f, 255.0f);
-  clamp(p2.b, 0.0f, 255.0f);
-  clamp(p2.a, 0.0f, 255.0f);
+  for(uint32 i = 0; i < 4; i++) {
+    clamp(p1[i], 0.0f, 255.0f);
+    clamp(p2[i], 0.0f, 255.0f);
+  }
 }
 
-static uint32 PowerIteration(const RGBAMatrix &mat, RGBADir &eigVec, double &eigVal) {
-
-  int numIterations = 0;
-  const int kMaxNumIterations = 200;
-
-  for(int nTries = 0; nTries < 3; nTries++) {
-  // !SPEED! Find eigenvectors by using the power method. This is good because the
-  // matrix is only 4x4, which allows us to use SIMD...
-  RGBAVector b = RGBAVector(float(rand()) + 1.0f);
-  b /= b.Length();
-
-  bool fixed = false;
-  numIterations = 0;
-  while(!fixed && ++numIterations < kMaxNumIterations) {
-
-    RGBAVector newB = mat * b;
-
-    // !HACK! If the principal eigenvector of the covariance matrix
-    // converges to zero, that means that the points lie equally 
-    // spaced on a sphere in this space. In this (extremely rare)
-    // situation, just choose a point and use it as the principal 
-    // direction.
-    const float newBlen = newB.Length();
-    if(newBlen < 1e-10) {
-      eigVec = b;
-      eigVal = 0.0;
-      return numIterations;
-    }
-
-    eigVal = newB.Length();
-    newB /= float(eigVal);
-
-    if(fabs(1.0f - (b * newB)) < 1e-5)
-      fixed = true;
-
-    b = newB;
-  }
-
-  eigVec = b;  
-  if(numIterations < kMaxNumIterations) {
-    break;
-  }
-  }
-
-  if(numIterations == kMaxNumIterations) {
-    eigVal = 0.0;
-  }
-  return numIterations;
-}
-
-uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, double &eigOne, double *eigTwo) {
+uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, float *eigOne, float *eigTwo) {
 
   assert(nPts <= kMaxNumDataPoints);
 
@@ -579,7 +381,7 @@ uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, doubl
     toPts[i] = pts[i] - avg;
 
     for(uint32 j = 0; j < kNumColorChannels; j++) {
-      toPtsMax.c[j] = max(toPtsMax.c[j], toPts[i].c[j]);
+      toPtsMax[j] = max(toPtsMax[j], toPts[i][j]);
     }
   }
 
@@ -602,7 +404,7 @@ uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, doubl
   assert(uptsIdx > 0);
 
   if(uptsIdx == 1) {
-    axis.r = axis.g = axis.b = axis.a = 0.0f;
+    axis.R() = axis.G() = axis.B() = axis.A() = 0.0f;
     return 0;
 
   // Collinear?
@@ -631,7 +433,7 @@ uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, doubl
 
       float sum = 0.0;
       for(uint32 k = 0; k < nPts; k++) {
-        sum += toPts[k].c[i] * toPts[k].c[j];
+        sum += toPts[k][i] * toPts[k][j];
       }
 
       covMatrix(i, j) = sum / kFloatConversion[kNumColorChannels - 1];
@@ -639,17 +441,17 @@ uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, doubl
     }
   }
   
-  uint32 iters = PowerIteration(covMatrix, axis, eigOne);
+  uint32 iters = covMatrix.PowerMethod(axis, eigOne);
+  if(NULL != eigTwo && NULL != eigOne) {
+    if(*eigOne != 0.0) {
+      RGBAMatrix reduced;
+      for(uint32 j = 0; j < 4; j++) {
+        for(uint32 i = 0; i < 4; i++) {
+          reduced(i, j) = axis[j] * axis[i];
+        }
+      }
 
-  if(NULL != eigTwo) {
-    if(eigOne != 0.0) {
-      RGBAMatrix reduced = covMatrix - eigOne * RGBAMatrix(
-        axis.c[0] * axis.c[0], axis.c[0] * axis.c[1], axis.c[0] * axis.c[2], axis.c[0] * axis.c[3], 
-        axis.c[1] * axis.c[0], axis.c[1] * axis.c[1], axis.c[1] * axis.c[2], axis.c[1] * axis.c[3],
-        axis.c[2] * axis.c[0], axis.c[2] * axis.c[1], axis.c[2] * axis.c[2], axis.c[2] * axis.c[3],
-        axis.c[3] * axis.c[0], axis.c[3] * axis.c[1], axis.c[3] * axis.c[2], axis.c[3] * axis.c[3]
-      );
-      
+      reduced = covMatrix - ((*eigOne) * reduced);
       bool allZero = true;
       for(uint32 i = 0; i < 16; i++) {
         if(fabs(reduced[i]) > 0.0005) {
@@ -662,7 +464,7 @@ uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, doubl
       }
       else {
         RGBADir dummyDir;
-        iters += PowerIteration(reduced, dummyDir, *eigTwo);
+        iters += reduced.PowerMethod(dummyDir, eigTwo);
       }
     }
     else {

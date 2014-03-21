@@ -67,6 +67,8 @@
 #define __RGBA_ENDPOINTS_H__
 
 #include "TexCompTypes.h"
+#include "Vector4.h"
+#include "Matrix4x4.h"
 
 #include <cmath>
 #include <cfloat>
@@ -75,262 +77,48 @@
 static const uint32 kNumColorChannels = 4;
 static const uint32 kMaxNumDataPoints = 16;
 
-class RGBAVector {
-
-public:
-  union {
-    struct { float r, g, b, a; };
-    struct { float x, y, z, w; };
-    float c[4];
-  };
-
-  uint32 GetIdx() const { return  idx; }
-
-  RGBAVector() : r(-1.0), g(-1.0), b(-1.0), a(-1.0) { }
-  RGBAVector(uint32 _idx, uint32 pixel) : 
-    r(float(pixel & 0xFF)), 
-    g(float((pixel >> 8) & 0xFF)), 
-    b(float((pixel >> 16) & 0xFF)), 
-    a(float((pixel >> 24) & 0xFF)),
-    idx(_idx)
+class RGBAVector : public FasTC::Vector4<float> {
+  typedef FasTC::Vector4<float> BaseVector;
+ public:
+  uint32 GetIdx() const { return  m_Idx; }
+  RGBAVector() : BaseVector(-1.0, -1.0, -1.0, -1.0) { }
+  RGBAVector(uint32 idx, uint32 pixel) : 
+   BaseVector(
+    static_cast<float>(pixel & 0xFF),
+    static_cast<float>((pixel >> 8) & 0xFF),
+    static_cast<float>((pixel >> 16) & 0xFF),
+    static_cast<float>((pixel >> 24) & 0xFF)
+   )
+   , m_Idx(idx)
   { }
 
-  RGBAVector(float _r, float _g, float _b, float _a) :
-    r(_r), g(_g), b(_b), a(_a), idx(0) { }
+  RGBAVector(float _r, float _g, float _b, float _a)
+  : BaseVector(_r, _g, _b, _a), m_Idx(0) { }
 
-  explicit RGBAVector(float cc) : r(cc), g(cc), b(cc), a(cc), idx(0) { }
+  explicit RGBAVector(float cc) : BaseVector(cc, cc, cc, cc), m_Idx(0) { }
 
-  RGBAVector &operator =(const RGBAVector &other) {
-    this->idx = other.idx;
-    memcpy(c, other.c, sizeof(c));
-    return (*this);
-  }
-
-  RGBAVector operator +(const RGBAVector &p) const {
-    return RGBAVector(r + p.r, g + p.g, b + p.b, a + p.a);
-  }
-
-  RGBAVector &operator +=(const RGBAVector &p) {
-    r += p.r; g += p.g; b += p.b; a += p.a;
-    return *this;
-  }
-
-  RGBAVector operator -(const RGBAVector &p) const {
-    return RGBAVector(r - p.r, g - p.g, b - p.b, a - p.a);
-  }
-
-  RGBAVector &operator -=(const RGBAVector &p) {
-    r -= p.r; g -= p.g; b -= p.b; a -= p.a;
-    return *this;
-  }
-
-  RGBAVector operator /(const float s) const {
-    return RGBAVector(r / s, g / s, b / s, a / s);
-  }
-
-  RGBAVector &operator /=(const float s) {
-    r /= s; g /= s; b /= s; a /= s;
-    return *this;
-  }
-
-  float operator *(const RGBAVector &p) const {
-    return r * p.r + g * p.g + b * p.b + a * p.a;
-  }
-
-  float Length() const {
-    return sqrt((*this) * (*this));
-  }
-
-  RGBAVector &operator *=(const RGBAVector &v) {
-    r *= v.r; g *= v.g; b *= v.b; a *= v.a;
-    return *this;
-  }
-
-  RGBAVector operator *(const float s) const {
-    return RGBAVector(r * s, g * s, b * s, a * s);
-  }
-
-  friend RGBAVector operator *(const float s, const RGBAVector &p) {
-    return RGBAVector(p.r * s, p.g * s, p.b * s, p.a * s);
-  }
-
-  RGBAVector &operator *=(const float s) {
-    r *= s; g *= s; b *= s; a *= s;
-    return *this;
-  }
-
-  float &operator [](const int i) {
-    return c[i];
-  }
-
-  friend bool operator ==(const RGBAVector &rhs, const RGBAVector &lhs) {
-    const RGBAVector d = rhs - lhs;
-    return fabs(d.r) < 1e-7 && fabs(d.g) < 1e-7 && fabs(d.b) < 1e-7 && fabs(d.a) < 1e-7;
-  }
-
-  friend bool operator !=(const RGBAVector &rhs, const RGBAVector &lhs) {
-    return !(rhs == lhs);
-  }
-
-  operator float *() {
-    return c;
-  }
-
-  RGBAVector Cross(const RGBAVector &rhs) {
-    return RGBAVector(
-      rhs.y * z - y * rhs.z,
-      rhs.z * x - z * rhs.x,
-      rhs.x * y - x * rhs.y,
-      1.0f
-    );
-  }
+  const float &R() const { return vec[0]; }
+  float &R() { return vec[0]; }
+  const float &G() const { return vec[1]; }
+  float &G() { return vec[1]; }
+  const float &B() const { return vec[2]; }
+  float &B() { return vec[2]; }
+  const float &A() const { return vec[3]; }
+  float &A() { return vec[3]; }
 
   // Quantize this point.
   uint32 ToPixel(const uint32 channelMask = 0xFFFFFFFF, const int pBit = -1) const;
 
 private:
-  uint32 idx;
+  uint32 m_Idx;
 };
-
-class RGBAMatrix {
-private:
-  union {
-    float m[kNumColorChannels*kNumColorChannels];
-    struct {
-      float m1, m2, m3, m4;
-      float m5, m6, m7, m8;
-      float m9, m10, m11, m12;
-      float m13, m14, m15, m16;
-    };
-  };
-
-  RGBAMatrix(const float *arr) {
-    memcpy(m, arr, sizeof(m));
-  }
-
-public:
-
-  RGBAMatrix(
-    float _m1, float _m2, float _m3, float _m4,
-    float _m5, float _m6, float _m7, float _m8,
-    float _m9, float _m10, float _m11, float _m12,
-    float _m13, float _m14, float _m15, float _m16
-  ) :
-    m1(_m1), m2(_m2), m3(_m3), m4(_m4),
-    m5(_m5), m6(_m6), m7(_m7), m8(_m8),
-    m9(_m9), m10(_m10), m11(_m11), m12(_m12),
-    m13(_m13), m14(_m14), m15(_m15), m16(_m16)
-  { }
-  
-  RGBAMatrix() : 
-    m1(1.0f), m2(0.0f), m3(0.0f), m4(0.0f),
-    m5(0.0f), m6(1.0f), m7(0.0f), m8(0.0f),
-    m9(0.0f), m10(0.0f), m11(1.0f), m12(0.0f),
-    m13(0.0f), m14(0.0f), m15(0.0f), m16(1.0f)
-  { }
-
-  RGBAMatrix &operator =(const RGBAMatrix &other) {
-    memcpy(m, other.m, sizeof(m));
-    return (*this);
-  }
-
-  RGBAMatrix operator +(const RGBAMatrix &p) const {
-    float newm[kNumColorChannels*kNumColorChannels];
-    for(uint32 i = 0; i < kNumColorChannels*kNumColorChannels; i++) newm[i] = m[i] + p.m[i];
-    return RGBAMatrix(newm);
-  }
-
-  RGBAMatrix &operator +=(const RGBAMatrix &p) {
-    for(uint32 i = 0; i < kNumColorChannels*kNumColorChannels; i++) m[i] += p.m[i];
-    return *this;
-  }
-
-  RGBAMatrix operator -(const RGBAMatrix &p) const {
-    float newm[kNumColorChannels*kNumColorChannels];
-    for(uint32 i = 0; i < kNumColorChannels*kNumColorChannels; i++) newm[i] = m[i] - p.m[i];
-    return RGBAMatrix(newm);
-  }
-
-  RGBAMatrix &operator -=(const RGBAMatrix &p) {
-    for(uint32 i = 0; i < kNumColorChannels*kNumColorChannels; i++) m[i] -= p.m[i];
-    return *this;
-  }
-
-  RGBAMatrix operator /(const float s) const {
-    float newm[kNumColorChannels*kNumColorChannels];
-    for(uint32 i = 0; i < kNumColorChannels*kNumColorChannels; i++) newm[i] = m[i] / s;
-    return RGBAMatrix(newm);
-  }
-
-  RGBAMatrix &operator /=(const float s) {
-    for(uint32 i = 0; i < kNumColorChannels*kNumColorChannels; i++) m[i] /= s;
-    return *this;
-  }
-
-  RGBAMatrix operator *(const float s) const {
-    float newm[kNumColorChannels*kNumColorChannels];
-    for(uint32 i = 0; i < kNumColorChannels*kNumColorChannels; i++) newm[i] = m[i] * s;
-    return RGBAMatrix(newm);
-  }
-
-  RGBAMatrix operator *(const double s) const {
-    float newm[kNumColorChannels*kNumColorChannels];
-    for(uint32 i = 0; i < kNumColorChannels*kNumColorChannels; i++) newm[i] = float(double(m[i]) * s);
-    return RGBAMatrix(newm);
-  }
-
-  friend RGBAMatrix operator *(const float s, const RGBAMatrix &p) {
-    float newm[kNumColorChannels*kNumColorChannels];
-    for(uint32 i = 0; i < kNumColorChannels*kNumColorChannels; i++) newm[i] = p.m[i] * s;
-    return RGBAMatrix(newm);  
-  }
-
-  friend RGBAMatrix operator *(const double s, const RGBAMatrix &p) {
-    float newm[kNumColorChannels*kNumColorChannels];
-    for(uint32 i = 0; i < kNumColorChannels*kNumColorChannels; i++) newm[i] = float(double(p.m[i]) * s);
-    return RGBAMatrix(newm);  
-  }
-
-  RGBAMatrix &operator *=(const float s) {
-    for(uint32 i = 0; i < kNumColorChannels*kNumColorChannels; i++) m[i] *= s;
-    return *this;
-  }
-
-  float &operator ()(const int i, const int j) {
-    return (*this)[i*4 + j];
-  }
-
-  float &operator [](const int i) {
-    return m[i];
-  }
-
-  friend bool operator ==(const RGBAMatrix &rhs, const RGBAMatrix &lhs) {
-    const RGBAMatrix d = rhs - lhs;
-    for(uint32 i = 0; i < kNumColorChannels*kNumColorChannels; i++)
-      if(d.m[i] > 1e-10)
-        return false;
-    return true;
-  }
-
-  operator float *() {
-    return m;
-  }
-
-  RGBAVector operator *(const RGBAVector &p) const;
-  RGBAMatrix operator *(const RGBAMatrix &mat) const;
-  RGBAMatrix &operator *=(const RGBAMatrix &mat);
-  static RGBAMatrix RotateX(float rad);
-  static RGBAMatrix RotateY(float rad);
-  static RGBAMatrix RotateZ(float rad);
-  static RGBAMatrix Translate(const RGBAVector &t);
-  bool Identity();
-};
+typedef FasTC::Matrix4x4<float> RGBAMatrix;
 
 class RGBADir : public RGBAVector {
-public:
+ public:
   RGBADir() : RGBAVector() { }
   RGBADir(const RGBAVector &p) : RGBAVector(p) {
-    *this /= Length();
+    this->Normalize();
   }
 };
 
@@ -344,21 +132,14 @@ public:
     m_NumPoints(0), m_Total(0), 
     m_PointBitString(0),
     m_Min(FLT_MAX),
-    m_Max(-FLT_MAX),
-    m_PrincipalAxisCached(false)
+    m_Max(-FLT_MAX)
   { } 
 
   RGBACluster(const RGBACluster &c) : 
     m_NumPoints(c.m_NumPoints),
     m_Total(c.m_Total),
     m_PointBitString(c.m_PointBitString), 
-    m_Min(c.m_Min),
-    m_Max(c.m_Max),
-    m_PrincipalAxisCached(c.m_PrincipalAxisCached),
-    m_PrincipalEigenvalue(c.m_PrincipalEigenvalue),
-    m_SecondEigenvalue(c.m_SecondEigenvalue),
-    m_PowerMethodIterations(c.m_PowerMethodIterations),
-    m_PrincipalAxis(c.m_PrincipalAxis)
+    m_Min(c.m_Min), m_Max(c.m_Max)
   { 
     memcpy(this->m_DataPoints, c.m_DataPoints, m_NumPoints * sizeof(RGBAVector));
   }
@@ -368,14 +149,12 @@ public:
     m_NumPoints(1),
     m_Total(p),
     m_PointBitString(0),
-    m_Min(p), m_Max(p),
-    m_PrincipalAxisCached(false)
+    m_Min(p), m_Max(p)
   { 
     m_DataPoints[0] = p;
     m_PointBitString |= (1 << p.GetIdx());
   }
       
-  RGBAVector GetTotal() const { return m_Total; }
   const RGBAVector &GetPoint(int idx) const { return m_DataPoints[idx]; }
   uint32 GetNumPoints() const { return m_NumPoints; }
   RGBAVector GetAvg() const { return m_Total / float(m_NumPoints); }
@@ -395,16 +174,10 @@ public:
     const int pbits[2] = NULL, uint8 *indices = NULL) const;
 
   // Returns the principal axis for this point cluster.
-  double GetPrincipalEigenvalue();
-  double GetSecondEigenvalue();
-  uint32 GetPowerMethodIterations();
-  void GetPrincipalAxis(RGBADir &axis);
-
   bool AllSamePoint() const { return m_Max == m_Min; }
   int GetPointBitString() const { return m_PointBitString; }
 
 private:
-
   // The number of points in the cluster.
   uint32 m_NumPoints;
 
@@ -415,15 +188,14 @@ private:
 
   int m_PointBitString;
   RGBAVector m_Min, m_Max;
-
-  bool m_PrincipalAxisCached;
-  double m_PrincipalEigenvalue;
-  double m_SecondEigenvalue;
-  uint32 m_PowerMethodIterations;
-  RGBADir m_PrincipalAxis;
 };
 
 extern uint8 QuantizeChannel(const uint8 val, const uint8 mask, const int pBit = -1);
-extern uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, double &eigOne, double *eigTwo);
+extern uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, float *eigOne, float *eigTwo);
+
+namespace FasTC {
+  REGISTER_VECTOR_TYPE(RGBAVector);
+  REGISTER_VECTOR_TYPE(RGBADir);
+}
 
 #endif //__RGBA_ENDPOINTS_H__

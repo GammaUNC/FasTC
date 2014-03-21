@@ -489,8 +489,8 @@ double CompressionMode::CompressSingleColor(
       bestPbitCombo = pbi;
 
       for(uint32 ci = 0; ci < kNumColorChannels; ci++) {
-        p1.c[ci] = static_cast<float>(bestValI[ci]);
-        p2.c[ci] = static_cast<float>(bestValJ[ci]);
+        p1[ci] = static_cast<float>(bestValI[ci]);
+        p2[ci] = static_cast<float>(bestValJ[ci]);
       }
     }
   }
@@ -511,27 +511,27 @@ static void ChangePointForDirWithoutPbitChange(
   RGBAVector &v, uint32 dir, const float step[kNumColorChannels]
 ) {
   if(dir % 2) {
-    v.x -= step[0];
+    v.X() -= step[0];
   } else {
-    v.x += step[0];
+    v.X() += step[0];
   }
 
   if(((dir / 2) % 2)) {
-    v.y -= step[1];
+    v.Y() -= step[1];
   } else  {
-    v.y += step[1];
+    v.Y() += step[1];
   }
 
   if(((dir / 4) % 2)) {
-    v.z -= step[2];
+    v.Z() -= step[2];
   } else {
-    v.z += step[2];
+    v.Z() += step[2];
   }
 
   if(((dir / 8) % 2)) {
-    v.a -= step[3];
+    v.W() -= step[3];
   } else {
-    v.a += step[3];
+    v.W() += step[3];
   }
 }
 
@@ -539,27 +539,27 @@ static void ChangePointForDirWithPbitChange(
   RGBAVector &v, uint32 dir, uint32 oldPbit, const float step[kNumColorChannels]
 ) {
   if(dir % 2 && oldPbit == 0) {
-    v.x -= step[0];
+    v.X() -= step[0];
   } else if(!(dir % 2) && oldPbit == 1) {
-    v.x += step[0];
+    v.X() += step[0];
   }
 
   if(((dir / 2) % 2) && oldPbit == 0) {
-    v.y -= step[1];
+    v.Y() -= step[1];
   } else if(!((dir / 2) % 2) && oldPbit == 1) {
-    v.y += step[1];
+    v.Y() += step[1];
   }
 
   if(((dir / 4) % 2) && oldPbit == 0) {
-    v.z -= step[2];
+    v.Z() -= step[2];
   } else if(!((dir / 4) % 2) && oldPbit == 1) {
-    v.z += step[2];
+    v.Z() += step[2];
   }
 
   if(((dir / 8) % 2) && oldPbit == 0) {
-    v.a -= step[3];
+    v.W() -= step[3];
   } else if(!((dir / 8) % 2) && oldPbit == 1) {
-    v.a += step[3];
+    v.W() += step[3];
   }
 }
 
@@ -628,7 +628,7 @@ void CompressionMode::PickBestNeighboringEndpoints(
       }
 
       for(uint32 i = 0; i < kNumColorChannels; i++) {
-        np.c[i] = std::min(std::max(np.c[i], 0.0f), 255.0f);
+        np[i] = std::min(std::max(np[i], 0.0f), 255.0f);
       }
     }
 
@@ -821,20 +821,20 @@ double CompressionMode::CompressCluster(
       break;
 
       case 1:
-        swap(v.r, v.a);
+        swap(v.R(), v.A());
         break;
 
       case 2:
-        swap(v.g, v.a);
+        swap(v.G(), v.A());
         break;
 
       case 3:
-        swap(v.b, v.a);
+        swap(v.B(), v.A());
         break;
     }
 
-    alphaVals[i] = v.a;
-    v.a = 255.0f;
+    alphaVals[i] = v.A();
+    v.A() = 255.0f;
 
     alphaMin = std::min(alphaVals[i], alphaMin);
     alphaMax = std::max(alphaVals[i], alphaMax);
@@ -857,7 +857,7 @@ double CompressionMode::CompressCluster(
   const tInterpLevel *interpVals =
     kInterpolationValues + (GetNumberOfBitsPerAlpha() - 1);
 
-  const float weight = GetErrorMetric().a;
+  const float weight = GetErrorMetric().A();
 
   const uint32 nBuckets = (1 << GetNumberOfBitsPerAlpha());
 
@@ -1059,8 +1059,8 @@ double CompressionMode::CompressCluster(
   }
 
   for(uint32 i = 0; i < kNumColorChannels; i++) {
-    p1.c[i] = (i == (kNumColorChannels-1))? a1 : rgbp1.c[i];
-    p2.c[i] = (i == (kNumColorChannels-1))? a2 : rgbp2.c[i];
+    p1[i] = (i == (kNumColorChannels-1))? a1 : rgbp1[i];
+    p2[i] = (i == (kNumColorChannels-1))? a2 : rgbp2[i];
   }
 
   return rgbError + alphaError;
@@ -1088,13 +1088,9 @@ double CompressionMode::CompressCluster(
   const uint32 nBuckets = (1 << GetNumberOfBitsPerIndex());
 
 #if 1
-  RGBAVector avg =
-    cluster.GetTotal() / static_cast<float>(cluster.GetNumPoints());
+  RGBAVector avg = cluster.GetAvg();
   RGBADir axis;
-  double eigOne;
-  ::GetPrincipalAxis(
-    cluster.GetNumPoints(), cluster.GetPoints(), axis, eigOne, NULL
-  );
+  ::GetPrincipalAxis(cluster.GetNumPoints(), cluster.GetPoints(), axis, NULL, NULL);
 
   float mindp = FLT_MAX, maxdp = -FLT_MAX;
   for(uint32 i = 0 ; i < cluster.GetNumPoints(); i++) {
@@ -1457,7 +1453,6 @@ double CompressionMode::Compress(
 ) {
 
   const int kModeNumber = GetModeNumber();
-  const int nPartitionBits = GetNumberOfPartitionBits();
   const int nSubsets = GetNumberOfSubsets();
 
   Params params(shapeIdx);
@@ -2012,10 +2007,10 @@ static void CompressBC7Block(const uint32 *block, uint8 *outBuf) {
   for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
     RGBAVector p = RGBAVector(i, block[i]);
     blockCluster.AddPoint(p);
-    if(fabs(p.a - 255.0f) > 1e-10)
+    if(fabs(p.A() - 255.0f) > 1e-10)
       opaque = false;
 
-    if(p.a > 0.0f)
+    if(p.A() > 0.0f)
       transparent = false;
   }
 
@@ -2329,11 +2324,11 @@ static void CompressBC7Block(
   for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
     RGBAVector p = RGBAVector(i, block[i]);
     blockCluster.AddPoint(p);
-    if(fabs(p.a - 255.0f) > 1e-10) {
+    if(fabs(p.A() - 255.0f) > 1e-10) {
       opaque = false;
     }
 
-    if(p.a > 0.0f) {
+    if(p.A() > 0.0f) {
       transparent = false;
     }
   }
