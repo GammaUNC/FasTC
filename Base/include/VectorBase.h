@@ -74,6 +74,20 @@ namespace FasTC {
       return *this;
     }
 
+    // Equality comparison
+    template<typename _T>
+    bool operator==(const VectorBase<_T, N> &v) const {
+      bool result = true;
+      for(int i = 0; i < N; i++)
+        result = result && (vec[i] == v[i]);
+      return result;
+    }
+
+    template<typename _T>
+    bool operator!=(const VectorBase<_T, N> &v) const {
+      return !(operator==(v));
+    }
+
     // Allows casting to other vector types if the underlying type system does as well...
     template<typename _T>
     operator VectorBase<_T, N>() const { 
