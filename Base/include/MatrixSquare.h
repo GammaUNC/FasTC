@@ -50,16 +50,14 @@ namespace FasTC {
     // Returns them in eigVec and eigVal after kMaxNumIterations
     int PowerMethod(VectorBase<T, N> &eigVec,
                     T *eigVal = NULL,
-                    const int kMaxNumIterations = 200,
-                    const unsigned int kSeed = time(NULL)) {
+                    const int kMaxNumIterations = 5) {
 
-      srand(kSeed);
       int numIterations = 0;
 
       VectorBase<T, N> b;
+      T norm = 1.0/sqrt(static_cast<T>(N));
       for(int i = 0; i < N; i++)
-        b[i] = static_cast<T>(rand());
-      b.Normalize();
+        b[i] = norm;
 
       bool badEigenValue = false;
       bool fixed = false;
@@ -82,8 +80,8 @@ namespace FasTC {
           }
 
           VectorBase<T, N> b;
-          for(int i = 0; i < N; i++)
-            b[i] = static_cast<T>(rand());
+          for(int i = 0; i < (N>>1); i++)
+            b[i] = 1;
 
           b.Normalize();
           badEigenValue = true;
