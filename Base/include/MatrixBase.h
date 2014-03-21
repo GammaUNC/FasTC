@@ -234,6 +234,54 @@ namespace FasTC {
     ResultType GetMultiplication() const { return MultiplyMatrix(m_A, m_B); }
   };
 
+  template<typename TypeOne, typename TypeTwo>
+  class MultSwitch<
+    eVectorType_Matrix,
+    eVectorType_Scalar,
+    TypeOne, TypeTwo> {
+   private:
+    const TypeOne &m_A;
+    const TypeTwo &m_B;
+
+   public:
+    typedef MatrixBase<typename TypeOne::ScalarType, TypeOne::kNumRows, TypeOne::kNumCols> ResultType;
+
+    MultSwitch(const TypeOne &a, const TypeTwo &b)
+      : m_A(a), m_B(b) { }
+
+    ResultType GetMultiplication() const {
+      TypeOne result;
+      for(int i = 0; i < TypeOne::Size; i++) {
+        result[i] = m_A[i] * m_B;
+      }
+      return result;
+    }
+  };
+
+  template<typename TypeOne, typename TypeTwo>
+  class MultSwitch<
+    eVectorType_Scalar,
+    eVectorType_Matrix,
+    TypeOne, TypeTwo> {
+   private:
+    const TypeOne &m_A;
+    const TypeTwo &m_B;
+
+   public:
+    typedef MatrixBase<typename TypeTwo::ScalarType, TypeTwo::kNumRows, TypeTwo::kNumCols> ResultType;
+
+    MultSwitch(const TypeOne &a, const TypeTwo &b)
+      : m_A(a), m_B(b) { }
+
+    ResultType GetMultiplication() const {
+      TypeTwo result;
+      for(int i = 0; i < TypeTwo::Size; i++) {
+        result[i] = m_A * m_B[i];
+      }
+      return result;
+    }
+  };
+
   // Outer product...
   template<typename _T, typename _U, const int N, const int M>
   MatrixBase<_T, N, M> operator^(
@@ -256,7 +304,6 @@ namespace FasTC {
   ) { 
     return a ^ b; 
   }
-
 };
 
 #endif  // BASE_INCLUDE_MATRIXBASE_H_
