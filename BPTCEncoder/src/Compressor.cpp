@@ -103,8 +103,7 @@ using FasTC::BitStreamReadOnly;
 #include <iostream>
 #include <sstream>
 #include <string>
-
-// #define USE_PCA_FOR_SHAPE_ESTIMATION
+#include <limits>
 
 enum EBlockStats {
   eBlockStat_Path,
@@ -1250,7 +1249,6 @@ void CompressionMode::Pack(Params &params, BitStream &stream) const {
   const int nPartitionBits = GetNumberOfPartitionBits();
   const int nSubsets = GetNumberOfSubsets();
 
-  
   // Mode #
   stream.WriteBits(1 << kModeNumber, kModeNumber + 1);
 
@@ -1791,114 +1789,15 @@ void CompressAtomic(FasTC::CompressionJobList &cjl) {
   }
 }
 
-static double CompressTwoClusters(
-  int shapeIdx,
-  const RGBACluster *clusters,
-  uint8 *outBuf,
-  bool opaque,
-  double *errors = NULL,
-  int *modeChosen = NULL
-) {
-
-  uint8 tempBuf1[16];
-  BitStream tmpStream1(tempBuf1, 128, 0);
-  double bestError =
-    CompressionMode(1, opaque).Compress(tmpStream1, shapeIdx, clusters);
-
-  if(errors) errors[1] = bestError;
-  if(modeChosen) *modeChosen = 1;
-
-  memcpy(outBuf, tempBuf1, 16);
-  if(bestError == 0.0) {
-    return 0.0;
-  }
-
-  uint8 tempBuf3[16];
-  BitStream tmpStream3(tempBuf3, 128, 0);
-
-  double error =
-    CompressionMode(3, opaque).Compress(tmpStream3, shapeIdx, clusters);
-
-  if(errors) errors[3] = error;
-  if(error < bestError) {
-    if(modeChosen) *modeChosen = 3;
-    bestError = error;
-    memcpy(outBuf, tempBuf3, 16);
-    if(bestError == 0.0) {
-      return 0.0;
-    }
-  }
-
-  // Mode 3 offers more precision for RGB data. Mode 7 is really only if we
-  // have alpha.
-  if(!opaque) {
-    uint8 tempBuf7[16];
-    BitStream tmpStream7(tempBuf7, 128, 0);
-
-    error =
-      CompressionMode(7, opaque).Compress(tmpStream7, shapeIdx, clusters);
-
-    if(errors) errors[7] = error;
-    if(error < bestError) {
-      if(modeChosen) *modeChosen = 7;
-      memcpy(outBuf, tempBuf7, 16);
-      return error;
-    }
-  }
-
-  return bestError;
-}
-
-static double CompressThreeClusters(
-  int shapeIdx,
-  const RGBACluster *clusters,
-  uint8 *outBuf,
-  bool opaque,
-  double *errors = NULL,
-  int *modeChosen = NULL
-) {
-  uint8 tempBuf0[16];
-  BitStream tmpStream0(tempBuf0, 128, 0);
-
-  uint8 tempBuf2[16];
-  BitStream tmpStream2(tempBuf2, 128, 0);
-
-  double error, bestError = DBL_MAX;;
-  if(shapeIdx < 16) {
-    bestError =
-      CompressionMode(0, opaque).Compress(tmpStream0, shapeIdx, clusters);
-
-    if(errors) errors[0] = bestError;
-  } else {
-    if(errors) errors[0] = -1.0;
-  }
-
-  if(modeChosen) *modeChosen = 0;
-  memcpy(outBuf, tempBuf0, 16);
-  if(bestError == 0.0) {
-    return 0.0;
-  }
-
-  error =
-    CompressionMode(2, opaque).Compress(tmpStream2, shapeIdx, clusters);
-
-  if(errors) errors[2] = error;
-  if(error < bestError) {
-    if(modeChosen) *modeChosen = 2;
-    memcpy(outBuf, tempBuf2, 16);
-    return error;
-  }
-
-  return bestError;
-}
-
 static void PopulateTwoClustersForShape(
-  const RGBACluster &points, int shapeIdx, RGBACluster *clusters
+  const uint32 points[16], int shapeIdx, RGBACluster *clusters
 ) {
+  clusters[0].Reset();
+  clusters[1].Reset();
   const uint16 shape = kShapeMask2[shapeIdx];
   for(uint32 pt = 0; pt < kMaxNumDataPoints; pt++) {
 
-    const RGBAVector &p = points.GetPoint(pt);
+    const RGBAVector p = RGBAVector(pt, points[pt]);
 
     if((1 << pt) & shape)
       clusters[1].AddPoint(p);
@@ -1916,11 +1815,14 @@ static void PopulateTwoClustersForShape(
 }
 
 static void PopulateThreeClustersForShape(
-  const RGBACluster &points, int shapeIdx, RGBACluster *clusters
+  const uint32 points[16], int shapeIdx, RGBACluster *clusters
 ) {
+  clusters[0].Reset();
+  clusters[1].Reset();
+  clusters[2].Reset();
   for(uint32 pt = 0; pt < kMaxNumDataPoints; pt++) {
 
-    const RGBAVector &p = points.GetPoint(pt);
+    const RGBAVector p = RGBAVector(pt, points[pt]);
 
     if((1 << pt) & kShapeMask3[shapeIdx][0]) {
       if((1 << pt) & kShapeMask3[shapeIdx][1]) {
@@ -1955,18 +1857,8 @@ static double EstimateTwoClusterError(RGBACluster &c) {
   const float *w = BPTCC::GetErrorMetric();
 
   double error = 0.0001;
-#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-  double eigOne = c.GetPrincipalEigenvalue();
-  double eigTwo = c.GetSecondEigenvalue();
-  if(eigOne != 0.0) {
-    error += eigTwo / eigOne;
-  } else {
-    error += 1.0;
-  }
-#else
   error += c.QuantizedError(Min, Max, 8,
                             0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
-#endif
   return error;
 }
 
@@ -1981,20 +1873,157 @@ static double EstimateThreeClusterError(RGBACluster &c) {
   const float *w = BPTCC::GetErrorMetric();
 
   double error = 0.0001;
-#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-  double eigOne = c.GetPrincipalEigenvalue();
-  double eigTwo = c.GetSecondEigenvalue();
-
-  if(eigOne != 0.0) {
-    error += eigTwo / eigOne;
-  } else {
-    error += 1.0;
-  }
-#else
   error += c.QuantizedError(Min, Max, 4,
                             0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
-#endif
   return error;
+}
+
+static uint32 kTwoPartitionModes = 
+  static_cast<uint32>(eBlockMode_One) |
+  static_cast<uint32>(eBlockMode_Three) |
+  static_cast<uint32>(eBlockMode_Seven);
+static uint32 kThreePartitionModes =
+  static_cast<uint32>(eBlockMode_Zero) |
+  static_cast<uint32>(eBlockMode_Two);
+static uint32 kAlphaModes =
+  static_cast<uint32>(eBlockMode_Four) |
+  static_cast<uint32>(eBlockMode_Five) |
+  static_cast<uint32>(eBlockMode_Six)  |
+  static_cast<uint32>(eBlockMode_Seven);
+
+static ShapeSelection BoxSelection(uint32 x, uint32 y,
+                                   const uint32 pixels[16]) {
+
+  ShapeSelection result;
+
+  bool opaque = true;
+  for(uint32 i = 0; i < 16; i++) {
+    uint32 a = (pixels[i] >> 24) & 0xFF;
+    opaque = opaque && (a >= 250); // For all intents and purposes...
+  }
+
+  // First we must figure out which shape to use. To do this, simply
+  // see which shape has the smallest sum of minimum bounding spheres.
+  double bestError[2] = { std::numeric_limits<double>::max(),
+                          std::numeric_limits<double>::max() };
+
+  for(unsigned int i = 0; i < kNumShapes2; i++) {
+    RGBACluster clusters[2];
+    PopulateTwoClustersForShape(pixels, i, clusters);
+
+    double err = 0.0;
+    for(int ci = 0; ci < 2; ci++) {
+      err += EstimateTwoClusterError(clusters[ci]);
+    }
+
+    if(err < bestError[0]) {
+      bestError[0] = err;
+      result.m_TwoShapeIndex = i;
+    }
+
+    // If it's small, we'll take it!
+    if(err < 1e-9) {
+      result.m_SelectedModes = kTwoPartitionModes;
+      return result;
+    }
+  }
+
+  // There are not 3 subset blocks that support alpha, so only check these
+  // if the entire block is opaque.
+  if(opaque) {
+    for(unsigned int i = 0; i < kNumShapes3; i++) {
+
+      RGBACluster clusters[3];
+      PopulateThreeClustersForShape(pixels, i, clusters);
+
+      double err = 0.0;
+      for(int ci = 0; ci < 3; ci++) {
+        err += EstimateThreeClusterError(clusters[ci]);
+      }
+
+      if(err < bestError[1]) {
+        bestError[1] = err;
+        result.m_ThreeShapeIndex = i;
+      }
+
+      // If it's small, we'll take it!
+      if(err < 1e-9) {
+        result.m_SelectedModes = kThreePartitionModes;
+        return result;
+      }
+    }
+
+    // If it's opaque, we get more value out of mode 6 than modes
+    // 4 and 5, so just ignore those.
+    result.m_SelectedModes &=
+      ~(static_cast<uint32>(eBlockMode_Four) |
+        static_cast<uint32>(eBlockMode_Five));
+
+  } else {
+    // Only some modes support alpha
+    result.m_SelectedModes &= kAlphaModes;
+  }
+
+  return result;
+}
+
+static void CompressClusters(ShapeSelection selection, const uint32 pixels[16],
+                             uint8 *outBuf, double *errors, int *modeChosen) {
+  RGBACluster clusters[3];
+  uint8 tmpBuf[16];
+  double bestError = std::numeric_limits<double>::max();
+  uint32 modes[8] = {0, 2, 1, 3, 7, 4, 5, 6};
+
+  bool populatedThree = false;
+  bool populatedTwo = false;
+  bool populatedOne = false;
+
+  // Block mode zero only has four bits for the partition index,
+  // so if the chosen three-partition shape is not within this range,
+  // then we shouldn't consider using this block mode...
+  if(selection.m_ThreeShapeIndex >= 16) {
+    selection.m_SelectedModes &= ~(static_cast<uint32>(eBlockMode_Zero));
+  }
+
+  for(uint32 modeIdx = 0; modeIdx < 8; modeIdx++) {
+
+    uint32 mode = modes[modeIdx];
+    if((selection.m_SelectedModes & (1 << mode)) == 0) {
+      continue;
+    }
+
+    uint32 shape = 0;
+    if(modeIdx < 2) {
+      shape = selection.m_ThreeShapeIndex;
+      if(!populatedThree) {
+        PopulateThreeClustersForShape(pixels, shape, clusters);
+        populatedThree = true;
+      }
+    } else if(modeIdx < 5) {
+      shape = selection.m_TwoShapeIndex;
+      if(!populatedTwo) {
+        PopulateTwoClustersForShape(pixels, shape, clusters);
+        populatedTwo = true;
+      }
+    } else if(!populatedOne) {
+      clusters[0].Reset();
+      for(uint32 i = 0; i < 16; i++) {
+        clusters[0].AddPoint(RGBAVector(i, pixels[i]));
+      }
+      populatedOne = true;
+    }
+
+    BitStream tmpStream(tmpBuf, 128, 0);
+    double error = CompressionMode(mode).Compress(tmpStream, shape, clusters);
+
+    if(errors) errors[mode] = error;
+    if(error < bestError) {
+      memcpy(outBuf, tmpBuf, sizeof(tmpBuf));
+      bestError = error;
+      if(modeChosen)
+        *modeChosen = mode;
+    }
+  }
 }
 
 static void CompressBC7Block(const uint32 block[16], uint8 *outBuf,
@@ -2007,15 +2036,11 @@ static void CompressBC7Block(const uint32 block[16], uint8 *outBuf,
   }
 
   RGBACluster blockCluster;
-  bool opaque = true;
   bool transparent = true;
 
   for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
     RGBAVector p = RGBAVector(i, block[i]);
     blockCluster.AddPoint(p);
-    if(fabs(p.A() - 255.0f) > 1e-10)
-      opaque = false;
-
     if(p.A() > 0.0f)
       transparent = false;
   }
@@ -2027,122 +2052,16 @@ static void CompressBC7Block(const uint32 block[16], uint8 *outBuf,
     return;
   }
 
-  // First we must figure out which shape to use. To do this, simply
-  // see which shape has the smallest sum of minimum bounding spheres.
-  double bestError[2] = { DBL_MAX, DBL_MAX };
-  int bestShapeIdx[2] = { -1, -1 };
-  RGBACluster bestClusters[2][3];
-
-  for(unsigned int i = 0; i < kNumShapes2; i++) {
-    RGBACluster clusters[2];
-    PopulateTwoClustersForShape(blockCluster, i, clusters);
-
-    double err = 0.0;
-    for(int ci = 0; ci < 2; ci++) {
-      err += EstimateTwoClusterError(clusters[ci]);
-    }
-
-    // If it's small, we'll take it!
-    if(err < 1e-9) {
-      CompressTwoClusters(i, clusters, outBuf, opaque);
-      return;
-    }
-
-    if(err < bestError[0]) {
-      bestError[0] = err;
-      bestShapeIdx[0] = i;
-      bestClusters[0][0] = clusters[0];
-      bestClusters[0][1] = clusters[1];
-    }
+  ShapeSelectionFn selectionFn = BoxSelection;
+  if(settings.m_ShapeSelectionFn != NULL) {
+    selectionFn = settings.m_ShapeSelectionFn;
   }
+  assert(selectionFn);
 
-  // There are not 3 subset blocks that support alpha, so only check these
-  // if the entire block is opaque.
-  if(opaque) {
-    for(unsigned int i = 0; i < kNumShapes3; i++) {
-
-      RGBACluster clusters[3];
-      PopulateThreeClustersForShape(blockCluster, i, clusters);
-
-      double err = 0.0;
-      for(int ci = 0; ci < 3; ci++) {
-        err += EstimateThreeClusterError(clusters[ci]);
-      }
-
-      // If it's small, we'll take it!
-      if(err < 1e-9) {
-        CompressThreeClusters(i, clusters, outBuf, opaque);
-        return;
-      }
-
-      if(err < bestError[1]) {
-        bestError[1] = err;
-        bestShapeIdx[1] = i;
-        bestClusters[1][0] = clusters[0];
-        bestClusters[1][1] = clusters[1];
-        bestClusters[1][2] = clusters[2];
-      }
-    }
-  }
-
-  uint8 tempBuf1[16], tempBuf2[16];
-
-  BitStream tempStream1 (tempBuf1, 128, 0);
-  CompressionMode compressor(6, opaque);
-  double best = compressor.Compress(tempStream1, 0, &blockCluster);
-  if(best == 0.0f) {
-    memcpy(outBuf, tempBuf1, 16);
-    return;
-  }
-
-  // Check modes 4 and 5 if the block isn't opaque...
-  if(!opaque) {
-    for(int mode = 4; mode <= 5; mode++) {
-
-      BitStream tempStream2(tempBuf2, 128, 0);
-      CompressionMode compressorTry(mode, opaque);
-
-      double error = compressorTry.Compress(tempStream2, 0, &blockCluster);
-      if(error < best) {
-
-        best = error;
-
-        if(best == 0.0f) {
-          memcpy(outBuf, tempBuf2, 16);
-          return;
-        } else {
-          memcpy(tempBuf1, tempBuf2, 16);
-        }
-      }
-    }
-  }
-
-  double error =
-    CompressTwoClusters(bestShapeIdx[0], bestClusters[0], tempBuf2, opaque);
-  if(error < best) {
-
-    best = error;
-    if(error == 0.0f) {
-      memcpy(outBuf, tempBuf2, 16);
-      return;
-    } else {
-      memcpy(tempBuf1, tempBuf2, 16);
-    }
-  }
-
-  if(opaque) {
-    const double newError =
-      CompressThreeClusters(bestShapeIdx[1],
-                            bestClusters[1],
-                            tempBuf2,
-                            opaque);
-    if(newError < best) {
-      memcpy(outBuf, tempBuf2, 16);
-      return;
-    }
-  }
-
-  memcpy(outBuf, tempBuf1, 16);
+  ShapeSelection selection = selectionFn(0, 0, block);
+  selection.m_SelectedModes &= settings.m_BlockModes;
+  assert(selection.m_SelectedModes);
+  CompressClusters(selection, block, outBuf, NULL, NULL);
 }
 
 static double EstimateTwoClusterErrorStats(
@@ -2179,17 +2098,7 @@ static double EstimateTwoClusterErrorStats(
   }
 
   double error = 0.0001;
-#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-  double eigOne = c.GetPrincipalEigenvalue();
-  double eigTwo = c.GetSecondEigenvalue();
-  if(eigOne != 0.0) {
-    error += eigTwo / eigOne;
-  } else {
-    error += 1.0;
-  }
-#else
   error += std::min(err1, err3);
-#endif
   return error;
 }
 
@@ -2226,18 +2135,7 @@ static double EstimateThreeClusterErrorStats(
   }
 
   double error = 0.0001;
-#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-  double eigOne = c.GetPrincipalEigenvalue();
-  double eigTwo = c.GetSecondEigenvalue();
-
-  if(eigOne != 0.0) {
-    error += eigTwo / eigOne;
-  } else {
-    error += 1.0;
-  }
-#else
   error += std::min(err0, err2);
-#endif
   return error;
 }
 
@@ -2364,31 +2262,19 @@ static void CompressBC7Block(
         Min, Max, 4, 0xFEFEFEFE, RGBAVector(w[0], w[1], w[2], w[3])
       );
       UpdateErrorEstimate(modeEstimate, 6, err);
-
-#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-      double eigOne = blockCluster.GetPrincipalEigenvalue();
-      double eigTwo = blockCluster.GetSecondEigenvalue();
-      double error;
-      if(eigOne != 0.0) {
-        error = eigTwo / eigOne;
-      } else {
-        error = 1.0;
-      }
-
-      PrintStream(logStream, kBlockStatString[eBlockStat_SingleShapeEstimate], error);
-#endif
     }
   }
 
   // First we must figure out which shape to use. To do this, simply
   // see which shape has the smallest sum of minimum bounding spheres.
   double bestError[2] = { DBL_MAX, DBL_MAX };
-  int bestShapeIdx[2] = { -1, -1 };
-  RGBACluster bestClusters[2][3];
+
+  ShapeSelection selection;
+  uint32 path = 0;
 
   for(unsigned int i = 0; i < kNumShapes2; i++) {
     RGBACluster clusters[2];
-    PopulateTwoClustersForShape(blockCluster, i, clusters);
+    PopulateTwoClustersForShape(block, i, clusters);
 
     double err = 0.0;
     double errEstimate[2] = { -1.0, -1.0 };
@@ -2407,10 +2293,6 @@ static void CompressBC7Block(
       }
     }
 
-#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-    err /= 2.0;
-#endif
-
     if(errEstimate[0] != -1.0) {
       UpdateErrorEstimate(modeEstimate, 1, errEstimate[0]);
     }
@@ -2427,21 +2309,15 @@ static void CompressBC7Block(
 
     // If it's small, we'll take it!
     if(err < 1e-9) {
-      int modeChosen;
-      CompressTwoClusters(
-        i, clusters, outBuf, opaque, modeError, &modeChosen
-      );
-      bestMode = modeChosen;
-
-      PrintStat(logStream, kBlockStatString[eBlockStat_Path], 2);
-      return;
+      path = 2;
+      selection.m_TwoShapeIndex = i;
+      selection.m_SelectedModes = kTwoPartitionModes;
+      break;
     }
 
     if(err < bestError[0]) {
       bestError[0] = err;
-      bestShapeIdx[0] = i;
-      bestClusters[0][0] = clusters[0];
-      bestClusters[0][1] = clusters[1];
+      selection.m_TwoShapeIndex = i;
     }
   }
 
@@ -2451,7 +2327,7 @@ static void CompressBC7Block(
     for(unsigned int i = 0; i < kNumShapes3; i++) {
 
       RGBACluster clusters[3];
-      PopulateThreeClustersForShape(blockCluster, i, clusters);
+      PopulateThreeClustersForShape(block, i, clusters);
 
       double err = 0.0;
       double errEstimate[2] = { -1.0, -1.0 };
@@ -2470,10 +2346,6 @@ static void CompressBC7Block(
         }
       }
 
-#ifdef USE_PCA_FOR_SHAPE_ESTIMATION
-      err /= 3.0;
-#endif
-
       if(errEstimate[0] != -1.0) {
         UpdateErrorEstimate(modeEstimate, 0, errEstimate[0]);
       }
@@ -2490,94 +2362,26 @@ static void CompressBC7Block(
 
       // If it's small, we'll take it!
       if(err < 1e-9) {
-        int modeChosen;
-        CompressThreeClusters(
-          i, clusters, outBuf, opaque, modeError, &modeChosen
-        );
-        bestMode = modeChosen;
-
-        PrintStat(logStream, kBlockStatString[eBlockStat_Path], 2);
-        return;
+        path = 2;
+        selection.m_TwoShapeIndex = i;
+        selection.m_SelectedModes = kThreePartitionModes;
+        break;
       }
 
       if(err < bestError[1]) {
         bestError[1] = err;
-        bestShapeIdx[1] = i;
-        bestClusters[1][0] = clusters[0];
-        bestClusters[1][1] = clusters[1];
-        bestClusters[1][2] = clusters[2];
+        selection.m_ThreeShapeIndex = i;
       }
     }
   }
 
-  PrintStat(logStream, kBlockStatString[eBlockStat_Path], 3);
+  if(path == 0) path = 3;
 
-  uint8 tempBuf1[16], tempBuf2[16];
+  selection.m_SelectedModes &= settings.m_BlockModes;
+  assert(selection.m_SelectedModes);
+  CompressClusters(selection, block, outBuf, modeError, &bestMode);
 
-  BitStream tempStream1 (tempBuf1, 128, 0);
-  CompressionMode compressor(6, opaque);
-  double best = compressor.Compress(tempStream1, 0, &blockCluster);
-  modeError[6] = best;
-  bestMode = 6;
-  if(best == 0.0f) {
-    memcpy(outBuf, tempBuf1, 16);
-    return;
-  }
-
-  // Check modes 4 and 5 if the block isn't opaque...
-  if(!opaque) {
-    for(int mode = 4; mode <= 5; mode++) {
-
-      BitStream tempStream2(tempBuf2, 128, 0);
-      CompressionMode compressorTry(mode, opaque);
-
-      double error = compressorTry.Compress(tempStream2, 0, &blockCluster);
-      if(error < best) {
-
-        bestMode = mode;
-        best = error;
-
-        if(best == 0.0f) {
-          memcpy(outBuf, tempBuf2, 16);
-          return;
-        } else {
-          memcpy(tempBuf1, tempBuf2, 16);
-        }
-      }
-    }
-  }
-
-  int modeChosen;
-  double error = CompressTwoClusters(
-    bestShapeIdx[0], bestClusters[0], tempBuf2, opaque, modeError, &modeChosen
-  );
-  if(error < best) {
-
-    bestMode = modeChosen;
-    best = error;
-
-    if(error == 0.0f) {
-      memcpy(outBuf, tempBuf2, 16);
-      return;
-    } else {
-      memcpy(tempBuf1, tempBuf2, 16);
-    }
-  }
-
-  if(opaque) {
-    const double newError = CompressThreeClusters(
-      bestShapeIdx[1], bestClusters[1],
-      tempBuf2, opaque, modeError, &modeChosen
-    );
-    if(newError < best) {
-
-      bestMode = modeChosen;
-      memcpy(outBuf, tempBuf2, 16);
-      return;
-    }
-  }
-
-  memcpy(outBuf, tempBuf1, 16);
+  PrintStat(logStream, kBlockStatString[eBlockStat_Path], path);
 }
 
 static void DecompressBC7Block(const uint8 block[16], uint32 outBuf[16]) {

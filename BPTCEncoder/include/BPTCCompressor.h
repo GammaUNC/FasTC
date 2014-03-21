@@ -86,14 +86,14 @@ namespace BPTCC {
   // The enum is specialized to be power-of-two values so that an EBlockMode
   // variable can be used as a bit mask.
   enum EBlockMode {
-    eBlockMode_Zero = 0,
-    eBlockMode_One = 1,
-    eBlockMode_Two = 2,
-    eBlockMode_Three = 4,
-    eBlockMode_Four = 8,
-    eBlockMode_Five = 16,
-    eBlockMode_Six = 32,
-    eBlockMode_Seven = 64
+    eBlockMode_Zero = 1,
+    eBlockMode_One = 2,
+    eBlockMode_Two = 4,
+    eBlockMode_Three = 8,
+    eBlockMode_Four = 16,
+    eBlockMode_Five = 32,
+    eBlockMode_Six = 64,
+    eBlockMode_Seven = 128
   };
 
   // A shape selection can influence the results of the compressor by choosing
@@ -110,13 +110,18 @@ namespace BPTCC {
     // This is the additional mask to prevent modes once shape selection
     // is done. This value is &-ed with m_BlockModes from CompressionSettings
     // to determine what the final considered blocks are.
-    EBlockMode m_AdditionalModes;
+    uint32 m_SelectedModes;
+
+    // Defaults
+    ShapeSelection()
+    : m_SelectedModes(static_cast<EBlockMode>(0xFF))
+    { }
   };
 
   // A shape selection function is one that selects a BPTC shape from a given
   // block position and pixel array.
   typedef ShapeSelection
-    (*ShapeSelectionFn)(uint32 x, uint32 y, uint32 pixels[16]);
+    (*ShapeSelectionFn)(uint32 x, uint32 y, const uint32 pixels[16]);
 
   // Compression parameters used to control the BPTC compressor. Each of the
   // values has a default, so this is not strictly required to perform
@@ -135,11 +140,11 @@ namespace BPTCC {
     // This variable is a bit mask of EBlockMode values and by default contains
     // every mode. This setting can be used to further restrict the search space
     // and increase compression times.
-    EBlockMode m_BlockModes;
+    uint32 m_BlockModes;
 
     CompressionSettings()
     : m_ShapeSelectionFn(NULL)
-    , m_BlockModes(static_cast<EBlockMode>((1 << 7) - 1))
+    , m_BlockModes(static_cast<EBlockMode>(0xFF))
     { }
   };
 

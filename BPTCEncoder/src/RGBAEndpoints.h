@@ -177,6 +177,8 @@ public:
   bool AllSamePoint() const { return m_Max == m_Min; }
   int GetPointBitString() const { return m_PointBitString; }
 
+  void Reset() { *this = RGBACluster(); }
+
 private:
   // The number of points in the cluster.
   uint32 m_NumPoints;

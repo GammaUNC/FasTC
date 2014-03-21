@@ -105,8 +105,8 @@ class CompressionMode {
   // This initializes the compression variables used in order to compress a list
   // of clusters. We can increase the speed a tad by specifying whether or not
   // the block is opaque or not.
-  explicit CompressionMode(int mode, bool opaque = true)
-    : m_IsOpaque(opaque)
+  explicit CompressionMode(int mode)
+    : m_IsOpaque(mode < 4)
     , m_Attributes(&(kModeAttributes[mode]))
     , m_RotateMode(0)
     , m_IndexMode(0)
