@@ -76,6 +76,15 @@ static inline T sad(const T &a, const T &b) {
   return (a > b)? a - b : b - a;
 }
 
+static void CompressBPTC(const CompressionJob &cj) {
+  BPTCC::Compress(cj);
+}
+
+static void CompressBPTCWithStats(const CompressionJob &cj,
+                                  std::ostream *strm) {
+  BPTCC::CompressWithStats(cj, strm);
+}
+
 static void CompressPVRTC(const CompressionJob &cj) {
   PVRTCC::Compress(cj);
 }
@@ -109,7 +118,7 @@ static  CompressionFuncWithStats ChooseFuncFromSettingsWithStats(const SCompress
        return BPTCC::CompressNVTTWithStats;
       else
 #endif
-       return BPTCC::CompressWithStats;
+       return CompressBPTCWithStats;
     }
     break;
     
@@ -138,7 +147,7 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
        return BPTCC::CompressNVTT;
       else
 #endif
-       return BPTCC::Compress;
+       return CompressBPTC;
     }
     break;
 
@@ -223,7 +232,7 @@ class AtomicThreadUnit : public TCCallable {
   virtual ~AtomicThreadUnit() { }
   virtual void operator()() {
     m_Barrier->Wait();
-    if(m_CmpFnc == BPTCC::Compress) {
+    if(m_CmpFnc == CompressBPTC) {
       BPTCC::CompressAtomic(m_CompressionJobList);
     }
     else {

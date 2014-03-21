@@ -1553,9 +1553,13 @@ std::ostream &operator<<(const BlockLogger &bl, const T &v) {
 }
 
 // Function prototypes
-static void CompressBC7Block(const uint32 *block, uint8 *outBuf);
 static void CompressBC7Block(
-  const uint32 *block, uint8 *outBuf, const BlockLogger &logStream
+  const uint32 block[16], uint8 *outBuf,
+  const CompressionSettings = CompressionSettings()
+);
+static void CompressBC7Block(
+  const uint32 block[16], uint8 *outBuf, const BlockLogger &logStream,
+  const CompressionSettings = CompressionSettings()
 );
 
 static int gQualityLevel = 50;
@@ -1638,7 +1642,7 @@ void GetBlock(const uint32 x, const uint32 y, const uint32 pixelsWide,
 // the size of the image in pixels. The buffer pointed to by outBuf should be
 // large enough to store the compressed image. This implementation has an 4:1
 // compression ratio.
-void Compress(const FasTC::CompressionJob &cj) {
+void Compress(const FasTC::CompressionJob &cj, CompressionSettings settings) {
   const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
   const uint32 kBlockSz = GetBlockSize(FasTC::eCompressionFormat_BPTC);
   uint8 *outBuf = cj.OutBuf() + cj.CoordsToBlockIdx(cj.XStart(), cj.YStart()) * kBlockSz;
@@ -1651,7 +1655,7 @@ void Compress(const FasTC::CompressionJob &cj) {
 
       uint32 block[16];
       GetBlock(i, j, cj.Width(), inPixels, block);
-      CompressBC7Block(block, outBuf);
+      CompressBC7Block(block, outBuf, settings);
 
 #ifndef NDEBUG
       const uint8 *inBlock = reinterpret_cast<const uint8 *>(block);
@@ -1740,7 +1744,8 @@ void CompressAtomic(FasTC::CompressionJobList &cjl) {
 }
 #endif  // HAS_ATOMICS
 
-void CompressWithStats(const FasTC::CompressionJob &cj, std::ostream *logStream) {
+  void CompressWithStats(const FasTC::CompressionJob &cj, std::ostream *logStream,
+                         CompressionSettings settings) {
   const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
   const uint32 kBlockSz = GetBlockSize(FasTC::eCompressionFormat_BPTC);
   uint8 *outBuf = cj.OutBuf() + cj.CoordsToBlockIdx(cj.XStart(), cj.YStart()) * kBlockSz;
@@ -1755,9 +1760,9 @@ void CompressWithStats(const FasTC::CompressionJob &cj, std::ostream *logStream)
 
       if(logStream) {
         uint64 blockIdx = cj.CoordsToBlockIdx(i, j);
-        CompressBC7Block(block, outBuf, BlockLogger(blockIdx, *logStream));
+        CompressBC7Block(block, outBuf, BlockLogger(blockIdx, *logStream), settings);
       } else {
-        CompressBC7Block(block, outBuf);
+        CompressBC7Block(block, outBuf, settings);
       }
 
 #ifndef NDEBUG
@@ -1992,7 +1997,8 @@ static double EstimateThreeClusterError(RGBACluster &c) {
   return error;
 }
 
-static void CompressBC7Block(const uint32 *block, uint8 *outBuf) {
+static void CompressBC7Block(const uint32 block[16], uint8 *outBuf,
+                             const CompressionSettings settings) {
   // All a single color?
   if(AllOneColor(block)) {
     BitStream bStrm(outBuf, 128, 0);
@@ -2253,7 +2259,8 @@ static void PrintStat(const BlockLogger &lgr, const char *stat, const T &v) {
 
 // Compress a single block but collect statistics as well...
 static void CompressBC7Block(
-  const uint32 *block, uint8 *outBuf, const BlockLogger &logStream
+  const uint32 block[16], uint8 *outBuf, const BlockLogger &logStream,
+  const CompressionSettings settings
 ) {
 
   class RAIIStatSaver {

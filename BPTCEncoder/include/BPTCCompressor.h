@@ -82,6 +82,67 @@
 #include <iosfwd>
 
 namespace BPTCC {
+  // The various available block modes that a BPTC compressor can choose from.
+  // The enum is specialized to be power-of-two values so that an EBlockMode
+  // variable can be used as a bit mask.
+  enum EBlockMode {
+    eBlockMode_Zero = 0,
+    eBlockMode_One = 1,
+    eBlockMode_Two = 2,
+    eBlockMode_Three = 4,
+    eBlockMode_Four = 8,
+    eBlockMode_Five = 16,
+    eBlockMode_Six = 32,
+    eBlockMode_Seven = 64
+  };
+
+  // A shape selection can influence the results of the compressor by choosing
+  // different modes to compress or not compress. The shape index is a value
+  // between zero and sixty-four that corresponds to one of the available
+  // partitioning schemes defined by the BPTC format.
+  struct ShapeSelection {
+    // This is the shape index to use when evaluating two-partition shapes.
+    uint32 m_TwoShapeIndex;
+
+    // This is the shape index to use when evaluating three-partition shapes.
+    uint32 m_ThreeShapeIndex;
+
+    // This is the additional mask to prevent modes once shape selection
+    // is done. This value is &-ed with m_BlockModes from CompressionSettings
+    // to determine what the final considered blocks are.
+    EBlockMode m_AdditionalModes;
+  };
+
+  // A shape selection function is one that selects a BPTC shape from a given
+  // block position and pixel array.
+  typedef ShapeSelection
+    (*ShapeSelectionFn)(uint32 x, uint32 y, uint32 pixels[16]);
+
+  // Compression parameters used to control the BPTC compressor. Each of the
+  // values has a default, so this is not strictly required to perform
+  // compression, but some aspects of the compressor can be user-defined or
+  // overridden.
+  struct CompressionSettings {
+    // The shape selection function to use during compression. The default (when
+    // this variable is set to NULL) is to use the diagonal of the axis-aligned
+    // bounding box of every partition to estimate the error using that
+    // partition would accrue. The shape with the least error is then chosen.
+    // This procedure is done for both two and three partition shapes, and then
+    // every block mode is still available.
+    ShapeSelectionFn m_ShapeSelectionFn;
+
+    // The block modes that the compressor will consider during compression.
+    // This variable is a bit mask of EBlockMode values and by default contains
+    // every mode. This setting can be used to further restrict the search space
+    // and increase compression times.
+    EBlockMode m_BlockModes;
+
+    CompressionSettings()
+    : m_ShapeSelectionFn(NULL)
+    , m_BlockModes(static_cast<EBlockMode>((1 << 7) - 1))
+    { }
+  };
+
   // This is the error metric that is applied to our error measurement algorithm
   // in order to bias calculation towards results that are more in-line with
   // how the Human Visual System works. Uniform error means that each color
@@ -114,13 +175,15 @@ namespace BPTCC {
 
   // Compress the image given as RGBA data to BPTC format. Width and Height are
   // the dimensions of the image in pixels.
-  void Compress(const FasTC::CompressionJob &);
+  void Compress(const FasTC::CompressionJob &,
+                CompressionSettings settings = CompressionSettings());
 
   // Perform a compression while recording all of the choices the compressor
   // made into a list of statistics. We can use this to see whether or not
   // certain heuristics are working, such as whether or not certain modes are
   // being chosen more often than others, etc.
-  void CompressWithStats(const FasTC::CompressionJob &, std::ostream *logStream);
+  void CompressWithStats(const FasTC::CompressionJob &, std::ostream *logStream,
+                         CompressionSettings settings = CompressionSettings());
 
 #ifdef HAS_SSE_41
   // Compress the image given as RGBA data to BPTC format using an algorithm
@@ -146,8 +209,7 @@ namespace BPTCC {
                              std::ostream *logStream);
 #endif
 
-  // Decompress the image given as BPTC data to R8G8B8A8 format. Width and Height
-  // are the dimensions of the image in pixels.
+  // Decompress the image given as BPTC data to R8G8B8A8 format.
   void Decompress(const FasTC::DecompressionJob &);
 }  // namespace BPTCC
 
