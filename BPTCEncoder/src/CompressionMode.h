@@ -117,12 +117,13 @@ class CompressionMode {
   // BPTC block. The mode determines how these parameters will be translated
   // into actual bits.
   struct Params {
-    const uint16 m_ShapeIdx;
     RGBAVector m_P1[kMaxNumSubsets], m_P2[kMaxNumSubsets];
     uint8 m_Indices[kMaxNumSubsets][kMaxNumDataPoints];
     uint8 m_AlphaIndices[kMaxNumDataPoints];
     uint8 m_PbitCombo[kMaxNumSubsets];
-    int8 m_RotationMode, m_IndexMode;
+    int8 m_RotationMode;
+    int8 m_IndexMode;
+    const uint16 m_ShapeIdx;
     explicit Params(uint32 shape)
       : m_RotationMode(-1), m_IndexMode(-1), m_ShapeIdx(shape) {
       memset(m_Indices, 0xFF, sizeof(m_Indices));
