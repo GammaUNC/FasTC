@@ -70,9 +70,13 @@
 #include "Vector4.h"
 #include "Matrix4x4.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cfloat>
 #include <cstring>
+#include <limits>
+
+#include "Shapes.h"
 
 static const uint32 kNumColorChannels = 4;
 static const uint32 kMaxNumDataPoints = 16;
@@ -122,45 +126,37 @@ class RGBADir : public RGBAVector {
   }
 };
 
-// Makes sure that the values of the endpoints lie between 0 and 1.
-extern void ClampEndpoints(RGBAVector &p1, RGBAVector &p2);
-
 class RGBACluster {
+  // We really don't ever need to do these
+  RGBACluster &operator=(const RGBACluster &) { return *this; }
 public:
+  explicit RGBACluster(const uint32 pixels[16])
+    : m_NumPoints(0)
+    , m_Avg(0)
+    , m_Min(std::numeric_limits<float>::max())
+    , m_Max(-std::numeric_limits<float>::max())
+  {
+    for(uint32 i = 0; i < 16; i++) {
+      RGBAVector p = RGBAVector(i, pixels[i]);
+      m_Avg += p;
+      m_PointMap[m_NumPoints] = i;
+      m_DataPoints[m_NumPoints++] = p;
 
-  RGBACluster() : 
-    m_NumPoints(0), m_Total(0), 
-    m_PointBitString(0),
-    m_Min(FLT_MAX),
-    m_Max(-FLT_MAX)
-  { } 
-
-  RGBACluster(const RGBACluster &c) : 
-    m_NumPoints(c.m_NumPoints),
-    m_Total(c.m_Total),
-    m_PointBitString(c.m_PointBitString), 
-    m_Min(c.m_Min), m_Max(c.m_Max)
-  { 
-    memcpy(this->m_DataPoints, c.m_DataPoints, m_NumPoints * sizeof(RGBAVector));
+      for(uint32 i = 0; i < kNumColorChannels; i++) {
+        m_Min[i] = std::min(p[i], m_Min[i]);
+        m_Max[i] = std::max(p[i], m_Max[i]);
+      }
+    }
+    m_Avg /= static_cast<float>(m_NumPoints);
   }
 
-  RGBACluster(const RGBACluster &left, const RGBACluster &right);
-  RGBACluster(const RGBAVector &p) : 
-    m_NumPoints(1),
-    m_Total(p),
-    m_PointBitString(0),
-    m_Min(p), m_Max(p)
-  { 
-    m_DataPoints[0] = p;
-    m_PointBitString |= (1 << p.GetIdx());
+  RGBAVector &Point(int idx) { return m_DataPoints[m_PointMap[idx]]; }
+  const RGBAVector &GetPoint(int idx) const {
+    return m_DataPoints[m_PointMap[idx]];
   }
-      
-  const RGBAVector &GetPoint(int idx) const { return m_DataPoints[idx]; }
+
   uint32 GetNumPoints() const { return m_NumPoints; }
-  RGBAVector GetAvg() const { return m_Total / float(m_NumPoints); }
-  const RGBAVector *GetPoints() const { return m_DataPoints; }
-
-  void AddPoint(const RGBAVector &p);
+  RGBAVector GetAvg() const { return m_Avg; }
 
   void GetBoundingBox(RGBAVector &Min, RGBAVector &Max) const {
     Min = m_Min, Max = m_Max;
@@ -173,27 +169,72 @@ public:
     uint8 nBuckets, uint32 bitMask, const RGBAVector &errorMetricVec,
     const int pbits[2] = NULL, uint8 *indices = NULL) const;
 
-  // Returns the principal axis for this point cluster.
   bool AllSamePoint() const { return m_Max == m_Min; }
-  int GetPointBitString() const { return m_PointBitString; }
 
-  void Reset() { *this = RGBACluster(); }
+  // Returns the principal axis for this point cluster.
+  uint32 GetPrincipalAxis(RGBADir &axis, float *eigOne, float *eigTwo) const;
+
+  void SetShapeIndex(uint32 shapeIdx, uint32 nPartitions) {
+    m_NumPartitions = nPartitions;
+    m_ShapeIdx = shapeIdx;
+    // Recalculate();
+  }
+
+  void SetShapeIndex(uint32 shapeIdx) {
+    SetShapeIndex(shapeIdx, m_NumPartitions);
+  }
+
+  void SetPartition(uint32 part) {
+    m_SelectedPartition = part;
+    Recalculate();
+  }
+
+  bool IsPointValid(uint32 idx) const {
+    return m_SelectedPartition ==
+      BPTCC::GetSubsetForIndex(idx, m_ShapeIdx, m_NumPartitions);
+  }
 
 private:
   // The number of points in the cluster.
   uint32 m_NumPoints;
+  uint32 m_NumPartitions;
+  uint32 m_SelectedPartition;
+  uint32 m_ShapeIdx;
 
-  RGBAVector m_Total;
+  RGBAVector m_Avg;
 
   // The points in the cluster.
   RGBAVector m_DataPoints[kMaxNumDataPoints];
-
-  int m_PointBitString;
+  uint8 m_PointMap[kMaxNumDataPoints];
   RGBAVector m_Min, m_Max;
+
+  void Recalculate() {
+    m_NumPoints = 0;
+    m_Avg = RGBAVector(0.0f);
+    m_Min = RGBAVector(std::numeric_limits<float>::max());
+    m_Max = RGBAVector(-std::numeric_limits<float>::max());
+
+    uint32 map = 0;
+    for(uint32 idx = 0; idx < 16; idx++) {
+      if(!IsPointValid(idx)) continue;
+
+      m_NumPoints++;
+      m_Avg += m_DataPoints[idx];
+      m_PointMap[map++] = idx;
+
+      for(uint32 i = 0; i < kNumColorChannels; i++) {
+        m_Min[i] = std::min(m_DataPoints[idx][i], m_Min[i]);
+        m_Max[i] = std::max(m_DataPoints[idx][i], m_Max[i]);
+      }
+    }
+
+    m_Avg /= static_cast<float>(m_NumPoints);
+  }
 };
 
+// Makes sure that the values of the endpoints lie between 0 and 1.
+extern void ClampEndpoints(RGBAVector &p1, RGBAVector &p2);
 extern uint8 QuantizeChannel(const uint8 val, const uint8 mask, const int pBit = -1);
-extern uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, float *eigOne, float *eigTwo);
 
 namespace FasTC {
   REGISTER_VECTOR_TYPE(RGBAVector);

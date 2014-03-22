@@ -138,10 +138,9 @@ class CompressionMode {
   // be swapped. The final output bits will always be a valid BPTC block. 
   void Pack(Params &params, FasTC::BitStream &stream) const;
 
-  // This function compresses a group of clusters into the passed bitstream. The
-  // size of the clusters array is determined by the BC7 compression mode.
-  double Compress(FasTC::BitStream &stream,
-                  const int shapeIdx, const RGBACluster *clusters);
+  // This function compresses a group of clusters into the passed bitstream.
+  double Compress(FasTC::BitStream &stream, const int shapeIdx,
+                  RGBACluster &cluster);
 
   // This switch controls the quality of the simulated annealing optimizer. We
   // will not make more than this many steps regardless of how bad the error is.

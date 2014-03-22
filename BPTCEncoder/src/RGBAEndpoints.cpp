@@ -253,26 +253,6 @@ uint32 RGBAVector::ToPixel(const uint32 channelMask, const int pBit) const {
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-RGBACluster::RGBACluster(const RGBACluster &left, const RGBACluster &right) {
-  *this = left;
-  for(uint32 i = 0; i < right.m_NumPoints; i++) {
-    const RGBAVector &p = right.m_DataPoints[i];
-    AddPoint(p);
-  }
-}  
-
-void RGBACluster::AddPoint(const RGBAVector &p) {
-  assert(m_NumPoints < kMaxNumDataPoints);
-  m_Total += p;
-  m_DataPoints[m_NumPoints++] = p;
-  m_PointBitString |= 1 << p.GetIdx();
-
-  for(uint32 i = 0; i < kNumColorChannels; i++) {
-    m_Min[i] = min(p[i], m_Min[i]);
-    m_Max[i] = max(p[i], m_Max[i]);
-  }
-}
-
 double RGBACluster::QuantizedError(
   const RGBAVector &p1, const RGBAVector &p2,
   uint8 nBuckets, uint32 bitMask, const RGBAVector &errorMetricVec,
@@ -308,9 +288,9 @@ double RGBACluster::QuantizedError(
   const RGBAVector metric = errorMetricVec;
 
   float totalError = 0.0;
-  for(uint32 i = 0; i < m_NumPoints; i++) {
+  for(uint32 i = 0; i < GetNumPoints(); i++) {
 
-    const uint32 pixel = m_DataPoints[i].ToPixel();
+    const uint32 pixel = GetPoint(i).ToPixel();
     const uint8 *pb = (const uint8 *)(&pixel);
 
     float minError = FLT_MAX;
@@ -351,34 +331,13 @@ double RGBACluster::QuantizedError(
   return totalError;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// Utility function implementation
-//
-///////////////////////////////////////////////////////////////////////////////
-
-void ClampEndpoints(RGBAVector &p1, RGBAVector &p2) {
-  for(uint32 i = 0; i < 4; i++) {
-    clamp(p1[i], 0.0f, 255.0f);
-    clamp(p2[i], 0.0f, 255.0f);
-  }
-}
-
-uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, float *eigOne, float *eigTwo) {
-
-  assert(nPts <= kMaxNumDataPoints);
-
-  RGBAVector avg (0.0f);
-  for(uint32 i = 0; i < nPts; i++) {
-    avg += pts[i];
-  }
-  avg /= float(nPts);
+uint32 RGBACluster::GetPrincipalAxis(RGBADir &axis, float *eigOne, float *eigTwo) const {
 
   // We use these vectors for calculating the covariance matrix...
   RGBAVector toPts[kMaxNumDataPoints];
-  RGBAVector toPtsMax(-FLT_MAX);
-  for(uint32 i = 0; i < nPts; i++) {
-    toPts[i] = pts[i] - avg;
+  RGBAVector toPtsMax(-std::numeric_limits<float>::max());
+  for(uint32 i = 0; i < this->GetNumPoints(); i++) {
+    toPts[i] = this->GetPoint(i) - this->GetAvg();
 
     for(uint32 j = 0; j < kNumColorChannels; j++) {
       toPtsMax[j] = max(toPtsMax[j], toPts[i][j]);
@@ -388,16 +347,16 @@ uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, float
   // Generate a list of unique points...
   RGBAVector upts[kMaxNumDataPoints];
   uint32 uptsIdx = 0;
-  for(uint32 i = 0; i < nPts; i++) {
+  for(uint32 i = 0; i < this->GetNumPoints(); i++) {
     
     bool hasPt = false;
     for(uint32 j = 0; j < uptsIdx; j++) {
-      if(upts[j] == pts[i])
+      if(upts[j] == this->GetPoint(i))
         hasPt = true;
     }
 
     if(!hasPt) {
-      upts[uptsIdx++] = pts[i];
+      upts[uptsIdx++] = this->GetPoint(i);
     }
   }
 
@@ -411,7 +370,7 @@ uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, float
   } else {
     RGBADir dir (upts[1] - upts[0]);
     bool collinear = true;
-    for(uint32 i = 2; i < nPts; i++) {
+    for(uint32 i = 2; i < this->GetNumPoints(); i++) {
       RGBAVector v = (upts[i] - upts[0]);
       if(fabs(fabs(v*dir) - v.Length()) > 1e-7) {
         collinear = false;
@@ -432,7 +391,7 @@ uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, float
     for(uint32 j = 0; j <= i; j++) {
 
       float sum = 0.0;
-      for(uint32 k = 0; k < nPts; k++) {
+      for(uint32 k = 0; k < this->GetNumPoints(); k++) {
         sum += toPts[k][i] * toPts[k][j];
       }
 
@@ -473,4 +432,17 @@ uint32 GetPrincipalAxis(uint32 nPts, const RGBAVector *pts, RGBADir &axis, float
   }
 
   return iters;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Utility function implementation
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void ClampEndpoints(RGBAVector &p1, RGBAVector &p2) {
+  for(uint32 i = 0; i < 4; i++) {
+    clamp(p1[i], 0.0f, 255.0f);
+    clamp(p2[i], 0.0f, 255.0f);
+  }
 }

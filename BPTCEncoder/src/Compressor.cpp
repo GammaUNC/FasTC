@@ -79,6 +79,7 @@
 #include "TexCompTypes.h"
 #include "BCLookupTables.h"
 #include "RGBAEndpoints.h"
+#include "Shapes.h"
 
 #include "BitStream.h"
 using FasTC::BitStream;
@@ -161,17 +162,7 @@ static const char *kBlockStatString[kNumBlockStats] = {
   "BlockStat_ModeSevenError",
 };
 
-static const uint32 kNumShapes2 = 64;
-static const uint16 kShapeMask2[kNumShapes2] = {
-  0xcccc, 0x8888, 0xeeee, 0xecc8, 0xc880, 0xfeec, 0xfec8, 0xec80,
-  0xc800, 0xffec, 0xfe80, 0xe800, 0xffe8, 0xff00, 0xfff0, 0xf000,
-  0xf710, 0x008e, 0x7100, 0x08ce, 0x008c, 0x7310, 0x3100, 0x8cce,
-  0x088c, 0x3110, 0x6666, 0x366c, 0x17e8, 0x0ff0, 0x718e, 0x399c,
-  0xaaaa, 0xf0f0, 0x5a5a, 0x33cc, 0x3c3c, 0x55aa, 0x9696, 0xa55a,
-  0x73ce, 0x13c8, 0x324c, 0x3bdc, 0x6996, 0xc33c, 0x9966, 0x0660,
-  0x0272, 0x04e4, 0x4e40, 0x2720, 0xc936, 0x936c, 0x39c6, 0x639c,
-  0x9336, 0x9cc6, 0x817e, 0xe718, 0xccf0, 0x0fcc, 0x7744, 0xee22
-};
+namespace BPTCC {
 
 static const int kAnchorIdx2[kNumShapes2] = {
   15, 15, 15, 15, 15, 15, 15, 15,
@@ -182,26 +173,6 @@ static const int kAnchorIdx2[kNumShapes2] = {
   2 ,  8,  2,  2,  2, 15, 15,  6,
   6 ,  2,  6,  8, 15, 15,  2,  2,
   15, 15, 15, 15, 15,  2,  2, 15
-};
-
-static const uint32 kNumShapes3 = 64;
-static const uint16 kShapeMask3[kNumShapes3][2] = {
-  {0xfecc, 0xf600}, {0xffc8, 0x7300}, {0xff90, 0x3310}, {0xecce, 0x00ce},
-  {0xff00, 0xcc00}, {0xcccc, 0xcc00}, {0xffcc, 0x00cc}, {0xffcc, 0x3300},
-  {0xff00, 0xf000}, {0xfff0, 0xf000}, {0xfff0, 0xff00}, {0xcccc, 0x8888},
-  {0xeeee, 0x8888}, {0xeeee, 0xcccc}, {0xffec, 0xec80}, {0x739c, 0x7310},
-  {0xfec8, 0xc800}, {0x39ce, 0x3100}, {0xfff0, 0xccc0}, {0xfccc, 0x0ccc},
-  {0xeeee, 0xee00}, {0xff88, 0x7700}, {0xeec0, 0xcc00}, {0x7730, 0x3300},
-  {0x0cee, 0x00cc}, {0xffcc, 0xfc88}, {0x6ff6, 0x0660}, {0xff60, 0x6600},
-  {0xcbbc, 0xc88c}, {0xf966, 0xf900}, {0xceec, 0x0cc0}, {0xff10, 0x7310},
-  {0xff80, 0xec80}, {0xccce, 0x08ce}, {0xeccc, 0xec80}, {0x6666, 0x4444},
-  {0x0ff0, 0x0f00}, {0x6db6, 0x4924}, {0x6bd6, 0x4294}, {0xcf3c, 0x0c30},
-  {0xc3fc, 0x03c0}, {0xffaa, 0xff00}, {0xff00, 0x5500}, {0xfcfc, 0xcccc},
-  {0xcccc, 0x0c0c}, {0xf6f6, 0x6666}, {0xaffa, 0x0ff0}, {0xfff0, 0x5550},
-  {0xfaaa, 0xf000}, {0xeeee, 0x0e0e}, {0xf8f8, 0x8888}, {0xfff0, 0x9990},
-  {0xeeee, 0xe00e}, {0x8ff8, 0x8888}, {0xf666, 0xf000}, {0xff00, 0x9900},
-  {0xff66, 0xff00}, {0xcccc, 0xc00c}, {0xcffc, 0xcccc}, {0xf000, 0x9000},
-  {0x8888, 0x0808}, {0xfefe, 0xeeee}, {0xfffa, 0xfff0}, {0x7bde, 0x7310}
 };
 
 static const uint32 kWMValues[] = {
@@ -234,32 +205,6 @@ static const int kAnchorIdx3[2][kNumShapes3] = {
 template <typename T>
 static inline T sad(const T &a, const T &b) {
   return (a > b)? a - b : b - a;
-}
-
-static uint8 GetSubsetForIndex(int idx, const int shapeIdx, const int nSubs) {
-  int subset = 0;
-
-  switch(nSubs) {
-    case 2:
-    {
-      subset = !!((1 << idx) & kShapeMask2[shapeIdx]);
-    }
-    break;
-
-    case 3:
-    {
-      if(1 << idx & kShapeMask3[shapeIdx][0])
-        subset = 1 + !!((1 << idx) & kShapeMask3[shapeIdx][1]);
-      else
-        subset = 0;
-    }
-    break;
-
-    default:
-    break;
-  }
-
-  return subset;
 }
 
 static uint32 GetAnchorIndexForSubset(
@@ -303,8 +248,6 @@ static void insert(T* buf, int bufSz, T newVal, int idx = 0) {
 
 template <typename T>
 static inline void swap(T &a, T &b) { T t = a; a = b; b = t; }
-
-namespace BPTCC {
 
 const uint32 kInterpolationValues[4][16][2] = {
   { {64, 0}, {33, 31}, {0, 64}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
@@ -806,14 +749,14 @@ double CompressionMode::CompressCluster(
     return cluster.GetNumPoints() * bestErr;
   }
 
-  RGBACluster rgbCluster;
+  RGBACluster rgbCluster(cluster);
   float alphaVals[kMaxNumDataPoints] = {0};
 
   float alphaMin = FLT_MAX, alphaMax = -FLT_MAX;
-  for(uint32 i = 0; i < cluster.GetNumPoints(); i++) {
+  for(uint32 i = 0; i < rgbCluster.GetNumPoints(); i++) {
 
-    RGBAVector v = cluster.GetPoint(i);
-    switch(GetRotationMode()) {
+    RGBAVector &v = rgbCluster.Point(i);
+    switch(this->GetRotationMode()) {
       default:
       case 0:
         // Do nothing
@@ -837,8 +780,6 @@ double CompressionMode::CompressCluster(
 
     alphaMin = std::min(alphaVals[i], alphaMin);
     alphaMax = std::max(alphaVals[i], alphaMax);
-
-    rgbCluster.AddPoint(v);
   }
 
   uint8 dummyPbit = 0;
@@ -1087,19 +1028,18 @@ double CompressionMode::CompressCluster(
   const uint32 nBuckets = (1 << GetNumberOfBitsPerIndex());
 
 #if 1
-  RGBAVector avg = cluster.GetAvg();
   RGBADir axis;
-  ::GetPrincipalAxis(cluster.GetNumPoints(), cluster.GetPoints(), axis, NULL, NULL);
+  cluster.GetPrincipalAxis(axis, NULL, NULL);
 
   float mindp = FLT_MAX, maxdp = -FLT_MAX;
   for(uint32 i = 0 ; i < cluster.GetNumPoints(); i++) {
-    float dp = (cluster.GetPoint(i) - avg) * axis;
+    float dp = (cluster.GetPoint(i) - cluster.GetAvg()) * axis;
     if(dp < mindp) mindp = dp;
     if(dp > maxdp) maxdp = dp;
   }
 
-  p1 = avg + mindp * axis;
-  p2 = avg + maxdp * axis;
+  p1 = cluster.GetAvg() + mindp * axis;
+  p2 = cluster.GetAvg() + maxdp * axis;
 #else
   cluster.GetBoundingBox(p1, p2);
 #endif
@@ -1447,7 +1387,7 @@ void CompressionMode::Pack(Params &params, BitStream &stream) const {
 }
 
 double CompressionMode::Compress(
-  BitStream &stream, const int shapeIdx, const RGBACluster *clusters
+  BitStream &stream, const int shapeIdx, RGBACluster &cluster
 ) {
 
   const int kModeNumber = GetModeNumber();
@@ -1458,6 +1398,7 @@ double CompressionMode::Compress(
   double totalErr = 0.0;
   for(int cidx = 0; cidx < nSubsets; cidx++) {
     uint8 indices[kMaxNumDataPoints] = {0};
+    cluster.SetPartition(cidx);
 
     if(m_Attributes->hasRotation) {
 
@@ -1477,7 +1418,7 @@ double CompressionMode::Compress(
 
           RGBAVector v1, v2;
           double error = CompressCluster(
-            clusters[cidx], v1, v2, indices, alphaIndices
+            cluster, v1, v2, indices, alphaIndices
           );
 
           if(error < bestError) {
@@ -1499,7 +1440,7 @@ double CompressionMode::Compress(
     } else {  // ! m_Attributes->hasRotation
       // Compress this cluster
       totalErr += CompressCluster(
-        clusters[cidx],
+        cluster,
         params.m_P1[cidx], params.m_P2[cidx],
         indices, params.m_PbitCombo[cidx]
       );
@@ -1789,63 +1730,6 @@ void CompressAtomic(FasTC::CompressionJobList &cjl) {
   }
 }
 
-static void PopulateTwoClustersForShape(
-  const uint32 points[16], int shapeIdx, RGBACluster *clusters
-) {
-  clusters[0].Reset();
-  clusters[1].Reset();
-  const uint16 shape = kShapeMask2[shapeIdx];
-  for(uint32 pt = 0; pt < kMaxNumDataPoints; pt++) {
-
-    const RGBAVector p = RGBAVector(pt, points[pt]);
-
-    if((1 << pt) & shape)
-      clusters[1].AddPoint(p);
-    else
-      clusters[0].AddPoint(p);
-  }
-
-#ifndef NDEBUG
-  const uint32 pbs1 = clusters[0].GetPointBitString();
-  const uint32 pbs2 = clusters[1].GetPointBitString();
-  assert(!(pbs1 & pbs2));
-  assert((pbs1 ^ pbs2) == 0xFFFF);
-  assert((shape & pbs2) == shape);
-#endif
-}
-
-static void PopulateThreeClustersForShape(
-  const uint32 points[16], int shapeIdx, RGBACluster *clusters
-) {
-  clusters[0].Reset();
-  clusters[1].Reset();
-  clusters[2].Reset();
-  for(uint32 pt = 0; pt < kMaxNumDataPoints; pt++) {
-
-    const RGBAVector p = RGBAVector(pt, points[pt]);
-
-    if((1 << pt) & kShapeMask3[shapeIdx][0]) {
-      if((1 << pt) & kShapeMask3[shapeIdx][1]) {
-        clusters[2].AddPoint(p);
-      } else {
-        clusters[1].AddPoint(p);
-      }
-    } else {
-      clusters[0].AddPoint(p);
-    }
-  }
-
-#ifndef NDEBUG
-  const uint32 pbs1 = clusters[0].GetPointBitString();
-  const uint32 pbs2 = clusters[1].GetPointBitString();
-  const uint32 pbs3 = clusters[2].GetPointBitString();
-
-  assert(!(pbs1 & pbs2));
-  assert(!(pbs3 & pbs2));
-  assert(!(pbs3 & pbs1));
-#endif
-}
-
 static double EstimateTwoClusterError(RGBACluster &c) {
   RGBAVector Min, Max, v;
   c.GetBoundingBox(Min, Max);
@@ -1907,13 +1791,15 @@ static ShapeSelection BoxSelection(uint32 x, uint32 y,
   double bestError[2] = { std::numeric_limits<double>::max(),
                           std::numeric_limits<double>::max() };
 
+  RGBACluster cluster(pixels);
+
   for(unsigned int i = 0; i < kNumShapes2; i++) {
-    RGBACluster clusters[2];
-    PopulateTwoClustersForShape(pixels, i, clusters);
+    cluster.SetShapeIndex(i, 2);
 
     double err = 0.0;
     for(int ci = 0; ci < 2; ci++) {
-      err += EstimateTwoClusterError(clusters[ci]);
+      cluster.SetPartition(ci);
+      err += EstimateTwoClusterError(cluster);
     }
 
     if(err < bestError[0]) {
@@ -1932,13 +1818,12 @@ static ShapeSelection BoxSelection(uint32 x, uint32 y,
   // if the entire block is opaque.
   if(opaque) {
     for(unsigned int i = 0; i < kNumShapes3; i++) {
-
-      RGBACluster clusters[3];
-      PopulateThreeClustersForShape(pixels, i, clusters);
+      cluster.SetShapeIndex(i, 3);
 
       double err = 0.0;
       for(int ci = 0; ci < 3; ci++) {
-        err += EstimateThreeClusterError(clusters[ci]);
+        cluster.SetPartition(ci);
+        err += EstimateThreeClusterError(cluster);
       }
 
       if(err < bestError[1]) {
@@ -1969,14 +1854,10 @@ static ShapeSelection BoxSelection(uint32 x, uint32 y,
 
 static void CompressClusters(ShapeSelection selection, const uint32 pixels[16],
                              uint8 *outBuf, double *errors, int *modeChosen) {
-  RGBACluster clusters[3];
+  RGBACluster cluster(pixels);
   uint8 tmpBuf[16];
   double bestError = std::numeric_limits<double>::max();
   uint32 modes[8] = {0, 2, 1, 3, 7, 4, 5, 6};
-
-  bool populatedThree = false;
-  bool populatedTwo = false;
-  bool populatedOne = false;
 
   // Block mode zero only has four bits for the partition index,
   // so if the chosen three-partition shape is not within this range,
@@ -1995,28 +1876,18 @@ static void CompressClusters(ShapeSelection selection, const uint32 pixels[16],
     uint32 shape = 0;
     if(modeIdx < 2) {
       shape = selection.m_ThreeShapeIndex;
-      if(!populatedThree) {
-        PopulateThreeClustersForShape(pixels, shape, clusters);
-        populatedThree = true;
-      }
     } else if(modeIdx < 5) {
       shape = selection.m_TwoShapeIndex;
-      if(!populatedTwo) {
-        PopulateTwoClustersForShape(pixels, shape, clusters);
-        populatedTwo = true;
-      }
-    } else if(!populatedOne) {
-      clusters[0].Reset();
-      for(uint32 i = 0; i < 16; i++) {
-        clusters[0].AddPoint(RGBAVector(i, pixels[i]));
-      }
-      populatedOne = true;
     }
 
-    BitStream tmpStream(tmpBuf, 128, 0);
-    double error = CompressionMode(mode).Compress(tmpStream, shape, clusters);
+    cluster.SetShapeIndex(
+      shape, CompressionMode::GetAttributesForMode(mode)->numSubsets);
 
-    if(errors) errors[mode] = error;
+    BitStream tmpStream(tmpBuf, 128, 0);
+    double error = CompressionMode(mode).Compress(tmpStream, shape, cluster);
+
+    if(errors)
+      errors[mode] = error;
     if(error < bestError) {
       memcpy(outBuf, tmpBuf, sizeof(tmpBuf));
       bestError = error;
@@ -2035,14 +1906,15 @@ static void CompressBC7Block(const uint32 block[16], uint8 *outBuf,
     return;
   }
 
-  RGBACluster blockCluster;
+  RGBACluster blockCluster(block);
   bool transparent = true;
 
-  for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
-    RGBAVector p = RGBAVector(i, block[i]);
-    blockCluster.AddPoint(p);
-    if(p.A() > 0.0f)
+  for(uint32 i = 0; i < blockCluster.GetNumPoints(); i++) {
+    const RGBAVector &p = blockCluster.GetPoint(i);
+    if(p.A() > 0.0f) {
       transparent = false;
+      break;
+    }
   }
 
   // The whole block is transparent?
@@ -2222,13 +2094,12 @@ static void CompressBC7Block(
     return;
   }
 
-  RGBACluster blockCluster;
+  RGBACluster blockCluster(block);
   bool opaque = true;
   bool transparent = true;
 
-  for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
-    RGBAVector p = RGBAVector(i, block[i]);
-    blockCluster.AddPoint(p);
+  for(uint32 i = 0; i < blockCluster.GetNumPoints(); i++) {
+    const RGBAVector &p = blockCluster.GetPoint(i);
     if(fabs(p.A() - 255.0f) > 1e-10) {
       opaque = false;
     }
@@ -2273,14 +2144,14 @@ static void CompressBC7Block(
   uint32 path = 0;
 
   for(unsigned int i = 0; i < kNumShapes2; i++) {
-    RGBACluster clusters[2];
-    PopulateTwoClustersForShape(block, i, clusters);
+    blockCluster.SetShapeIndex(i, 2);
 
     double err = 0.0;
     double errEstimate[2] = { -1.0, -1.0 };
     for(int ci = 0; ci < 2; ci++) {
+      blockCluster.SetPartition(ci);
       double shapeEstimate[2] = { -1.0, -1.0 };
-      err += EstimateTwoClusterErrorStats(clusters[ci], shapeEstimate);
+      err += EstimateTwoClusterErrorStats(blockCluster, shapeEstimate);
 
       for(int ei = 0; ei < 2; ei++) {
         if(shapeEstimate[ei] >= 0.0) {
@@ -2325,15 +2196,14 @@ static void CompressBC7Block(
   // if the entire block is opaque.
   if(opaque) {
     for(unsigned int i = 0; i < kNumShapes3; i++) {
-
-      RGBACluster clusters[3];
-      PopulateThreeClustersForShape(block, i, clusters);
+      blockCluster.SetShapeIndex(i, 3);
 
       double err = 0.0;
       double errEstimate[2] = { -1.0, -1.0 };
       for(int ci = 0; ci < 3; ci++) {
+        blockCluster.SetPartition(ci);
         double shapeEstimate[2] = { -1.0, -1.0 };
-        err += EstimateThreeClusterErrorStats(clusters[ci], shapeEstimate);
+        err += EstimateThreeClusterErrorStats(blockCluster, shapeEstimate);
 
         for(int ei = 0; ei < 2; ei++) {
           if(shapeEstimate[ei] >= 0.0) {
