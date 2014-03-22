@@ -120,8 +120,8 @@ namespace BPTCC {
 
   // A shape selection function is one that selects a BPTC shape from a given
   // block position and pixel array.
-  typedef ShapeSelection
-    (*ShapeSelectionFn)(uint32 x, uint32 y, const uint32 pixels[16]);
+  typedef ShapeSelection (*ShapeSelectionFn)
+    (uint32 x, uint32 y, const uint32 pixels[16], const void *userData);
 
   // Compression parameters used to control the BPTC compressor. Each of the
   // values has a default, so this is not strictly required to perform
@@ -136,6 +136,9 @@ namespace BPTCC {
     // every block mode is still available.
     ShapeSelectionFn m_ShapeSelectionFn;
 
+    // The user data passed to the shape selection function.
+    void *m_ShapeSelectionUserData;
+
     // The block modes that the compressor will consider during compression.
     // This variable is a bit mask of EBlockMode values and by default contains
     // every mode. This setting can be used to further restrict the search space
@@ -144,6 +147,7 @@ namespace BPTCC {
 
     CompressionSettings()
     : m_ShapeSelectionFn(NULL)
+    , m_ShapeSelectionUserData(NULL)
     , m_BlockModes(static_cast<EBlockMode>(0xFF))
     { }
   };
