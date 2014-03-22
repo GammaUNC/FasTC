@@ -193,7 +193,7 @@ public:
       BPTCC::GetSubsetForIndex(idx, m_ShapeIdx, m_NumPartitions);
   }
 
-private:
+ private:
   // The number of points in the cluster.
   uint32 m_NumPoints;
   uint32 m_NumPartitions;
