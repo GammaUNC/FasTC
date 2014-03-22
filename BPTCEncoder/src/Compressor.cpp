@@ -419,7 +419,7 @@ double CompressionMode::CompressSingleColor(
       dist[ci] = std::max(bestChannelDist, dist[ci]);
     }
 
-    const float *errorWeights = BPTCC::GetErrorMetric();
+    const float *errorWeights = BPTCC::GetErrorMetric(this->m_ErrorMetric);
     float error = 0.0;
     for(uint32 i = 0; i < kNumColorChannels; i++) {
       float e = static_cast<float>(dist[i]) * errorWeights[i];
@@ -1461,16 +1461,12 @@ double CompressionMode::Compress(
   return totalErr;
 }
 
-static ErrorMetric gErrorMetric = eErrorMetric_Uniform;
-void SetErrorMetric(ErrorMetric e) { gErrorMetric = e; }
-
 ALIGN_SSE const float kErrorMetrics[kNumErrorMetrics][kNumColorChannels] = {
   { 1.0f, 1.0f, 1.0f, 1.0f },
   { sqrtf(0.3f), sqrtf(0.56f), sqrtf(0.11f), 1.0f }
 };
 
-const float *GetErrorMetric() { return kErrorMetrics[GetErrorMetricEnum()]; }
-ErrorMetric GetErrorMetricEnum() { return gErrorMetric; }
+const float *GetErrorMetric(ErrorMetric e) { return kErrorMetrics[e]; }
 
 class BlockLogger {
   public:
@@ -1502,15 +1498,6 @@ static void CompressBC7Block(
   const uint32 block[16], uint8 *outBuf, const BlockLogger &logStream,
   const CompressionSettings = CompressionSettings()
 );
-
-static int gQualityLevel = 50;
-void SetQualityLevel(int q) {
-  gQualityLevel = std::max(0, q);
-  const int kMaxIters = CompressionMode::kMaxAnnealingIterations;
-  CompressionMode::MaxAnnealingIterations =
-    std::min(kMaxIters, GetQualityLevel());
-}
-int GetQualityLevel() { return gQualityLevel; }
 
 // Returns true if the entire block is a single color.
 static bool AllOneColor(const uint32 block[16]) {
@@ -1732,7 +1719,7 @@ void CompressAtomic(FasTC::CompressionJobList &cjl) {
   }
 }
 
-static double EstimateTwoClusterError(RGBACluster &c) {
+static double EstimateTwoClusterError(ErrorMetric metric, RGBACluster &c) {
   RGBAVector Min, Max, v;
   c.GetBoundingBox(Min, Max);
   v = Max - Min;
@@ -1740,7 +1727,7 @@ static double EstimateTwoClusterError(RGBACluster &c) {
     return 0.0;
   }
 
-  const float *w = BPTCC::GetErrorMetric();
+  const float *w = BPTCC::GetErrorMetric(metric);
 
   double error = 0.0001;
   error += c.QuantizedError(Min, Max, 8,
@@ -1748,7 +1735,7 @@ static double EstimateTwoClusterError(RGBACluster &c) {
   return error;
 }
 
-static double EstimateThreeClusterError(RGBACluster &c) {
+static double EstimateThreeClusterError(ErrorMetric metric, RGBACluster &c) {
   RGBAVector Min, Max, v;
   c.GetBoundingBox(Min, Max);
   v = Max - Min;
@@ -1756,8 +1743,7 @@ static double EstimateThreeClusterError(RGBACluster &c) {
     return 0.0;
   }
 
-  const float *w = BPTCC::GetErrorMetric();
-
+  const float *w = BPTCC::GetErrorMetric(metric);
   double error = 0.0001;
   error += c.QuantizedError(Min, Max, 4,
                             0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
@@ -1778,9 +1764,10 @@ static uint32 kAlphaModes =
   static_cast<uint32>(eBlockMode_Seven);
 
 static ShapeSelection BoxSelection(
-  uint32, uint32, const uint32 pixels[16], const void *
+  uint32, uint32, const uint32 pixels[16], const void *userData
 ) {
 
+  ErrorMetric metric = *(reinterpret_cast<const ErrorMetric *>(userData));
   ShapeSelection result;
 
   bool opaque = true;
@@ -1802,7 +1789,7 @@ static ShapeSelection BoxSelection(
     double err = 0.0;
     for(int ci = 0; ci < 2; ci++) {
       cluster.SetPartition(ci);
-      err += EstimateTwoClusterError(cluster);
+      err += EstimateTwoClusterError(metric, cluster);
     }
 
     if(err < bestError[0]) {
@@ -1826,7 +1813,7 @@ static ShapeSelection BoxSelection(
       double err = 0.0;
       for(int ci = 0; ci < 3; ci++) {
         cluster.SetPartition(ci);
-        err += EstimateThreeClusterError(cluster);
+        err += EstimateThreeClusterError(metric, cluster);
       }
 
       if(err < bestError[1]) {
@@ -1856,7 +1843,8 @@ static ShapeSelection BoxSelection(
 }
 
 static void CompressClusters(ShapeSelection selection, const uint32 pixels[16],
-                             uint8 *outBuf, double *errors, int *modeChosen) {
+                             ErrorMetric metric, uint8 *outBuf,
+                             double *errors, int *modeChosen) {
   RGBACluster cluster(pixels);
   uint8 tmpBuf[16];
   double bestError = std::numeric_limits<double>::max();
@@ -1887,7 +1875,7 @@ static void CompressClusters(ShapeSelection selection, const uint32 pixels[16],
       shape, CompressionMode::GetAttributesForMode(mode)->numSubsets);
 
     BitStream tmpStream(tmpBuf, 128, 0);
-    double error = CompressionMode(mode).Compress(tmpStream, shape, cluster);
+    double error = CompressionMode(mode, metric).Compress(tmpStream, shape, cluster);
 
     if(errors)
       errors[mode] = error;
@@ -1929,20 +1917,22 @@ static void CompressBC7Block(const uint32 x, const uint32 y,
   }
 
   ShapeSelectionFn selectionFn = BoxSelection;
+  const void *userData = &settings.m_ErrorMetric;
   if(settings.m_ShapeSelectionFn != NULL) {
     selectionFn = settings.m_ShapeSelectionFn;
+    userData = settings.m_ShapeSelectionUserData;
   }
   assert(selectionFn);
 
   ShapeSelection selection =
-    selectionFn(x, y, block, settings.m_ShapeSelectionUserData);
+    selectionFn(x, y, block, userData);
   selection.m_SelectedModes &= settings.m_BlockModes;
   assert(selection.m_SelectedModes);
-  CompressClusters(selection, block, outBuf, NULL, NULL);
+  CompressClusters(selection, block, settings.m_ErrorMetric, outBuf, NULL, NULL);
 }
 
 static double EstimateTwoClusterErrorStats(
-  RGBACluster &c, double (&estimates)[2]
+  ErrorMetric metric, RGBACluster &c, double (&estimates)[2]
 ) {
   RGBAVector Min, Max, v;
   c.GetBoundingBox(Min, Max);
@@ -1952,7 +1942,7 @@ static double EstimateTwoClusterErrorStats(
     return 0.0;
   }
 
-  const float *w = BPTCC::GetErrorMetric();
+  const float *w = BPTCC::GetErrorMetric(metric);
 
   const double err1 = c.QuantizedError(
     Min, Max, 8, 0xFFFCFCFC, RGBAVector(w[0], w[1], w[2], w[3])
@@ -1980,7 +1970,7 @@ static double EstimateTwoClusterErrorStats(
 }
 
 static double EstimateThreeClusterErrorStats(
-  RGBACluster &c, double (&estimates)[2]
+  ErrorMetric metric, RGBACluster &c, double (&estimates)[2]
 ) {
   RGBAVector Min, Max, v;
   c.GetBoundingBox(Min, Max);
@@ -1990,7 +1980,7 @@ static double EstimateThreeClusterErrorStats(
     return 0.0;
   }
 
-  const float *w = BPTCC::GetErrorMetric();
+  const float *w = BPTCC::GetErrorMetric(metric);
   const double err0 = 0.0001 + c.QuantizedError(
     Min, Max, 4, 0xFFF0F0F0, RGBAVector(w[0], w[1], w[2], w[3])
   );
@@ -2134,7 +2124,7 @@ static void CompressBC7Block(
     if(v * v == 0) {
       modeEstimate[6] = 0.0;
     } else {
-      const float *w = GetErrorMetric();
+      const float *w = GetErrorMetric(settings.m_ErrorMetric);
       const double err = 0.0001 + blockCluster.QuantizedError(
         Min, Max, 4, 0xFEFEFEFE, RGBAVector(w[0], w[1], w[2], w[3])
       );
@@ -2157,7 +2147,8 @@ static void CompressBC7Block(
     for(int ci = 0; ci < 2; ci++) {
       blockCluster.SetPartition(ci);
       double shapeEstimate[2] = { -1.0, -1.0 };
-      err += EstimateTwoClusterErrorStats(blockCluster, shapeEstimate);
+      err += EstimateTwoClusterErrorStats(settings.m_ErrorMetric, 
+                                          blockCluster, shapeEstimate);
 
       for(int ei = 0; ei < 2; ei++) {
         if(shapeEstimate[ei] >= 0.0) {
@@ -2209,7 +2200,8 @@ static void CompressBC7Block(
       for(int ci = 0; ci < 3; ci++) {
         blockCluster.SetPartition(ci);
         double shapeEstimate[2] = { -1.0, -1.0 };
-        err += EstimateThreeClusterErrorStats(blockCluster, shapeEstimate);
+        err += EstimateThreeClusterErrorStats(settings.m_ErrorMetric, 
+                                              blockCluster, shapeEstimate);
 
         for(int ei = 0; ei < 2; ei++) {
           if(shapeEstimate[ei] >= 0.0) {
@@ -2255,7 +2247,8 @@ static void CompressBC7Block(
 
   selection.m_SelectedModes &= settings.m_BlockModes;
   assert(selection.m_SelectedModes);
-  CompressClusters(selection, block, outBuf, modeError, &bestMode);
+  ErrorMetric metric = settings.m_ErrorMetric;
+  CompressClusters(selection, block, metric, outBuf, modeError, &bestMode);
 
   PrintStat(logStream, kBlockStatString[eBlockStat_Path], path);
 }

@@ -76,13 +76,14 @@ static inline T sad(const T &a, const T &b) {
   return (a > b)? a - b : b - a;
 }
 
+static BPTCC::CompressionSettings gBPTCSettings;
 static void CompressBPTC(const CompressionJob &cj) {
-  BPTCC::Compress(cj);
+  BPTCC::Compress(cj, gBPTCSettings);
 }
 
 static void CompressBPTCWithStats(const CompressionJob &cj,
                                   std::ostream *strm) {
-  BPTCC::CompressWithStats(cj, strm);
+  BPTCC::CompressWithStats(cj, strm, gBPTCSettings);
 }
 
 static void CompressPVRTC(const CompressionJob &cj) {
@@ -135,7 +136,7 @@ static CompressionFunc ChooseFuncFromSettings(const SCompressionSettings &s) {
   switch(s.format) {
     case FasTC::eCompressionFormat_BPTC:
     {
-      BPTCC::SetQualityLevel(s.iQuality);
+      gBPTCSettings.m_NumSimulatedAnnealingSteps = s.iQuality;
 #ifdef HAS_SSE_41
       if(s.bUseSIMD) {
         return BPTCC::CompressImageBPTCSIMD;

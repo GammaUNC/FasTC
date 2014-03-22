@@ -105,9 +105,10 @@ class CompressionMode {
   // This initializes the compression variables used in order to compress a list
   // of clusters. We can increase the speed a tad by specifying whether or not
   // the block is opaque or not.
-  explicit CompressionMode(int mode)
+  explicit CompressionMode(int mode, ErrorMetric metric)
     : m_IsOpaque(mode < 4)
     , m_Attributes(&(kModeAttributes[mode]))
+    , m_ErrorMetric(metric)
     , m_RotateMode(0)
     , m_IndexMode(0)
   { }
@@ -184,6 +185,7 @@ class CompressionMode {
   const double m_IsOpaque;
   const Attributes *const m_Attributes;
 
+  ErrorMetric m_ErrorMetric;
   int m_RotateMode;
   int m_IndexMode;
 
@@ -224,7 +226,7 @@ class CompressionMode {
 
   // This returns the proper error metric even if we have rotation bits set
   RGBAVector GetErrorMetric() const {
-    const float *w = BPTCC::GetErrorMetric();
+    const float *w = BPTCC::GetErrorMetric(m_ErrorMetric);
     switch(GetRotationMode()) {
       default:
       case 0: return RGBAVector(w[0], w[1], w[2], w[3]);
