@@ -79,12 +79,12 @@ namespace FasTC {
             return numIterations;
           }
 
-          VectorBase<T, N> b;
           for(int i = 0; i < (N>>1); i++)
             b[i] = 1;
 
           b.Normalize();
           badEigenValue = true;
+          continue;
         }
 
         // Normalize
