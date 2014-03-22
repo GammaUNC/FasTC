@@ -177,7 +177,6 @@ public:
   void SetShapeIndex(uint32 shapeIdx, uint32 nPartitions) {
     m_NumPartitions = nPartitions;
     m_ShapeIdx = shapeIdx;
-    // Recalculate();
   }
 
   void SetShapeIndex(uint32 shapeIdx) {
