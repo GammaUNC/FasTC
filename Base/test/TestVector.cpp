@@ -168,8 +168,8 @@ TEST(VectorBase, Normalization) {
   float fv[2] = {1, 0};
   FasTC::VectorBase<float, 2> v2f (fv);
   v2f.Normalize();
-  EXPECT_EQ(v2f[0], 1);
-  EXPECT_EQ(v2f[1], 0);
+  EXPECT_NEAR(v2f[0], 1, kEpsilon);
+  EXPECT_NEAR(v2f[1], 0, kEpsilon);
 
   // Normalized vector should be sqrt(2) for each axis, although
   // this can't be represented as integers...
