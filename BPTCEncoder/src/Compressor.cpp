@@ -260,8 +260,6 @@ const uint32 kInterpolationValues[4][16][2] = {
     {30, 34}, {26, 38}, {21, 43}, {17, 47}, {13, 51}, {9, 55}, {4, 60}, {0, 64}}
 };
 
-int CompressionMode::MaxAnnealingIterations = 50;  // This is a setting.
-
 CompressionMode::Attributes
 CompressionMode::kModeAttributes[kNumModes] = {
   // Mode 0
@@ -666,7 +664,7 @@ double CompressionMode::OptimizeEndpointsForCluster(
   visitedStates[lastVisitedState].pBitCombo = curPbitCombo;
   lastVisitedState++;
 
-  const int maxEnergy = MaxAnnealingIterations;
+  const int maxEnergy = this->m_SASteps;
 
   for(int energy = 0; bestError > 0 && energy < maxEnergy; energy++) {
 
@@ -1842,8 +1840,8 @@ static ShapeSelection BoxSelection(
   return result;
 }
 
-static void CompressClusters(ShapeSelection selection, const uint32 pixels[16],
-                             ErrorMetric metric, uint8 *outBuf,
+static void CompressClusters(const ShapeSelection &selection, const uint32 pixels[16],
+                             const CompressionSettings &settings, uint8 *outBuf,
                              double *errors, int *modeChosen) {
   RGBACluster cluster(pixels);
   uint8 tmpBuf[16];
@@ -1853,14 +1851,15 @@ static void CompressClusters(ShapeSelection selection, const uint32 pixels[16],
   // Block mode zero only has four bits for the partition index,
   // so if the chosen three-partition shape is not within this range,
   // then we shouldn't consider using this block mode...
+  uint32 selectedModes = selection.m_SelectedModes;
   if(selection.m_ThreeShapeIndex >= 16) {
-    selection.m_SelectedModes &= ~(static_cast<uint32>(eBlockMode_Zero));
+    selectedModes &= ~(static_cast<uint32>(eBlockMode_Zero));
   }
 
   for(uint32 modeIdx = 0; modeIdx < 8; modeIdx++) {
 
     uint32 mode = modes[modeIdx];
-    if((selection.m_SelectedModes & (1 << mode)) == 0) {
+    if((selectedModes & (1 << mode)) == 0) {
       continue;
     }
 
@@ -1875,7 +1874,7 @@ static void CompressClusters(ShapeSelection selection, const uint32 pixels[16],
       shape, CompressionMode::GetAttributesForMode(mode)->numSubsets);
 
     BitStream tmpStream(tmpBuf, 128, 0);
-    double error = CompressionMode(mode, metric).Compress(tmpStream, shape, cluster);
+    double error = CompressionMode(mode, settings).Compress(tmpStream, shape, cluster);
 
     if(errors)
       errors[mode] = error;
@@ -1928,7 +1927,7 @@ static void CompressBC7Block(const uint32 x, const uint32 y,
     selectionFn(x, y, block, userData);
   selection.m_SelectedModes &= settings.m_BlockModes;
   assert(selection.m_SelectedModes);
-  CompressClusters(selection, block, settings.m_ErrorMetric, outBuf, NULL, NULL);
+  CompressClusters(selection, block, settings, outBuf, NULL, NULL);
 }
 
 static double EstimateTwoClusterErrorStats(
@@ -2247,8 +2246,7 @@ static void CompressBC7Block(
 
   selection.m_SelectedModes &= settings.m_BlockModes;
   assert(selection.m_SelectedModes);
-  ErrorMetric metric = settings.m_ErrorMetric;
-  CompressClusters(selection, block, metric, outBuf, modeError, &bestMode);
+  CompressClusters(selection, block, settings, outBuf, modeError, &bestMode);
 
   PrintStat(logStream, kBlockStatString[eBlockStat_Path], path);
 }
