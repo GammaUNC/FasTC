@@ -106,6 +106,7 @@ CONFIGURE_FILE(
 SET( HEADERS
   config/BPTCConfig.h.in
   include/BPTCCompressor.h
+  include/Shapes.h
   src/CompressionMode.h
   src/RGBAEndpoints.h
   src/ParallelStage.h

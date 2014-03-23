@@ -50,8 +50,8 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#ifndef BPTCENCODER_SRC_SHAPES_H_
-#define BPTCENCODER_SRC_SHAPES_H_
+#ifndef BPTCENCODER_INCLUDE_SHAPES_H_
+#define BPTCENCODER_INCLUDE_SHAPES_H_
 
 namespace BPTCC {
 
@@ -115,4 +115,4 @@ namespace BPTCC {
 
 }  // namespace BPTCC
 
-#endif  // BPTCENCODER_SRC_SHAPES_H_
+#endif  // BPTCENCODER_INCLUDE_SHAPES_H_
