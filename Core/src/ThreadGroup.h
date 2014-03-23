@@ -125,8 +125,6 @@ class ThreadGroup {
 
   EThreadState m_ThreadState;
   bool m_ExitFlag;
-
-  std::ostream *m_LogStream;
 };
 
 #endif // _THREAD_GROUP_H_
