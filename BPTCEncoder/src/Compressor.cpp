@@ -295,6 +295,13 @@ CompressionMode::kModeAttributes[kNumModes] = {
     false, false, CompressionMode::ePBitType_NotShared },
 };
 
+ALIGN_SSE const float kErrorMetrics[kNumErrorMetrics][kNumColorChannels] = {
+  { 1.0f, 1.0f, 1.0f, 1.0f },
+  { sqrtf(0.3f), sqrtf(0.56f), sqrtf(0.11f), 1.0f }
+};
+
+const float *GetErrorMetric(ErrorMetric e) { return kErrorMetrics[e]; }
+
 void CompressionMode::ClampEndpointsToGrid(
   RGBAVector &p1, RGBAVector &p2, uint8 &bestPBitCombo
 ) const {
@@ -417,7 +424,7 @@ double CompressionMode::CompressSingleColor(
       dist[ci] = std::max(bestChannelDist, dist[ci]);
     }
 
-    const float *errorWeights = BPTCC::GetErrorMetric(this->m_ErrorMetric);
+    const float *errorWeights = kErrorMetrics[this->m_ErrorMetric];
     float error = 0.0;
     for(uint32 i = 0; i < kNumColorChannels; i++) {
       float e = static_cast<float>(dist[i]) * errorWeights[i];
@@ -1459,13 +1466,6 @@ double CompressionMode::Compress(
   return totalErr;
 }
 
-ALIGN_SSE const float kErrorMetrics[kNumErrorMetrics][kNumColorChannels] = {
-  { 1.0f, 1.0f, 1.0f, 1.0f },
-  { sqrtf(0.3f), sqrtf(0.56f), sqrtf(0.11f), 1.0f }
-};
-
-const float *GetErrorMetric(ErrorMetric e) { return kErrorMetrics[e]; }
-
 class BlockLogger {
   public:
   BlockLogger(uint64 blockIdx, std::ostream &os)
@@ -1725,7 +1725,7 @@ static double EstimateTwoClusterError(ErrorMetric metric, RGBACluster &c) {
     return 0.0;
   }
 
-  const float *w = BPTCC::GetErrorMetric(metric);
+  const float *w = kErrorMetrics[metric];
 
   double error = 0.0001;
   error += c.QuantizedError(Min, Max, 8,
@@ -1741,7 +1741,7 @@ static double EstimateThreeClusterError(ErrorMetric metric, RGBACluster &c) {
     return 0.0;
   }
 
-  const float *w = BPTCC::GetErrorMetric(metric);
+  const float *w = kErrorMetrics[metric];
   double error = 0.0001;
   error += c.QuantizedError(Min, Max, 4,
                             0xFFFFFFFF, RGBAVector(w[0], w[1], w[2], w[3]));
@@ -1804,37 +1804,36 @@ static ShapeSelection BoxSelection(
 
   // There are not 3 subset blocks that support alpha, so only check these
   // if the entire block is opaque.
-  if(opaque) {
-    for(unsigned int i = 0; i < kNumShapes3; i++) {
-      cluster.SetShapeIndex(i, 3);
+  if(!opaque) {
+    result.m_SelectedModes &= kAlphaModes;
+    return result;
+  }
 
-      double err = 0.0;
-      for(int ci = 0; ci < 3; ci++) {
-        cluster.SetPartition(ci);
-        err += EstimateThreeClusterError(metric, cluster);
-      }
+  // If it's opaque, we get more value out of mode 6 than modes
+  // 4 and 5, so just ignore those.
+  result.m_SelectedModes &=
+    ~(static_cast<uint32>(eBlockMode_Four) |
+      static_cast<uint32>(eBlockMode_Five));
 
-      if(err < bestError[1]) {
-        bestError[1] = err;
-        result.m_ThreeShapeIndex = i;
-      }
+  for(unsigned int i = 0; i < kNumShapes3; i++) {
+    cluster.SetShapeIndex(i, 3);
 
-      // If it's small, we'll take it!
-      if(err < 1e-9) {
-        result.m_SelectedModes = kThreePartitionModes;
-        return result;
-      }
+    double err = 0.0;
+    for(int ci = 0; ci < 3; ci++) {
+      cluster.SetPartition(ci);
+      err += EstimateThreeClusterError(metric, cluster);
     }
 
-    // If it's opaque, we get more value out of mode 6 than modes
-    // 4 and 5, so just ignore those.
-    result.m_SelectedModes &=
-      ~(static_cast<uint32>(eBlockMode_Four) |
-        static_cast<uint32>(eBlockMode_Five));
+    if(err < bestError[1]) {
+      bestError[1] = err;
+      result.m_ThreeShapeIndex = i;
+    }
 
-  } else {
-    // Only some modes support alpha
-    result.m_SelectedModes &= kAlphaModes;
+    // If it's small, we'll take it!
+    if(err < 1e-9) {
+      result.m_SelectedModes = kThreePartitionModes;
+      return result;
+    }
   }
 
   return result;
@@ -1941,7 +1940,7 @@ static double EstimateTwoClusterErrorStats(
     return 0.0;
   }
 
-  const float *w = BPTCC::GetErrorMetric(metric);
+  const float *w = kErrorMetrics[metric];
 
   const double err1 = c.QuantizedError(
     Min, Max, 8, 0xFFFCFCFC, RGBAVector(w[0], w[1], w[2], w[3])
@@ -1979,7 +1978,7 @@ static double EstimateThreeClusterErrorStats(
     return 0.0;
   }
 
-  const float *w = BPTCC::GetErrorMetric(metric);
+  const float *w = kErrorMetrics[metric];
   const double err0 = 0.0001 + c.QuantizedError(
     Min, Max, 4, 0xFFF0F0F0, RGBAVector(w[0], w[1], w[2], w[3])
   );
@@ -2123,7 +2122,7 @@ static void CompressBC7Block(
     if(v * v == 0) {
       modeEstimate[6] = 0.0;
     } else {
-      const float *w = GetErrorMetric(settings.m_ErrorMetric);
+      const float *w = kErrorMetrics[settings.m_ErrorMetric];
       const double err = 0.0001 + blockCluster.QuantizedError(
         Min, Max, 4, 0xFEFEFEFE, RGBAVector(w[0], w[1], w[2], w[3])
       );
