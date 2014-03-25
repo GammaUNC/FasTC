@@ -170,12 +170,6 @@ public:
 
   // Returns the error if we were to quantize the colors right now with the
   // given number of buckets and bit mask.
-  template<const uint8 nBuckets>
-  double QuantizedError(
-    const RGBAVector &p1, const RGBAVector &p2,
-    uint32 bitMask, const RGBAVector &errorMetricVec,
-    const int pbits[2] = NULL, uint8 *indices = NULL) const;
-
   double QuantizedError(
     const RGBAVector &p1, const RGBAVector &p2,
     uint32 nBuckets, uint32 bitMask, const RGBAVector &errorMetricVec,
@@ -227,6 +221,12 @@ public:
   uint32 m_DataPixels[kMaxNumDataPoints];
   uint8 m_PointMap[kMaxNumDataPoints];
   RGBAVector m_Min, m_Max;
+
+  template<const uint8 nBuckets>
+  double QuantizedError(
+    const RGBAVector &p1, const RGBAVector &p2,
+    uint32 bitMask, const RGBAVector &errorMetricVec,
+    const int pbits[2] = NULL, uint8 *indices = NULL) const;
 
   void Recalculate() {
     m_NumPoints = 0;

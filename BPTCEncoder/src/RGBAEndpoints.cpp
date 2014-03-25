@@ -225,23 +225,19 @@ double RGBACluster::QuantizedError(
 ) const {
 
   // nBuckets should be a power of two.
+  const uint8 indexPrec = log2(nBuckets);
   assert(!(nBuckets & (nBuckets - 1)));
-  const uint8 indexPrec = 8-CountBitsInMask(~(nBuckets - 1));
+  assert(indexPrec >= 2 && indexPrec <= 4);
   
   typedef uint32 tInterpPair[2];
   typedef tInterpPair tInterpLevel[16];
-  const tInterpLevel *interpVals =
-    (nBuckets == 3)? BPTCC::kInterpolationValues 
-    : BPTCC::kInterpolationValues + (indexPrec - 1);
-
-  assert(indexPrec >= 2 && indexPrec <= 4);
+  const tInterpLevel *interpVals = BPTCC::kInterpolationValues + (indexPrec - 1);
 
   uint32 qp1, qp2;
   if(pbits) {
     qp1 = p1.ToPixel(bitMask, pbits[0]);
     qp2 = p2.ToPixel(bitMask, pbits[1]);
-  }
-  else {
+  } else {
     qp1 = p1.ToPixel(bitMask);
     qp2 = p2.ToPixel(bitMask);
   }
@@ -265,12 +261,12 @@ double RGBACluster::QuantizedError(
       uint32 interp1 = (*interpVals)[j][1];
 
       RGBAVector errorVec (0.0f);
-      for(uint32 k = 0; k < kNumColorChannels; k++) {
+      for(uint32 k = 0; k < 4; k++) {
         const uint32 ip = (((pqp1[k] * interp0) + (pqp2[k] * interp1) + 32) >> 6) & 0xFF;
         const uint8 dist = sad<uint8>(pb[k], ip);
         errorVec[k] = static_cast<float>(dist) * metric[k];
       }
-      
+
       float error = errorVec * errorVec;
       if(error < minError) {
         minError = error;
