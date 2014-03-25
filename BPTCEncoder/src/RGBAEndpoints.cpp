@@ -254,7 +254,7 @@ double RGBACluster::QuantizedError(
   float totalError = 0.0;
   for(uint32 i = 0; i < GetNumPoints(); i++) {
 
-    const uint32 pixel = GetPoint(i).ToPixel();
+    const uint32 pixel = GetPixel(i);
     const uint8 *pb = (const uint8 *)(&pixel);
 
     float minError = FLT_MAX;

@@ -141,6 +141,7 @@ public:
       RGBAVector p = RGBAVector(i, pixels[i]);
       m_Avg += p;
       m_PointMap[m_NumPoints] = i;
+      m_DataPixels[m_NumPoints] = p.ToPixel();
       m_DataPoints[m_NumPoints++] = p;
 
       for(uint32 i = 0; i < kNumColorChannels; i++) {
@@ -154,6 +155,10 @@ public:
   RGBAVector &Point(int idx) { return m_DataPoints[m_PointMap[idx]]; }
   const RGBAVector &GetPoint(int idx) const {
     return m_DataPoints[m_PointMap[idx]];
+  }
+
+  const uint32 &GetPixel(int idx) const {
+    return m_DataPixels[m_PointMap[idx]];
   }
 
   uint32 GetNumPoints() const { return m_NumPoints; }
@@ -219,6 +224,7 @@ public:
 
   // The points in the cluster.
   RGBAVector m_DataPoints[kMaxNumDataPoints];
+  uint32 m_DataPixels[kMaxNumDataPoints];
   uint8 m_PointMap[kMaxNumDataPoints];
   RGBAVector m_Min, m_Max;
 
