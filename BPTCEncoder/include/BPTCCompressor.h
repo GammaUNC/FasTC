@@ -109,16 +109,27 @@ namespace BPTCC {
     kNumErrorMetrics
   };
 
+  // A shape consists of an index into the table of shapes and the number
+  // of partitions that the index corresponds to. Different BPTC modes
+  // interpret the shape differently and some are even illegal (such as
+  // having an index >= 16 on mode 0). Hence, each shape corresponds to
+  // these two variables.
+  struct Shape {
+    uint32 m_NumPartitions;
+    uint32 m_Index;
+  };
+
   // A shape selection can influence the results of the compressor by choosing
   // different modes to compress or not compress. The shape index is a value
   // between zero and sixty-four that corresponds to one of the available
   // partitioning schemes defined by the BPTC format.
   struct ShapeSelection {
-    // This is the shape index to use when evaluating two-partition shapes.
-    uint32 m_TwoShapeIndex;
+    // This is the number of indices from which to select the appropriate
+    // shapes. I.e. the compressor will try the first m_NumIndices shapes
+    uint32 m_NumIndices;
 
-    // This is the shape index to use when evaluating three-partition shapes.
-    uint32 m_ThreeShapeIndex;
+    // These are the shape indices to use when evaluating two-partition shapes.
+    Shape m_Shapes[10];
 
     // This is the additional mask to prevent modes once shape selection
     // is done. This value is &-ed with m_BlockModes from CompressionSettings
@@ -127,7 +138,8 @@ namespace BPTCC {
 
     // Defaults
     ShapeSelection()
-    : m_SelectedModes(static_cast<EBlockMode>(0xFF))
+    : m_NumIndices(0)
+    , m_SelectedModes(static_cast<EBlockMode>(0xFF))
     { }
   };
 

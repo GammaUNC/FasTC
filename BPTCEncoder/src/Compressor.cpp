@@ -1198,7 +1198,8 @@ void CompressionMode::Pack(Params &params, BitStream &stream) const {
   stream.WriteBits(1 << kModeNumber, kModeNumber + 1);
 
   // Partition #
-  assert((((1 << nPartitionBits) - 1) & params.m_ShapeIdx) == params.m_ShapeIdx);
+  assert(!nPartitionBits ||
+         (((1 << nPartitionBits) - 1) & params.m_ShapeIdx) == params.m_ShapeIdx);
   stream.WriteBits(params.m_ShapeIdx, nPartitionBits);
 
   stream.WriteBits(params.m_RotationMode, m_Attributes->hasRotation? 2 : 0);
@@ -1392,13 +1393,13 @@ void CompressionMode::Pack(Params &params, BitStream &stream) const {
 }
 
 double CompressionMode::Compress(
-  BitStream &stream, const int shapeIdx, RGBACluster &cluster
+  Params &params, const int shapeIdx, RGBACluster &cluster
 ) {
 
   const int kModeNumber = GetModeNumber();
   const int nSubsets = GetNumberOfSubsets();
 
-  Params params(shapeIdx);
+  params = Params(shapeIdx);
 
   double totalErr = 0.0;
   for(int cidx = 0; cidx < nSubsets; cidx++) {
@@ -1461,8 +1462,6 @@ double CompressionMode::Compress(
     }
   }
 
-  Pack(params, stream);
-  assert(stream.GetBitsWritten() == 128);
   return totalErr;
 }
 
@@ -1781,6 +1780,7 @@ static ShapeSelection BoxSelection(
 
   RGBACluster cluster(pixels);
 
+  result.m_NumIndices = 1;
   for(unsigned int i = 0; i < kNumShapes2; i++) {
     cluster.SetShapeIndex(i, 2);
 
@@ -1792,7 +1792,8 @@ static ShapeSelection BoxSelection(
 
     if(err < bestError[0]) {
       bestError[0] = err;
-      result.m_TwoShapeIndex = i;
+      result.m_Shapes[0].m_Index = i;
+      result.m_Shapes[0].m_NumPartitions = 2;
     }
 
     // If it's small, we'll take it!
@@ -1815,6 +1816,7 @@ static ShapeSelection BoxSelection(
     ~(static_cast<uint32>(eBlockMode_Four) |
       static_cast<uint32>(eBlockMode_Five));
 
+  result.m_NumIndices++;
   for(unsigned int i = 0; i < kNumShapes3; i++) {
     cluster.SetShapeIndex(i, 3);
 
@@ -1826,7 +1828,8 @@ static ShapeSelection BoxSelection(
 
     if(err < bestError[1]) {
       bestError[1] = err;
-      result.m_ThreeShapeIndex = i;
+      result.m_Shapes[1].m_Index = i;
+      result.m_Shapes[1].m_NumPartitions = 3;
     }
 
     // If it's small, we'll take it!
@@ -1843,16 +1846,19 @@ static void CompressClusters(const ShapeSelection &selection, const uint32 pixel
                              const CompressionSettings &settings, uint8 *outBuf,
                              double *errors, int *modeChosen) {
   RGBACluster cluster(pixels);
-  uint8 tmpBuf[16];
   double bestError = std::numeric_limits<double>::max();
   uint32 modes[8] = {0, 2, 1, 3, 7, 4, 5, 6};
+  uint32 bestMode = 8;
+  CompressionMode::Params bestParams;
 
-  // Block mode zero only has four bits for the partition index,
-  // so if the chosen three-partition shape is not within this range,
-  // then we shouldn't consider using this block mode...
   uint32 selectedModes = selection.m_SelectedModes;
-  if(selection.m_ThreeShapeIndex >= 16) {
-    selectedModes &= ~(static_cast<uint32>(eBlockMode_Zero));
+  uint32 numShapeIndices = std::min<uint32>(5, selection.m_NumIndices);
+
+  // If we don't have any indices, turn off two and three partition modes,
+  // since the compressor will simply ignore the shapeIndex variable afterwards...
+  if(numShapeIndices == 0) {
+    numShapeIndices = 1;
+    selectedModes &= ~(kTwoPartitionModes | kThreePartitionModes);
   }
 
   for(uint32 modeIdx = 0; modeIdx < 8; modeIdx++) {
@@ -1862,28 +1868,45 @@ static void CompressClusters(const ShapeSelection &selection, const uint32 pixel
       continue;
     }
 
-    uint32 shape = 0;
-    if(modeIdx < 2) {
-      shape = selection.m_ThreeShapeIndex;
-    } else if(modeIdx < 5) {
-      shape = selection.m_TwoShapeIndex;
-    }
+    for(uint32 shapeIdx = 0; shapeIdx < numShapeIndices; shapeIdx++) {
+      const Shape &shape = selection.m_Shapes[shapeIdx];
 
-    cluster.SetShapeIndex(
-      shape, CompressionMode::GetAttributesForMode(mode)->numSubsets);
+      // If the shape doesn't support the number of subsets then skip it.
+      uint32 nParts = CompressionMode::GetAttributesForMode(mode)->numSubsets;
+      if(nParts != 1 && nParts != shape.m_NumPartitions) {
+        continue;
+      }
 
-    BitStream tmpStream(tmpBuf, 128, 0);
-    double error = CompressionMode(mode, settings).Compress(tmpStream, shape, cluster);
+      // Block mode zero only has four bits for the partition index,
+      // so if the chosen three-partition shape is not within this range,
+      // then we shouldn't consider using this block mode...
+      if(shape.m_Index >= 16 && mode == 0) {
+        continue;
+      }
 
-    if(errors)
-      errors[mode] = error;
-    if(error < bestError) {
-      memcpy(outBuf, tmpBuf, sizeof(tmpBuf));
-      bestError = error;
-      if(modeChosen)
-        *modeChosen = mode;
+      uint32 idx = shape.m_Index;
+      cluster.SetShapeIndex(idx, nParts);
+
+      CompressionMode::Params params;
+      double error = CompressionMode(mode, settings).Compress(params, idx, cluster);
+
+      if(errors)
+        errors[mode] = std::min(error, errors[mode]);
+
+      if(error < bestError) {
+        bestError = error;
+        bestMode = mode;
+        bestParams = params;
+      }
     }
   }
+
+  assert(bestMode < 8);
+
+  BitStream stream(outBuf, 128, 0);
+  CompressionMode(bestMode, settings).Pack(bestParams, stream);
+  if(modeChosen)
+    *modeChosen = bestMode;
 }
 
 static void CompressBC7Block(const uint32 x, const uint32 y,
@@ -2137,6 +2160,7 @@ static void CompressBC7Block(
   ShapeSelection selection;
   uint32 path = 0;
 
+  selection.m_NumIndices = 1;
   for(unsigned int i = 0; i < kNumShapes2; i++) {
     blockCluster.SetShapeIndex(i, 2);
 
@@ -2173,23 +2197,24 @@ static void CompressBC7Block(
       );
     }
 
+    if(err < bestError[0]) {
+      bestError[0] = err;
+      selection.m_Shapes[0].m_Index = i;
+      selection.m_Shapes[0].m_NumPartitions = 2;
+    }
+
     // If it's small, we'll take it!
     if(err < 1e-9) {
       path = 2;
-      selection.m_TwoShapeIndex = i;
       selection.m_SelectedModes = kTwoPartitionModes;
       break;
-    }
-
-    if(err < bestError[0]) {
-      bestError[0] = err;
-      selection.m_TwoShapeIndex = i;
     }
   }
 
   // There are not 3 subset blocks that support alpha, so only check these
   // if the entire block is opaque.
   if(opaque) {
+    selection.m_NumIndices++;
     for(unsigned int i = 0; i < kNumShapes3; i++) {
       blockCluster.SetShapeIndex(i, 3);
 
@@ -2226,17 +2251,17 @@ static void CompressBC7Block(
         );
       }
 
+      if(err < bestError[1]) {
+        bestError[1] = err;
+        selection.m_Shapes[1].m_Index = i;
+        selection.m_Shapes[1].m_NumPartitions = 3;
+      }
+
       // If it's small, we'll take it!
       if(err < 1e-9) {
         path = 2;
-        selection.m_TwoShapeIndex = i;
         selection.m_SelectedModes = kThreePartitionModes;
         break;
-      }
-
-      if(err < bestError[1]) {
-        bestError[1] = err;
-        selection.m_ThreeShapeIndex = i;
       }
     }
   }

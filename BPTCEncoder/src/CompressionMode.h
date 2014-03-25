@@ -125,7 +125,8 @@ class CompressionMode {
     uint8 m_PbitCombo[kMaxNumSubsets];
     int8 m_RotationMode;
     int8 m_IndexMode;
-    const uint16 m_ShapeIdx;
+    uint16 m_ShapeIdx;
+    Params() { }
     explicit Params(uint32 shape)
       : m_RotationMode(-1), m_IndexMode(-1), m_ShapeIdx(shape) {
       memset(m_Indices, 0xFF, sizeof(m_Indices));
@@ -141,7 +142,7 @@ class CompressionMode {
   void Pack(Params &params, FasTC::BitStream &stream) const;
 
   // This function compresses a group of clusters into the passed bitstream.
-  double Compress(FasTC::BitStream &stream, const int shapeIdx,
+  double Compress(Params &params, const int shapeIdx,
                   RGBACluster &cluster);
 
   // This switch controls the quality of the simulated annealing optimizer. We
