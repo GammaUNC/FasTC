@@ -241,7 +241,8 @@ EImageFileFormat ImageFile::DetectFileFormat(const CHAR *filename) {
 
   size_t len = strlen(filename);
   if(len >= 256) {
-    // !FIXME! Report Error...
+    assert(false);
+    ReportError("Filename too long!");
     return kNumImageFileFormats;
   }
 
@@ -249,6 +250,7 @@ EImageFileFormat ImageFile::DetectFileFormat(const CHAR *filename) {
 
   while((dotPos >= len)? false : filename[dotPos--] != '.');
   if (dotPos >= len) {
+    assert(!"Malformed filename... no .ext");
     return kNumImageFileFormats;
   }
   

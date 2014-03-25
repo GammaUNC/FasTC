@@ -97,8 +97,6 @@ static T max(const T &a, const T &b) {
 }
 #endif
 
-static const double kPi = 3.141592653589793238462643383279502884197;
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Static helper functions

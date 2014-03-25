@@ -86,7 +86,6 @@ public:
 
   static const unsigned int kMaxFilenameSz = 256;
   char m_Filename[kMaxFilenameSz];
-  unsigned int m_Handle;
   unsigned int m_Width;
   unsigned int m_Height;
 

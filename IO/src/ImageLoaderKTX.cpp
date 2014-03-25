@@ -216,7 +216,7 @@ bool ImageLoaderKTX::ReadData() {
       memcpy(keyValueData, rdr.GetData(), keyAndValueByteSize);
       const char *key = reinterpret_cast<const char *>((const uint8 *)keyValueData);
       const char *value = key;
-      while(value != '\0') {
+      while(*value != '\0') {
         value++;
       }
       value++; // consume the null byte
