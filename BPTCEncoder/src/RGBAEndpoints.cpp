@@ -147,27 +147,9 @@ static inline void clamp(ty &x, const ty &min, const ty &max) {
 // absolute distance. It turns out the compiler does a much
 // better job of optimizing this than we can, since we can't 
 // translate the values to/from registers
-static uint8 sad(uint8 a, uint8 b) {
-#if 0
-  __asm
-  {
-    movzx eax, a
-    movzx ecx, b
-    sub eax, ecx
-    jns done
-    neg eax
-done:
-  }
-#else
-  //const INT d = a - b;
-  //const INT mask = d >> 31;
-  //return (d ^ mask) - mask;
-
-  // return abs(a - b);
-
+template <typename ty>
+static ty sad(ty a, ty b) {
   return (a > b)? a - b : b - a;
-
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -180,7 +162,7 @@ uint8 QuantizeChannel(const uint8 val, const uint8 mask, const int pBit) {
 
   // If the mask is all the bits, then we can just return the value.
   if(mask == 0xFF) {
-          return val;
+    return val;
   }
 
   // Otherwise if the mask is no bits then we'll assume that they want
@@ -211,7 +193,7 @@ uint8 QuantizeChannel(const uint8 val, const uint8 mask, const int pBit) {
   lval |= lval >> prec;
   hval |= hval >> prec;
 
-  if(sad(val, lval) < sad(val, hval))
+  if(sad<uint8>(val, lval) < sad<uint8>(val, hval))
     return lval;
   else
     return hval;
@@ -264,8 +246,8 @@ double RGBACluster::QuantizedError(
     qp2 = p2.ToPixel(bitMask);
   }
 
-  uint8 *pqp1 = (uint8 *)&qp1;
-  uint8 *pqp2 = (uint8 *)&qp2;
+  const uint8 *pqp1 = reinterpret_cast<const uint8 *>(&qp1);
+  const uint8 *pqp2 = reinterpret_cast<const uint8 *>(&qp2);
 
   const RGBAVector metric = errorMetricVec;
 
@@ -284,8 +266,8 @@ double RGBACluster::QuantizedError(
 
       RGBAVector errorVec (0.0f);
       for(uint32 k = 0; k < kNumColorChannels; k++) {
-        const uint8 ip = (((uint32(pqp1[k]) * interp0) + (uint32(pqp2[k]) * interp1) + 32) >> 6) & 0xFF;
-        const uint8 dist = sad(pb[k], ip);
+        const uint32 ip = (((pqp1[k] * interp0) + (pqp2[k] * interp1) + 32) >> 6) & 0xFF;
+        const uint8 dist = sad<uint8>(pb[k], ip);
         errorVec[k] = static_cast<float>(dist) * metric[k];
       }
       
