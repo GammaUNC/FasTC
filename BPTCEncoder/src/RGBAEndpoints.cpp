@@ -217,16 +217,16 @@ uint32 RGBAVector::ToPixel(const uint32 channelMask, const int pBit) const {
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+template<const uint8 nBuckets>
 double RGBACluster::QuantizedError(
   const RGBAVector &p1, const RGBAVector &p2,
-  uint8 nBuckets, uint32 bitMask, const RGBAVector &errorMetricVec,
+  uint32 bitMask, const RGBAVector &errorMetricVec,
   const int pbits[2], uint8 *indices
 ) const {
 
   // nBuckets should be a power of two.
-  assert(nBuckets == 3 || !(nBuckets & (nBuckets - 1)));
-
-  const uint8 indexPrec = (nBuckets == 3)? 3 : 8-CountBitsInMask(~(nBuckets - 1));
+  assert(!(nBuckets & (nBuckets - 1)));
+  const uint8 indexPrec = 8-CountBitsInMask(~(nBuckets - 1));
   
   typedef uint32 tInterpPair[2];
   typedef tInterpPair tInterpLevel[16];
@@ -294,6 +294,21 @@ double RGBACluster::QuantizedError(
 
   return totalError;
 }
+
+template double RGBACluster::QuantizedError<4>(
+  const RGBAVector &p1, const RGBAVector &p2,
+  uint32 bitMask, const RGBAVector &errorMetricVec,
+  const int pbits[2], uint8 *indices) const;
+
+template double RGBACluster::QuantizedError<8>(
+  const RGBAVector &p1, const RGBAVector &p2,
+  uint32 bitMask, const RGBAVector &errorMetricVec,
+  const int pbits[2], uint8 *indices) const;
+
+template double RGBACluster::QuantizedError<16>(
+  const RGBAVector &p1, const RGBAVector &p2,
+  uint32 bitMask, const RGBAVector &errorMetricVec,
+  const int pbits[2], uint8 *indices) const;
 
 uint32 RGBACluster::GetPrincipalAxis(RGBADir &axis, float *eigOne, float *eigTwo) const {
 

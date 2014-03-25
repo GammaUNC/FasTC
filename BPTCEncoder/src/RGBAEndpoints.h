@@ -71,6 +71,7 @@
 #include "Matrix4x4.h"
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cfloat>
 #include <cstring>
@@ -164,10 +165,24 @@ public:
 
   // Returns the error if we were to quantize the colors right now with the
   // given number of buckets and bit mask.
+  template<const uint8 nBuckets>
   double QuantizedError(
     const RGBAVector &p1, const RGBAVector &p2,
-    uint8 nBuckets, uint32 bitMask, const RGBAVector &errorMetricVec,
+    uint32 bitMask, const RGBAVector &errorMetricVec,
     const int pbits[2] = NULL, uint8 *indices = NULL) const;
+
+  double QuantizedError(
+    const RGBAVector &p1, const RGBAVector &p2,
+    uint32 nBuckets, uint32 bitMask, const RGBAVector &errorMetricVec,
+    const int pbits[2] = NULL, uint8 *indices = NULL) const {
+    switch(nBuckets) {
+      case 4: return QuantizedError<4>(p1, p2, bitMask, errorMetricVec, pbits, indices);
+      case 8: return QuantizedError<8>(p1, p2, bitMask, errorMetricVec, pbits, indices);
+      case 16: return QuantizedError<16>(p1, p2, bitMask, errorMetricVec, pbits, indices);
+    }
+    assert(!"Unsupported num buckets");
+    return std::numeric_limits<double>::max();
+  }
 
   bool AllSamePoint() const { return m_Max == m_Min; }
 
