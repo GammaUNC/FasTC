@@ -215,6 +215,11 @@ uint32 RGBAVector::ToPixel(const uint32 channelMask, const int pBit) const {
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+template<typename T>
+static inline T Clamp(const T &x, const T &a, const T &b) {
+  return std::max(a, std::min(x, b));
+}
+
 template<const uint8 nBuckets>
 double RGBACluster::QuantizedError(
   const RGBAVector &p1, const RGBAVector &p2,
@@ -240,20 +245,68 @@ double RGBACluster::QuantizedError(
     qp2 = p2.ToPixel(bitMask);
   }
 
+  const RGBAVector uqp1 = RGBAVector(0, qp1);
+  const RGBAVector uqp2 = RGBAVector(0, qp2);
+  const float uqplsq = (uqp1 - uqp2).LengthSq();
+  const RGBAVector uqpdir = uqp2 - uqp1;
+
   const uint8 *pqp1 = reinterpret_cast<const uint8 *>(&qp1);
   const uint8 *pqp2 = reinterpret_cast<const uint8 *>(&qp2);
 
   const RGBAVector metric = errorMetricVec;
 
   float totalError = 0.0;
+  if(uqplsq == 0) {
+
+    // If both endpoints are the same then the indices don't matter...
+    for(uint32 i = 0; i < GetNumPoints(); i++) {
+
+      const uint32 pixel = GetPixel(i);
+      const uint8 *pb = (const uint8 *)(&pixel);
+
+      uint32 interp0 = (*interpVals)[0][0];
+      uint32 interp1 = (*interpVals)[0][1];
+
+      RGBAVector errorVec (0.0f);
+      for(uint32 k = 0; k < 4; k++) {
+        const uint32 ip = (((pqp1[k] * interp0) + (pqp2[k] * interp1) + 32) >> 6) & 0xFF;
+        const uint8 dist = sad<uint8>(pb[k], ip);
+        errorVec[k] = static_cast<float>(dist) * metric[k];
+      }
+
+      totalError += errorVec * errorVec;
+
+      if(indices)
+        indices[i] = 0;
+    }
+
+    return totalError;
+  }
+
   for(uint32 i = 0; i < GetNumPoints(); i++) {
+
+    // Project this point unto the direction denoted by uqpdir...
+    const RGBAVector pt = GetPoint(i);
+#if 0
+    const float pct = Clamp(((pt - uqp1) * uqpdir) / uqplsq, 0.0f, 1.0f);
+    const int32 j1 = static_cast<int32>(pct * static_cast<float>(nBuckets-1));
+    const int32 j2 = static_cast<int32>(pct * static_cast<float>(nBuckets-1) + 0.7);
+#else
+    const float pct = ((pt - uqp1) * uqpdir) / uqplsq;
+    int32 j1 = floor(pct * static_cast<float>(nBuckets-1));
+    int32 j2 = ceil(pct * static_cast<float>(nBuckets-1));
+    j1 = std::max(0, j1);
+    j2 = std::min(j2, nBuckets - 1);
+#endif
+
+    assert(j1 >= 0 && j2 <= nBuckets - 1);
 
     const uint32 pixel = GetPixel(i);
     const uint8 *pb = (const uint8 *)(&pixel);
 
     float minError = FLT_MAX;
     uint8 bestBucket = 0;
-    for(int j = 0; j < nBuckets; j++) {
+    for(int32 j = j1; j <= j2; j++) {
 
       uint32 interp0 = (*interpVals)[j][0];
       uint32 interp1 = (*interpVals)[j][1];
