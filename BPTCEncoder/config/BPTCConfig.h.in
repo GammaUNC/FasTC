@@ -62,4 +62,4 @@
 #cmakedefine HAS_GCC_ATOMICS
 #cmakedefine HAS_MSVC_ATOMICS
 
-#cmakedefine FOUND_NVTT_BC7_EXPORT
+#cmakedefine FOUND_NVTT_BPTC_EXPORT

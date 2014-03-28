@@ -50,8 +50,8 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "BC7Compressor.h"
-#include "BC7CompressionMode.h"
+#include "BPTCCompressor.h"
+#include "CompressionMode.h"
 #undef DBL_MAX
 #include "BitStream.h"
 #include "TexCompTypes.h"
@@ -62,7 +62,7 @@
 
 #include "avpcl.h"
 
-namespace BC7C {
+namespace BPTCC {
 
   void GetBlock(uint32 x, uint32 y, uint32 width, const uint32 *pixels, Tile &t) {
     for(uint32 j = 0; j < 4; j++)
@@ -146,11 +146,11 @@ namespace BC7C {
     double mse = kModeFuncs[mode](t, out);
     PrintStat(log, ss.str().c_str(), mse);
 
-    BitStreamReadOnly strm(reinterpret_cast<uint8 *>(out));
+    FasTC::BitStreamReadOnly strm(reinterpret_cast<uint8 *>(out));
     while(!strm.ReadBit());
 
-    const BC7CompressionMode::Attributes *attrs =
-      BC7CompressionMode::GetAttributesForMode(mode);
+    const CompressionMode::Attributes *attrs =
+      CompressionMode::GetAttributesForMode(mode);
     const uint32 nSubsets = attrs->numSubsets;
 
     ss.str("");
