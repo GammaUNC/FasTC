@@ -306,7 +306,8 @@ double RGBACluster::QuantizedError(
 
     float minError = FLT_MAX;
     uint8 bestBucket = 0;
-    for(int32 j = j1; j <= j2; j++) {
+    int32 j = j1;
+    do {
 
       uint32 interp0 = (*interpVals)[j][0];
       uint32 interp1 = (*interpVals)[j][1];
@@ -331,7 +332,7 @@ double RGBACluster::QuantizedError(
       else if(error > minError) {
         break;
       }
-    }
+    } while(++j <= j2);
 
     totalError += minError;
 
