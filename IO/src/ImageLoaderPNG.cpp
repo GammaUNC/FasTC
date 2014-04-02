@@ -44,8 +44,9 @@
 #include "ImageLoaderPNG.h"
 
 #include <algorithm>
-#include <cstdio>
 #include <cassert>
+#include <cstdio>
+#include <cstring>
 
 #include <png.h>
 
@@ -77,9 +78,6 @@ ImageLoaderPNG::ImageLoaderPNG(const unsigned char *rawData)
   : ImageLoader(rawData)
   , m_StreamPosition(8) // We start at position 8 because of PNG header.
 {
-}
-
-ImageLoaderPNG::~ImageLoaderPNG() {
 }
 
 bool ImageLoaderPNG::ReadData() {

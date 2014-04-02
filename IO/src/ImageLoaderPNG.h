@@ -49,7 +49,7 @@
 class ImageLoaderPNG : public ImageLoader {
  public:
   ImageLoaderPNG(const unsigned char *rawData);
-  virtual ~ImageLoaderPNG();
+  virtual ~ImageLoaderPNG() { }
 
   virtual bool ReadData();
 
