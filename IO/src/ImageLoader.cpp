@@ -75,6 +75,18 @@ void ReportError(const char *str) {
 }
 
 unsigned int ImageLoader::GetChannelForPixel(uint32 x, uint32 y, uint32 ch) {
+
+  // First make sure that we're in bounds...
+  if(x >= GetWidth()) {
+    assert(!"Fix requirement that images have multiple-of-four dimensions");
+    return 0;
+  }
+
+  if(y >= GetHeight()) {
+    assert(!"Fix requirement that images have multiple-of-four dimensions");
+    return 0;
+  }
+
   uint32 prec;
   const uint8 *data;
 
@@ -106,9 +118,6 @@ unsigned int ImageLoader::GetChannelForPixel(uint32 x, uint32 y, uint32 ch) {
 
   if(0 == prec)
     return 0;
-
-  assert(x < GetWidth());
-  assert(y < GetHeight());
 
   uint32 pixelIdx = y * GetWidth() + x;
   const uint32 val = data[pixelIdx];
@@ -182,15 +191,14 @@ FasTC::Image<> *ImageLoader::LoadImage() {
   m_Width = GetWidth();
   m_Height = GetHeight();
 
-  // Create RGBA buffer 
-  const unsigned int dataSz = 4 * m_Width * m_Height;
-
-  m_PixelData = new unsigned char[dataSz];
-
   // Populate buffer in block stream order... make 
   // sure that width and height are aligned to multiples of four.
   const unsigned int aw = ((m_Width + 3) >> 2) << 2;
   const unsigned int ah = ((m_Height + 3) >> 2) << 2;
+
+  // Create RGBA buffer 
+  const unsigned int dataSz = 4 * aw * ah;
+  m_PixelData = new unsigned char[dataSz];
 
 #ifndef NDEBUG
   if(aw != m_Width || ah != m_Height)
@@ -241,6 +249,9 @@ FasTC::Image<> *ImageLoader::LoadImage() {
       m_PixelData[byteIdx++] = alphaVal & 0xFF;
     }
   }
+
+  m_Width = aw;
+  m_Height = ah;
 
   uint32 *pixels = reinterpret_cast<uint32 *>(m_PixelData);
   return new FasTC::Image<>(m_Width, m_Height, pixels);
