@@ -295,7 +295,7 @@ double RGBACluster::QuantizedError(
     const float pct = ((pt - uqp1) * uqpdir) / uqplsq;
     int32 j1 = floor(pct * static_cast<float>(nBuckets-1));
     int32 j2 = ceil(pct * static_cast<float>(nBuckets-1));
-    j1 = std::max(0, j1);
+    j1 = std::min(std::max(0, j1), nBuckets - 1);
     j2 = std::min(j2, nBuckets - 1);
 #endif
 
