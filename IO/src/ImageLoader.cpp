@@ -78,12 +78,10 @@ unsigned int ImageLoader::GetChannelForPixel(uint32 x, uint32 y, uint32 ch) {
 
   // First make sure that we're in bounds...
   if(x >= GetWidth()) {
-    assert(!"Fix requirement that images have multiple-of-four dimensions");
     return 0;
   }
 
   if(y >= GetHeight()) {
-    assert(!"Fix requirement that images have multiple-of-four dimensions");
     return 0;
   }
 

@@ -46,9 +46,9 @@ namespace DXTC
 
     const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
     uint32 startX = cj.XStart();
-    bool done = false;
-    for(uint32 j = cj.YStart(); !done; j += 4) {
-      for(uint32 i = startX; !done && i < cj.Width(); i += 4) {
+    for(uint32 j = cj.YStart(); j <= cj.YEnd(); j += 4) {
+      const uint32 endX = j == cj.YEnd()? cj.XEnd() : cj.Width();
+      for(uint32 i = startX; i < endX; i += 4) {
 
         const uint32 kOffset = j*cj.Width() + i;
         ExtractBlock(inPixels + kOffset, cj.Width(), block);
@@ -56,7 +56,6 @@ namespace DXTC
         EmitWord(outBuf, ColorTo565(maxColor));
         EmitWord(outBuf, ColorTo565(minColor));
         EmitColorIndices(block, outBuf, minColor, maxColor);
-        done = i+4 >= cj.XEnd() && j+(i+4 == cj.Width()? 4 : 0) >= cj.YEnd();
       }
       startX = 0;
     }

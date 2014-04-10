@@ -1573,10 +1573,9 @@ void Compress(const FasTC::CompressionJob &cj, CompressionSettings settings) {
   uint8 *outBuf = cj.OutBuf() + cj.CoordsToBlockIdx(cj.XStart(), cj.YStart()) * kBlockSz;
 
   uint32 startX = cj.XStart();
-  bool done = false;
-
-  for(uint32 j = cj.YStart(); !done; j += 4) {
-    for(uint32 i = startX; !done && i < cj.Width(); i += 4) {
+  for(uint32 j = cj.YStart(); j <= cj.YEnd(); j += 4) {
+    const uint32 endX = j == cj.YEnd()? cj.XEnd() : cj.Width();
+    for(uint32 i = startX; i < endX; i += 4) {
 
       uint32 block[16];
       GetBlock(i, j, cj.Width(), inPixels, block);
@@ -1608,7 +1607,6 @@ void Compress(const FasTC::CompressionJob &cj, CompressionSettings settings) {
 #endif
 
       outBuf += kBlockSz;
-      done = i+4 >= cj.XEnd() && j+(i+4 == cj.Width()? 4 : 0) >= cj.YEnd();
     }
     startX = 0;
   }
@@ -1676,9 +1674,9 @@ void CompressAtomic(FasTC::CompressionJobList &cjl) {
   uint8 *outBuf = cj.OutBuf() + cj.CoordsToBlockIdx(cj.XStart(), cj.YStart()) * kBlockSz;
 
   uint32 startX = cj.XStart();
-  bool done = false;
-  for(uint32 j = cj.YStart(); !done; j += 4) {
-    for(uint32 i = startX; !done && i < cj.Width(); i += 4) {
+  for(uint32 j = cj.YStart(); j <= cj.YEnd(); j += 4) {
+    const uint32 endX = j == cj.YEnd()? cj.XEnd() : cj.Width();
+    for(uint32 i = startX; i < endX; i += 4) {
 
       uint32 block[16];
       GetBlock(i, j, cj.Width(), inPixels, block);
@@ -1709,7 +1707,6 @@ void CompressAtomic(FasTC::CompressionJobList &cjl) {
 #endif
 
       outBuf += 16;
-      done = i+4 >= cj.XEnd() && j+(i+4 == cj.Width()? 4 : 0) >= cj.YEnd();
     }
 
     startX = 0;
