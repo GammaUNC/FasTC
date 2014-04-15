@@ -70,8 +70,8 @@ namespace FasTC {
    public:
     explicit Bits(IntType &v) : m_Bits(v) { }
 
-    bool operator[](uint32 bitPos) {
-      return (m_Bits >> bitPos) & 1;
+    uint8 operator[](uint32 bitPos) {
+      return static_cast<uint8>((m_Bits >> bitPos) & 1);
     }
 
     IntType operator()(uint32 start, uint32 end) {
