@@ -131,7 +131,7 @@ ImageFile::~ImageFile() {
   }
 
   if(m_FileData) {
-    delete m_FileData;
+    delete [] m_FileData;
     m_FileData = NULL;
   }
 }
@@ -144,7 +144,7 @@ bool ImageFile::Load() {
   }
   
   if(m_FileData) {
-    delete m_FileData;
+    delete [] m_FileData;
     m_FileData = NULL;
   }
 
