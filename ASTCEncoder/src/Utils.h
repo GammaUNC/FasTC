@@ -141,6 +141,9 @@ namespace ASTCC {
 
   static int32 SelectPartition(int32 seed, int32 x, int32 y, int32 z,
                                int32 partitionCount, int32 smallBlock) {
+    if(1 == partitionCount)
+      return 0;
+
     if(smallBlock) {
       x <<= 1;
       y <<= 1;
