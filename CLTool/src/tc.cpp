@@ -91,18 +91,13 @@ void ExtractBasename(const char *filename, char *buf, size_t bufSz) {
   size_t len = strlen(filename);
   const char *end = filename + len;
   const char *ext = end;
-  const char *base = NULL;
+  const char *base = filename;
   while(--end != filename && !base) {
     if(*end == '.') {
       ext = end;
     } else if(*end == '\\' || *end == '/') {
       base = end + 1;
     }
-  }
-
-  if(!base) {
-    fprintf(stderr, "Filename (%s) has no extension, we don't know how to deal with it!\n", filename);
-    exit(1);
   }
 
   size_t numChars = ext - base + 1;
