@@ -915,18 +915,19 @@ namespace ASTCC {
 
     // Read the texel weight data..
     uint8 texelWeightData[16];
-    memset(texelWeightData, 0, sizeof(texelWeightData));
-    FasTC::BitStream texelWeightStream (texelWeightData, 16*8, 0);
+    memcpy(texelWeightData, inBuf, sizeof(texelWeightData));
     
-    int32 texelWeightBits = weightParams.GetPackedBitSize();
-    while(texelWeightBits > 0) {
-      uint32 nb = std::min(texelWeightBits, 8);
-      uint32 b = strm.ReadBits(nb);
-      texelWeightStream.WriteBits(b, nb);
-      texelWeightBits -= 8;
-    }
+    // Reverse everything
+    for(uint32 i = 0; i < 8; i++) {
+      // Taken from http://graphics.stanford.edu/~seander/bithacks.html#ReverseByteWith64Bits
+      #define REVERSE_BYTE(b) (((b) * 0x80200802ULL) & 0x0884422110ULL) * 0x0101010101ULL >> 32
+      unsigned char a = REVERSE_BYTE(texelWeightData[i]);
+      unsigned char b = REVERSE_BYTE(texelWeightData[15 - i]);
+      #undef REVERSE_BYTE
 
-    assert(strm.GetBitsRead() == 128);
+      texelWeightData[i] = b;
+      texelWeightData[15-i] = a;
+    }
 
     // Decode both color data and texel weight data
     uint32 colorValues[32]; // Four values, two endpoints, four maximum paritions
