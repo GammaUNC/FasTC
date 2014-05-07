@@ -91,6 +91,14 @@ namespace ASTCC {
 
       return IntegerEncodedValue::CreateEncoding(m_MaxWeight).GetBitLength(nIdxs);
     }
+
+    uint32 GetNumWeightValues() const {
+      uint32 ret = m_Width * m_Height;
+      if(m_bDualPlane) {
+        ret *= 2;
+      }
+      return ret;
+    }
   };
 
   TexelWeightParams DecodeBlockInfo(BitStreamReadOnly &strm) {
@@ -283,10 +291,10 @@ namespace ASTCC {
     return params;
   }
 
-  void FillError(uint8 *outBuf, uint32 blockWidth, uint32 blockHeight) {
+  void FillError(uint32 *outBuf, uint32 blockWidth, uint32 blockHeight) {
     for(uint32 j = 0; j < blockHeight; j++)
     for(uint32 i = 0; i < blockWidth; i++) {
-      reinterpret_cast<uint32 *>(outBuf)[j * blockWidth + i] = 0xFFFF00FF;
+      outBuf[j * blockWidth + i] = 0xFFFF00FF;
     }
   }
 
@@ -584,9 +592,13 @@ namespace ASTCC {
       if(params.m_bDualPlane) {
         itr++;
         unquantized[1][weightIdx] = UnquantizeTexelWeight(*itr);
+        if(itr == weights.end()) {
+          break;
+        }
       }
 
-      weightIdx++;
+      if(++weightIdx >= (params.m_Width * params.m_Height))
+        break;
     }
 
     // Do infill if necessary (Section C.2.18) ...
@@ -638,7 +650,8 @@ namespace ASTCC {
 
   // Section C.2.14
   void ComputeEndpoints(FasTC::Pixel &ep1, FasTC::Pixel &ep2,
-                        const uint32* &colorValues, uint32 colorEndpointMode) {
+                        const uint32* colorValuesPtr, uint32 colorEndpointMode) {
+    const uint32 *colorValues = colorValuesPtr;
     #define READ_UINT_VALUES(N)                 \
       uint32 v[N];                              \
       for(uint32 i = 0; i < N; i++) {           \
@@ -770,7 +783,7 @@ namespace ASTCC {
 
   void DecompressBlock(const uint8 inBuf[16],
                        const uint32 blockWidth, const uint32 blockHeight,
-                       uint8 *outBuf) {
+                       uint32 *outBuf) {
     BitStreamReadOnly strm(inBuf);
     TexelWeightParams weightParams = DecodeBlockInfo(strm);
     
@@ -922,16 +935,16 @@ namespace ASTCC {
 
     std::vector<IntegerEncodedValue> texelWeightValues;
     FasTC::BitStreamReadOnly weightStream (texelWeightData);
+
     IntegerEncodedValue::
       DecodeIntegerSequence(texelWeightValues, weightStream,
                             weightParams.m_MaxWeight,
-                            weightParams.m_Width * weightParams.m_Height);
+                            weightParams.GetNumWeightValues());
 
     FasTC::Pixel endpoints[4][2];
-    const uint32 *colorValuesPtr = colorValues;
     for(uint32 i = 0; i < nPartitions; i++) {
       ComputeEndpoints(endpoints[i][0], endpoints[i][1],
-                       colorValuesPtr, colorEndpointMode[i]);
+                       colorValues, colorEndpointMode[i]);
     }
 
     // Blocks can be at most 12x12, so we can have as many as 144 weights
@@ -945,9 +958,6 @@ namespace ASTCC {
       uint32 partition = Select2DPartition(
         partitionIndex, i, j, nPartitions, (blockHeight * blockWidth) < 32
       );
-      if(nPartitions == 1) {
-        partition = 0;
-      }
       assert(partition < nPartitions);
 
       FasTC::Pixel p;
@@ -975,15 +985,14 @@ namespace ASTCC {
     uint32 blockWidth = GetBlockWidth(dcj.Format());
     uint32 blockHeight = GetBlockHeight(dcj.Format());
     uint32 blockIdx = 0;
-    for(uint32 j = 0; j < dcj.Width(); j+=blockHeight) {
-      for(uint32 i = 0; i < dcj.Height(); i+=blockWidth) {
+    for(uint32 j = 0; j < dcj.Height(); j+=blockHeight) {
+      for(uint32 i = 0; i < dcj.Width(); i+=blockWidth) {
 
         const uint8 *blockPtr = dcj.InBuf() + blockIdx*16;
 
         // Blocks can be at most 12x12
         uint32 uncompData[144];
-        uint8 *dataPtr = reinterpret_cast<uint8 *>(uncompData);
-        DecompressBlock(blockPtr, blockWidth, blockHeight, dataPtr);
+        DecompressBlock(blockPtr, blockWidth, blockHeight, uncompData);
 
         uint8 *outRow = dcj.OutBuf() + (j*dcj.Width() + i)*4;
         for(uint32 jj = 0; jj < blockHeight; jj++) {
