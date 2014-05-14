@@ -833,9 +833,9 @@ namespace ASTCC {
     uint32 baseCEM = 0;
     if(nPartitions == 1) {
       colorEndpointMode[0] = strm.ReadBits(4);
+      partitionIndex = 0;
     } else {
-      uint32 restOfPartitionIndex = strm.ReadBits(10);
-      partitionIndex |= restOfPartitionIndex << 2;
+      partitionIndex = strm.ReadBits(10);
       baseCEM = strm.ReadBits(6);
     }
     uint32 baseMode = (baseCEM & 3);
