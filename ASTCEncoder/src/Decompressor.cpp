@@ -650,8 +650,7 @@ namespace ASTCC {
 
   // Section C.2.14
   void ComputeEndpoints(FasTC::Pixel &ep1, FasTC::Pixel &ep2,
-                        const uint32* colorValuesPtr, uint32 colorEndpointMode) {
-    const uint32 *colorValues = colorValuesPtr;
+                        const uint32* &colorValues, uint32 colorEndpointMode) {
     #define READ_UINT_VALUES(N)                 \
       uint32 v[N];                              \
       for(uint32 i = 0; i < N; i++) {           \
@@ -943,9 +942,10 @@ namespace ASTCC {
                             weightParams.GetNumWeightValues());
 
     FasTC::Pixel endpoints[4][2];
+    const uint32 *colorValuesPtr = colorValues;
     for(uint32 i = 0; i < nPartitions; i++) {
       ComputeEndpoints(endpoints[i][0], endpoints[i][1],
-                       colorValues, colorEndpointMode[i]);
+                       colorValuesPtr, colorEndpointMode[i]);
     }
 
     // Blocks can be at most 12x12, so we can have as many as 144 weights
