@@ -975,7 +975,12 @@ namespace ASTCC {
 
         uint32 weight = weights[plane][j * blockWidth + i];
         uint32 C = (C0 * (64 - weight) + C1 * weight + 32) / 64;
-        p.Component(c) = C >> 8;
+        if(C == 65535) {
+          p.Component(c) = 255;
+        } else {
+          double Cf = static_cast<double>(C);
+          p.Component(c) = static_cast<uint16>(255.0 * (Cf / 65536.0) + 0.5);
+        }
       }
 
       outBuf[j * blockWidth + i] = p.Pack();
