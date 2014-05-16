@@ -1008,6 +1008,16 @@ namespace ASTCC {
         blockIdx++;
       }
     }
+
+    // Flip the image...
+    uint32 *imgStart = reinterpret_cast<uint32 *>(dcj.OutBuf());
+    for(uint32 j = 0; j < (dcj.Height() >> 1); j++) {
+      for(uint32 i = 0; i < dcj.Width(); i++) {
+        const uint32 rowA = j*dcj.Width();
+        const uint32 rowB = (dcj.Height() - j - 1) * dcj.Width();
+        std::swap(imgStart[rowA + i], imgStart[rowB + i]);
+      }
+    }
   }
 
 }  // namespace ASTCC
