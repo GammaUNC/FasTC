@@ -112,17 +112,16 @@ namespace BPTCC {
     uint8 *outBuf = cj.OutBuf() + cj.CoordsToBlockIdx(cj.XStart(), cj.YStart()) * kBlockSz;
 
     uint32 startX = cj.XStart();
-    bool done = false;
-
-    for(uint32 j = cj.YStart(); !done; j += 4) {
-      for(uint32 i = startX; !done && i < cj.Width(); i += 4) {
+    const uint32 endY = std::min(cj.YEnd(), cj.Height() - 4);
+    for(uint32 j = cj.YStart(); j <= endY; j += 4) {
+      const uint32 endX = j == cj.YEnd()? cj.XEnd() : cj.Width();
+      for(uint32 i = startX; i < endX; i += 4) {
 
         Tile block(4, 4);
         GetBlock(i, j, cj.Width(), inPixels, block);
         AVPCL::compress(block, reinterpret_cast<char *>(outBuf), NULL);
 
         outBuf += kBlockSz;
-        done = i+4 >= cj.XEnd() && j+(i+4 == cj.Width()? 4 : 0) >= cj.YEnd();
       }
       startX = 0;
     }
@@ -173,9 +172,10 @@ namespace BPTCC {
     uint8 *outBuf = cj.OutBuf() + cj.CoordsToBlockIdx(cj.XStart(), cj.YStart()) * kBlockSz;
 
     uint32 startX = cj.XStart();
-    bool done = false;
-    for(uint32 j = cj.YStart(); !done; j += 4) {
-      for(uint32 i = startX; !done && i < cj.Width(); i += 4) {
+    const uint32 endY = std::min(cj.YEnd(), cj.Height() - 4);
+    for(uint32 j = cj.YStart(); j <= endY; j += 4) {
+      const uint32 endX = j == cj.YEnd()? cj.XEnd() : cj.Width();
+      for(uint32 i = startX; i < endX; i += 4) {
 
         Tile block(4, 4);
         GetBlock(i, j, cj.Width(), inPixels, block);
@@ -197,7 +197,6 @@ namespace BPTCC {
         }
 
         outBuf += 16;
-        done = i+4 >= cj.XEnd() && j+(i+4 == cj.Width()? 4 : 0) >= cj.YEnd();
       }
 
       startX = 0;
