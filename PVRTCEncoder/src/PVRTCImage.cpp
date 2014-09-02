@@ -66,7 +66,9 @@
 #include "Pixel.h"
 using FasTC::Pixel;
 
-#include "../../IO/include/ImageFile.h"
+#ifdef DEBUG_PVRTC_DECODER
+#  include "../../IO/include/ImageFile.h"
+#endif
 
 template <typename T>
 inline T Clamp(const T &v, const T &a, const T &b) {
@@ -540,6 +542,7 @@ uint32 Image::GetPixelIndex(int32 i, int32 j, EWrapMode wrapMode) const {
   return idx;
 }
 
+#ifdef DEBUG_PVRTC_DECODER
 void Image::DebugOutput(const char *filename) const {
   uint32 *outPixels = new uint32[GetWidth() * GetHeight()];
   const uint8 fullDepth[4] = { 8, 8, 8, 8 };
@@ -561,5 +564,8 @@ void Image::DebugOutput(const char *filename) const {
   ::ImageFile imgFile(debugFilename, eFileFormat_PNG, img);
   imgFile.Write();
 }
+#else
+void Image::DebugOutput(const char *filename) const { }
+#endif // DEBUG_PVRTC_DECODER
 
 }  // namespace PVRTCC

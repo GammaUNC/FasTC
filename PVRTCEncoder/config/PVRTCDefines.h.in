@@ -51,3 +51,4 @@
  */
 
 #cmakedefine PVRTEXLIB_FOUND
+#cmakedefine DEBUG_PVRTC_DECODER
