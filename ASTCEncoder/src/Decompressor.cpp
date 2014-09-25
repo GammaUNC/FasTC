@@ -184,7 +184,7 @@ namespace ASTCC {
 
     // Determine R
     uint32 R = !!(modeBits & 0x10);
-    if(layout < 4) {
+    if(layout < 5) {
       R |= (modeBits & 0x3) << 1;
     } else {
       R |= (modeBits & 0xC) >> 1;
