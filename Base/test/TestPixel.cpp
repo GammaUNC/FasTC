@@ -82,7 +82,7 @@ TEST(Pixel, FourWideConstructor) {
     EXPECT_EQ(depth[i], 8);
   }
 
-  FasTC::Pixel q(static_cast<uint16>(1 << 16), 6, -2, 5, 4);
+  FasTC::Pixel q(0, 6, -2, 5, 4);
   EXPECT_EQ(q.R(), 6);
   EXPECT_EQ(q.G(), -2);
   EXPECT_EQ(q.B(), 5);

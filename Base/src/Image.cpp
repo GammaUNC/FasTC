@@ -316,6 +316,11 @@ double Image<PixelType>::ComputeSSIM(Image<PixelType> *other) {
   const uint32 filterSz = 11;
   const double filterSigma = 1.5;
 
+  if(img1.GetWidth() < filterSz || img1.GetHeight() < filterSz ||
+     img2.GetWidth() < filterSz || img2.GetHeight() < filterSz) {
+    return -1.0;
+  }
+
   Image<IPixel> mu1 = FilterValid(img1, filterSz, filterSigma);
   Image<IPixel> mu2 = FilterValid(img2, filterSz, filterSigma);
 

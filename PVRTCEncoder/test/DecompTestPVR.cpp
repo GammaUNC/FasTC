@@ -60,12 +60,10 @@
 
 #include "TestUtils.h"
 
-// #define OUTPUT_DEBUG_IMAGE
-
-#ifdef OUTPUT_DEBUG_IMAGE
-#  include "Core/include/Image.h"
-#  include "IO/include/ImageFile.h"
-#endif  // OUTPUT_DEBUG_IMAGE
+#ifdef DEBUG_PVRTC_DECODER
+#  include "Image.h"
+#  include "ImageFile.h"
+#endif  // DEBUG_PVRTC_DECODER
 
 class ImageTester {
  public:
@@ -88,7 +86,7 @@ class ImageTester {
 
     uint8 *outBuf = reinterpret_cast<uint8 *>(outPixels);
     FasTC::DecompressionJob dcj(fmt, data, outBuf, w, h);
-#ifdef OUTPUT_DEBUG_IMAGE
+#ifdef DEBUG_PVRTC_DECODER
     PVRTCC::Decompress(dcj, PVRTCC::eWrapMode_Wrap, true);
 #else
     PVRTCC::Decompress(dcj, PVRTCC::eWrapMode_Wrap);
@@ -106,10 +104,10 @@ class ImageTester {
       EXPECT_EQ(PixelPrinter(libPixels[i]), PixelPrinter(outPixels[i]));
     }
 
-#ifdef OUTPUT_DEBUG_IMAGE
+#ifdef DEBUG_PVRTC_DECODER
     char dbgfname[256];
     snprintf(dbgfname, sizeof(dbgfname), "Debug%s.png", filename);
-    ::ImageFile imgFile(dbgfname, eFileFormat_PNG, ::Image(w, h, outPixels));
+    ImageFile imgFile(dbgfname, eFileFormat_PNG, FasTC::Image<>(w, h, outPixels));
     imgFile.Write();
 #endif  // OUTPUT_DEBUG_IMAGE
 

@@ -79,9 +79,10 @@
 #include "CompressionMode.h"
 
 #include <cassert>
+#include <cfloat>
+#include <cmath>
 #include <cstdlib>
 #include <cstdio>
-#include <cfloat>
 
 #ifndef min
 template <typename T>
@@ -228,7 +229,7 @@ double RGBACluster::QuantizedError(
 ) const {
 
   // nBuckets should be a power of two.
-  const uint8 indexPrec = log2(nBuckets);
+  const uint8 indexPrec = static_cast<uint8>(log(static_cast<float>(nBuckets))/log(2.0f));
   assert(!(nBuckets & (nBuckets - 1)));
   assert(indexPrec >= 2 && indexPrec <= 4);
   
@@ -293,8 +294,8 @@ double RGBACluster::QuantizedError(
     const int32 j2 = static_cast<int32>(pct * static_cast<float>(nBuckets-1) + 0.7);
 #else
     const float pct = ((pt - uqp1) * uqpdir) / uqplsq;
-    int32 j1 = floor(pct * static_cast<float>(nBuckets-1));
-    int32 j2 = ceil(pct * static_cast<float>(nBuckets-1));
+    int32 j1 = static_cast<int32>(floor(pct * static_cast<float>(nBuckets-1)));
+    int32 j2 = static_cast<int32>(ceil(pct * static_cast<float>(nBuckets-1)));
     j1 = std::min(std::max(0, j1), nBuckets - 1);
     j2 = std::min(j2, nBuckets - 1);
 #endif

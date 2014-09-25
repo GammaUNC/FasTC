@@ -1572,8 +1572,9 @@ void Compress(const FasTC::CompressionJob &cj, CompressionSettings settings) {
   const uint32 kBlockSz = GetBlockSize(FasTC::eCompressionFormat_BPTC);
   uint8 *outBuf = cj.OutBuf() + cj.CoordsToBlockIdx(cj.XStart(), cj.YStart()) * kBlockSz;
 
+  const uint32 endY = std::min(cj.YEnd(), cj.Height() - 4);
   uint32 startX = cj.XStart();
-  for(uint32 j = cj.YStart(); j <= cj.YEnd(); j += 4) {
+  for(uint32 j = cj.YStart(); j <= endY; j += 4) {
     const uint32 endX = j == cj.YEnd()? cj.XEnd() : cj.Width();
     for(uint32 i = startX; i < endX; i += 4) {
 

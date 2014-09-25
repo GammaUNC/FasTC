@@ -52,6 +52,7 @@
 
 #include "rg_etc1.h"
 #include "ETCCompressor.h"
+#include <algorithm>
 #include <cstring>
 
 namespace ETCC {
@@ -62,11 +63,13 @@ namespace ETCC {
     params.m_quality = rg_etc1::cLowQuality;
     rg_etc1::pack_etc1_block_init();
 
-    const uint32 kBlockSz = GetBlockSize(FasTC::eCompressionFormat_ETC1);
+    uint32 kBlockSz = GetBlockSize(FasTC::eCompressionFormat_ETC1);
     const uint32 startBlock = cj.CoordsToBlockIdx(cj.XStart(), cj.YStart());
     uint8 *outBuf = cj.OutBuf() + startBlock * kBlockSz;
+
+    const uint32 endY = std::min(cj.YEnd(), cj.Height() - 4);
     uint32 startX = cj.XStart();
-    for(uint32 j = cj.YStart(); j <= cj.YEnd(); j += 4) {
+    for(uint32 j = cj.YStart(); j <= endY; j += 4) {
       const uint32 endX = j == cj.YEnd()? cj.XEnd() : cj.Width();
       for(uint32 i = startX; i < endX; i += 4) {
 

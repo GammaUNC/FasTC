@@ -55,7 +55,7 @@ namespace FasTC {
       int numIterations = 0;
 
       VectorBase<T, N> b;
-      T norm = 1.0/sqrt(static_cast<T>(N));
+      T norm = static_cast<T>(1.0)/sqrt(static_cast<T>(N));
       for(int i = 0; i < N; i++)
         b[i] = norm;
 

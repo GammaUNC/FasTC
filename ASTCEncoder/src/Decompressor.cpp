@@ -605,7 +605,7 @@ namespace ASTCC {
     uint32 Ds = (1024 + (blockWidth/2)) / (blockWidth - 1);
     uint32 Dt = (1024 + (blockHeight/2)) / (blockHeight - 1);
 
-    for(uint32 plane = 0; plane < (params.m_bDualPlane? 2 : 1); plane++)
+    for(uint32 plane = 0; plane < (params.m_bDualPlane? 2U : 1U); plane++)
     for(uint32 t = 0; t < blockHeight; t++)
     for(uint32 s = 0; s < blockWidth; s++) {
       uint32 cs = Ds * s;
