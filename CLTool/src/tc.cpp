@@ -53,6 +53,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define WIN32_LEAN_AND_MEAN
 
+#include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <cstdio>
