@@ -209,29 +209,33 @@ FasTC::Image<> *ImageLoader::LoadImage() {
     for(uint32 i = 0; i < aw; i++) {
 
       unsigned int redVal = GetChannelForPixel(i, j, 0);
-      if(redVal == INT_MAX)
+      if(redVal == INT_MAX) {
         return NULL;
+      }
 
       unsigned int greenVal = redVal;
       unsigned int blueVal = redVal;
 
       if(GetGreenChannelPrecision() > 0) {
         greenVal = GetChannelForPixel(i, j, 1);
-        if(greenVal == INT_MAX)
+        if(greenVal == INT_MAX) {
           return NULL;
+        }
       }
 
       if(GetBlueChannelPrecision() > 0) {
         blueVal = GetChannelForPixel(i, j, 2);
-        if(blueVal == INT_MAX)
+        if(blueVal == INT_MAX) {
           return NULL;
+        }
       }
 
       unsigned int alphaVal = 0xFF;
       if(GetAlphaChannelPrecision() > 0) {
         alphaVal = GetChannelForPixel(i, j, 3);
-        if(alphaVal == INT_MAX)
+        if(alphaVal == INT_MAX) {
           return NULL;
+        }
       }
 
       // Red channel
