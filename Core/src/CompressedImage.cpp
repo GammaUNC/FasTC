@@ -167,15 +167,21 @@ void CompressedImage::ComputePixels() {
 }
 
 uint32 CompressedImage::GetCompressedSize(uint32 uncompressedSize, ECompressionFormat format) {
+
+  // Make sure that the uncompressed size is a multiple of the pixel size.
+  assert(uncompressedSize % sizeof(uint32) == 0);
+
+  // The compressed size is the block size times the number of blocks
   uint32 blockDim[2];
   GetBlockDimensions(format, blockDim);
 
-  const uint32 uncompBlockSz = blockDim[0] * blockDim[1] * sizeof(uint32);
+  const uint32 uncompBlockSize = blockDim[0] * blockDim[1] * sizeof(uint32);
+
+  // The uncompressed block size should be a factor of the uncompressed size.
+  assert(uncompressedSize % uncompBlockSize == 0);
+
+  const uint32 nBlocks = uncompressedSize / uncompBlockSize;
   const uint32 blockSz = GetBlockSize(format);
 
-  assert(uncompBlockSz % blockSz == 0);
-  const uint32 scale = uncompBlockSz / blockSz;
-
-  assert(uncompressedSize % blockSz == 0);
-  return uncompressedSize / scale;
+  return nBlocks * blockSz;
 }
