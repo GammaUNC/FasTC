@@ -85,8 +85,8 @@ unsigned int ImageLoader::GetChannelForPixel(uint32 x, uint32 y, uint32 ch) {
     return 0;
   }
 
-  uint32 prec;
-  const uint8 *data;
+  uint32 prec = 0;
+  const uint8 *data = NULL;
 
   switch(ch) {
   case 0:
@@ -135,7 +135,7 @@ unsigned int ImageLoader::GetChannelForPixel(uint32 x, uint32 y, uint32 ch) {
       }
     }
 
-    return ret;
+    return static_cast<unsigned int>(ret);
   }
   else if(prec > 8) {
     const int32 toShift = prec - 8;
@@ -164,10 +164,10 @@ bool ImageLoader::LoadFromPixelBuffer(const uint32 *data, bool flipY) {
       if(flipY)
         idx = (m_Height - j - 1)*m_Height + i;
       uint32 pixel = data[idx];
-      m_RedData[pIdx] = pixel & 0xFF;
-      m_GreenData[pIdx] = (pixel >> 8) & 0xFF;
-      m_BlueData[pIdx] = (pixel >> 16) & 0xFF;
-      m_AlphaData[pIdx] = (pixel >> 24) & 0xFF;
+      m_RedData[pIdx] = static_cast<uint8>(pixel & 0xFF);
+      m_GreenData[pIdx] = static_cast<uint8>((pixel >> 8) & 0xFF);
+      m_BlueData[pIdx] = static_cast<uint8>((pixel >> 16) & 0xFF);
+      m_AlphaData[pIdx] = static_cast<uint8>((pixel >> 24) & 0xFF);
     }
   }
 
@@ -189,24 +189,13 @@ FasTC::Image<> *ImageLoader::LoadImage() {
   m_Width = GetWidth();
   m_Height = GetHeight();
 
-  // Populate buffer in block stream order... make 
-  // sure that width and height are aligned to multiples of four.
-  const unsigned int aw = ((m_Width + 3) >> 2) << 2;
-  const unsigned int ah = ((m_Height + 3) >> 2) << 2;
-
   // Create RGBA buffer 
-  const unsigned int dataSz = 4 * aw * ah;
+  const unsigned int dataSz = 4 * GetWidth() * GetHeight();
   m_PixelData = new unsigned char[dataSz];
 
-#ifndef NDEBUG
-  if(aw != m_Width || ah != m_Height)
-    fprintf(stderr, "Warning: Image dimension not multiple of four. "
-                    "Space will be filled with black.\n");
-#endif
-
   int byteIdx = 0;
-  for(uint32 j = 0; j < ah; j++) {
-    for(uint32 i = 0; i < aw; i++) {
+  for(uint32 j = 0; j < GetHeight(); j++) {
+    for(uint32 i = 0; i < GetWidth(); i++) {
 
       unsigned int redVal = GetChannelForPixel(i, j, 0);
       if(redVal == INT_MAX) {
@@ -239,21 +228,18 @@ FasTC::Image<> *ImageLoader::LoadImage() {
       }
 
       // Red channel
-      m_PixelData[byteIdx++] = redVal & 0xFF;
+      m_PixelData[byteIdx++] = static_cast<uint8>(redVal & 0xFF);
 
       // Green channel
-      m_PixelData[byteIdx++] = greenVal & 0xFF;
+      m_PixelData[byteIdx++] = static_cast<uint8>(greenVal & 0xFF);
 
       // Blue channel
-      m_PixelData[byteIdx++] = blueVal & 0xFF;
+      m_PixelData[byteIdx++] = static_cast<uint8>(blueVal & 0xFF);
 
       // Alpha channel
-      m_PixelData[byteIdx++] = alphaVal & 0xFF;
+      m_PixelData[byteIdx++] = static_cast<uint8>(alphaVal & 0xFF);
     }
   }
-
-  m_Width = aw;
-  m_Height = ah;
 
   uint32 *pixels = reinterpret_cast<uint32 *>(m_PixelData);
   return new FasTC::Image<>(m_Width, m_Height, pixels);
