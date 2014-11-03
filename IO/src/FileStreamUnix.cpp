@@ -95,7 +95,9 @@ public:
   }
 
   ~FileStreamImpl() {
-    fclose(m_FilePtr);
+    if (0 != m_FilePtr) {
+      fclose(m_FilePtr);
+    }
   }
 
   void IncreaseReferenceCount() { m_ReferenceCount++; }
