@@ -111,13 +111,14 @@ void ExtractBasename(const char *filename, char *buf, size_t bufSz) {
 int main(int argc, char **argv) {
 
   int fileArg = 1;
-  if(fileArg == argc) {
+  if (fileArg == argc) {
     PrintUsage();
     exit(1);
   }
 
-  char decompressedOutput[256]; decompressedOutput[0] = '\0';
-  bool bNoDecompress = false;
+  char decompressedOutput[256];
+  decompressedOutput[0] = '\0';
+  bool bDecompress = true;
   int numJobs = 0;
   int quality = 50;
   int numThreads = 1;
@@ -134,10 +135,10 @@ int main(int argc, char **argv) {
   do {
     knowArg = false;
 
-    if(strcmp(argv[fileArg], "-n") == 0) {
+    if (strcmp(argv[fileArg], "-n") == 0) {
       fileArg++;
 
-      if(fileArg == argc || (numCompressions = atoi(argv[fileArg])) < 0) {
+      if (fileArg == argc || (numCompressions = atoi(argv[fileArg])) < 0) {
         PrintUsage();
         exit(1);
       }
@@ -147,26 +148,26 @@ int main(int argc, char **argv) {
       continue;
     }
 
-    if(strcmp(argv[fileArg], "-f") == 0) {
+    if (strcmp(argv[fileArg], "-f") == 0) {
       fileArg++;
 
-      if(fileArg == argc) {
+      if (fileArg == argc) {
         PrintUsage();
         exit(1);
       } else {
-        if(!strcmp(argv[fileArg], "PVRTC")) {
+        if (!strcmp(argv[fileArg], "PVRTC")) {
           format = FasTC::eCompressionFormat_PVRTC4;
-        } else if(!strcmp(argv[fileArg], "PVRTCLib")) {
+        } else if (!strcmp(argv[fileArg], "PVRTCLib")) {
           format = FasTC::eCompressionFormat_PVRTC4;
           bUsePVRTexLib = true;
-        } else if(!strcmp(argv[fileArg], "BPTCLib")) {
+        } else if (!strcmp(argv[fileArg], "BPTCLib")) {
           format = FasTC::eCompressionFormat_BPTC;
           bUseNVTT = true;
-        } else if(!strcmp(argv[fileArg], "ETC1")) {
+        } else if (!strcmp(argv[fileArg], "ETC1")) {
           format = FasTC::eCompressionFormat_ETC1;
-        } else if(!strcmp(argv[fileArg], "DXT1")) {
+        } else if (!strcmp(argv[fileArg], "DXT1")) {
           format = FasTC::eCompressionFormat_DXT1;
-        } else if(!strcmp(argv[fileArg], "DXT5")) {
+        } else if (!strcmp(argv[fileArg], "DXT5")) {
           format = FasTC::eCompressionFormat_DXT5;
         }
       }
@@ -176,10 +177,10 @@ int main(int argc, char **argv) {
       continue;
     }
 
-    if(strcmp(argv[fileArg], "-d") == 0) {
+    if (strcmp(argv[fileArg], "-d") == 0) {
       fileArg++;
-      
-      if(fileArg == argc) {
+
+      if (fileArg == argc) {
         PrintUsage();
         exit(1);
       } else {
@@ -193,38 +194,38 @@ int main(int argc, char **argv) {
       continue;
     }
 
-    if(strcmp(argv[fileArg], "-nd") == 0) {
+    if (strcmp(argv[fileArg], "-nd") == 0) {
       fileArg++;
-      bNoDecompress = true;
+      bDecompress = false;
       knowArg = true;
       continue;
     }
 
-    if(strcmp(argv[fileArg], "-l") == 0) {
+    if (strcmp(argv[fileArg], "-l") == 0) {
       fileArg++;
       bSaveLog = true;
       knowArg = true;
       continue;
     }
-    
-    if(strcmp(argv[fileArg], "-v") == 0) {
+
+    if (strcmp(argv[fileArg], "-v") == 0) {
       fileArg++;
       bVerbose = true;
       knowArg = true;
       continue;
     }
-    
-    if(strcmp(argv[fileArg], "-simd") == 0) {
+
+    if (strcmp(argv[fileArg], "-simd") == 0) {
       fileArg++;
       bUseSIMD = true;
       knowArg = true;
       continue;
     }
 
-    if(strcmp(argv[fileArg], "-t") == 0) {
+    if (strcmp(argv[fileArg], "-t") == 0) {
       fileArg++;
-      
-      if(fileArg == argc || (numThreads = atoi(argv[fileArg])) < 1) {
+
+      if (fileArg == argc || (numThreads = atoi(argv[fileArg])) < 1) {
         PrintUsage();
         exit(1);
       }
@@ -234,10 +235,10 @@ int main(int argc, char **argv) {
       continue;
     }
 
-    if(strcmp(argv[fileArg], "-q") == 0) {
+    if (strcmp(argv[fileArg], "-q") == 0) {
       fileArg++;
-      
-      if(fileArg == argc || (quality = atoi(argv[fileArg])) < 0) {
+
+      if (fileArg == argc || (quality = atoi(argv[fileArg])) < 0) {
         PrintUsage();
         exit(1);
       }
@@ -247,10 +248,10 @@ int main(int argc, char **argv) {
       continue;
     }
 
-    if(strcmp(argv[fileArg], "-j") == 0) {
+    if (strcmp(argv[fileArg], "-j") == 0) {
       fileArg++;
-      
-      if(fileArg == argc || (numJobs = atoi(argv[fileArg])) < 0) {
+
+      if (fileArg == argc || (numJobs = atoi(argv[fileArg])) < 0) {
         PrintUsage();
         exit(1);
       }
@@ -260,16 +261,16 @@ int main(int argc, char **argv) {
       continue;
     }
 
-    if(strcmp(argv[fileArg], "-a") == 0) {
+    if (strcmp(argv[fileArg], "-a") == 0) {
       fileArg++;
       bUseAtomics = true;
       knowArg = true;
       continue;
     }
 
-  } while(knowArg && fileArg < argc);
+  } while (knowArg && fileArg < argc);
 
-  if(fileArg == argc) {
+  if (fileArg == argc) {
     PrintUsage();
     exit(1);
   }
@@ -277,15 +278,14 @@ int main(int argc, char **argv) {
   char basename[256];
   ExtractBasename(argv[fileArg], basename, 256);
 
-  ImageFile file (argv[fileArg]);
-  if(!file.Load()) {
-    fprintf(stderr, "Error loading file: %s\n", argv[fileArg]);
+  ImageFile file(argv[fileArg]);
+  if (!file.Load()) {
     return 1;
   }
 
   FasTC::Image<> img(*file.GetImage());
 
-  if(bVerbose) {
+  if (bVerbose) {
     fprintf(stdout, "Entropy: %.5f\n", img.ComputeEntropy());
     fprintf(stdout, "Mean Local Entropy: %.5f\n", img.ComputeMeanLocalEntropy());
   }
@@ -293,12 +293,12 @@ int main(int argc, char **argv) {
   std::ofstream logFile;
   ThreadSafeStreambuf streamBuf(logFile);
   std::ostream logStream(&streamBuf);
-  if(bSaveLog) {
+  if (bSaveLog) {
     char logname[256];
     sprintf(logname, "%s.log", basename);
     logFile.open(logname);
   }
-  
+
   SCompressionSettings settings;
   settings.format = format;
   settings.bUseSIMD = bUseSIMD;
@@ -309,36 +309,40 @@ int main(int argc, char **argv) {
   settings.iJobSize = numJobs;
   settings.bUsePVRTexLib = bUsePVRTexLib;
   settings.bUseNVTT = bUseNVTT;
-  if(bSaveLog) {
+  if (bSaveLog) {
     settings.logStream = &logStream;
   } else {
     settings.logStream = NULL;
   }
 
   CompressedImage *ci = CompressImage(&img, settings);
-  if(NULL == ci) {
-    fprintf(stderr, "Error compressing image!\n");
+  if (NULL == ci) {
     return 1;
   }
 
-  double PSNR = img.ComputePSNR(ci);
-  if(PSNR > 0.0) {
-    fprintf(stdout, "PSNR: %.3f\n", PSNR);
-  }
-  else {
-    fprintf(stderr, "Error computing PSNR\n");
-  }
+  if (ci->GetWidth() != img.GetWidth() ||
+          ci->GetHeight() != img.GetHeight()) {
+    fprintf(stderr, "Cannot compute image metrics: compressed and uncompressed dimensions differ.\n");
+  } else {
+    double PSNR = img.ComputePSNR(ci);
+    if(PSNR > 0.0) {
+      fprintf(stdout, "PSNR: %.3f\n", PSNR);
+    }
+    else {
+      fprintf(stderr, "Error computing PSNR\n");
+    }
 
-  if(bVerbose) {
-    double SSIM = img.ComputeSSIM(ci);
-    if(SSIM > 0.0) {
-      fprintf(stdout, "SSIM: %.9f\n", SSIM);
-    } else {
-      fprintf(stderr, "Error computing SSIM\n");
+    if(bVerbose) {
+      double SSIM = img.ComputeSSIM(ci);
+      if(SSIM > 0.0) {
+        fprintf(stdout, "SSIM: %.9f\n", SSIM);
+      } else {
+        fprintf(stderr, "Error computing SSIM\n");
+      }
     }
   }
 
-  if(!bNoDecompress) {
+  if(bDecompress) {
     if(decompressedOutput[0] != '\0') {
       memcpy(basename, decompressedOutput, 256);
     } else if(format == FasTC::eCompressionFormat_BPTC) {

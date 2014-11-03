@@ -45,16 +45,16 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdlib>
 #include <cstdio>
 #include <cassert>
 #include <iostream>
+#include <string.h>
 
-#include "ETCCompressor.h"
-#include "DXTCompressor.h"
 #include "BPTCCompressor.h"
+#include "CompressionFormat.h"
 #include "CompressionFuncs.h"
-#include "Image.h"
+#include "DXTCompressor.h"
+#include "ETCCompressor.h"
 #include "ImageFile.h"
 #include "Pixel.h"
 #include "PVRTCCompressor.h"
@@ -188,7 +188,10 @@ static double CompressImageInSerial(
   const SCompressionSettings &settings
 ) {
   CompressionFunc f = ChooseFuncFromSettings(settings);
-  CompressionFuncWithStats fStats = ChooseFuncFromSettingsWithStats(settings);
+  CompressionFuncWithStats fStats = NULL;
+  if (settings.logStream) {
+    fStats = ChooseFuncFromSettingsWithStats(settings);
+  }
 
   double cmpTimeTotal = 0.0;
 
@@ -392,30 +395,51 @@ CompressedImage *CompressImage(
 ) {
   if(!img) return NULL;
 
-  const uint32 w = img->GetWidth();
-  const uint32 h = img->GetHeight();
+  uint32 width = img->GetWidth();
+  uint32 height = img->GetHeight();
+  assert(width > 0);
+  assert(height > 0);
+
+  // Make sure that the width and height of the image is a multiple of
+  // the block size of the format
+  uint32 blockDims[2];
+  FasTC::GetBlockDimensions(settings.format, blockDims);
+  if ((width % blockDims[0]) != 0 || (height % blockDims[1]) != 0) {
+    ReportError("WARNING - Image size is not a multiple of block size. Padding with zeros...");
+    uint32 newWidth = ((width + (blockDims[0] - 1)) / blockDims[0]) * blockDims[0];
+    uint32 newHeight = ((height + (blockDims[1] - 1)) / blockDims[1]) * blockDims[1];
+
+    assert(newWidth > width || newHeight > height);
+    assert(newWidth % blockDims[0] == 0);
+    assert(newHeight % blockDims[1] == 0);
+
+    width = newWidth;
+    height = newHeight;
+  }
+
+  uint32 dataSz = width * height * 4;
+  uint32 *data = new uint32[dataSz / 4];
+  memset(data, 0, dataSz);
 
   CompressedImage *outImg = NULL;
-  const unsigned int dataSz = w * h * 4;
-  uint32 *data = new uint32[dataSz / 4];
-
-  assert(dataSz > 0);
 
   // Allocate data based on the compression method
   uint32 cmpDataSz = CompressedImage::GetCompressedSize(dataSz, settings.format);
 
   // Make sure that we have RGBA data...
   img->ComputePixels();
-  const PixelType *pixels = img->GetPixels();
-  for(uint32 i = 0; i < img->GetNumPixels(); i++) {
-    data[i] = pixels[i].Pack();
+  for(uint32 j = 0; j < img->GetHeight(); j++) {
+    for(uint32 i = 0; i < img->GetWidth(); i++) {
+      data[j * width + i] = (*img)(i, j).Pack();
+    }
   }
 
   unsigned char *cmpData = new unsigned char[cmpDataSz];
-  CompressImageData(reinterpret_cast<uint8 *>(data), w, h, cmpData, cmpDataSz, settings);
+  uint8 *dataPtr = reinterpret_cast<uint8 *>(data);
+  if (CompressImageData(dataPtr, width, height, cmpData, cmpDataSz, settings)) {
+    outImg = new CompressedImage(width, height, settings.format, cmpData);
+  }
 
-  outImg = new CompressedImage(w, h, settings.format, cmpData);
-  
   delete [] data;
   delete [] cmpData;
   return outImg;
@@ -433,7 +457,7 @@ bool CompressImageData(
   uint8 *compressedData,
   const uint32 cmpDataSz,
   const SCompressionSettings &settings
-) { 
+) {
 
   uint32 dataSz = width * height * 4;
 
@@ -469,6 +493,19 @@ bool CompressImageData(
     if(settings.logStream) {
       ReportError("WARNING - PVRTC compressor does not support stat collection.");
     }
+  }
+
+  uint32 blockDims[2];
+  FasTC::GetBlockDimensions(settings.format, blockDims);
+  if ((width % blockDims[0]) != 0 || (height % blockDims[1]) != 0) {
+    ReportError("ERROR - CompressImageData: width or height is not multiple of block dimension");
+    return false;
+  } else if (settings.format == FasTC::eCompressionFormat_PVRTC4 &&
+             ((width & (width - 1)) != 0 ||
+              (height & (height - 1)) != 0 ||
+              width != height)) {
+    ReportError("ERROR - CompressImageData: PVRTC4 images must be square and power-of-two.");
+    return false;
   }
 
   // Allocate data based on the compression method
