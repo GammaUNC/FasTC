@@ -77,10 +77,10 @@ namespace ASTCC {
       case FasTC::eCompressionFormat_ASTC10x10: return 10;
       case FasTC::eCompressionFormat_ASTC12x10: return 10;
       case FasTC::eCompressionFormat_ASTC12x12: return 12;
-      default: assert(false); return -1;
+      default: assert(false); return static_cast<uint32>(-1);
     }
     assert(false);
-    return -1;
+    return static_cast<uint32>(-1);
   };
 
   static inline uint32 GetBlockWidth(FasTC::ECompressionFormat fmt) {
@@ -99,10 +99,10 @@ namespace ASTCC {
       case FasTC::eCompressionFormat_ASTC10x10: return 10;
       case FasTC::eCompressionFormat_ASTC12x10: return 12;
       case FasTC::eCompressionFormat_ASTC12x12: return 12;
-      default: assert(false); return -1;
+      default: assert(false); return static_cast<uint32>(-1);
     }
     assert(false);
-    return -1;
+    return static_cast<uint32>(-1);
   };
 
   // Count the number of bits set in a number.
@@ -127,7 +127,11 @@ namespace ASTCC {
   // Adds more precision to the blue channel as described
   // in C.2.14
   static inline FasTC::Pixel BlueContract(int32 a, int32 r, int32 g, int32 b) {
-    return FasTC::Pixel(a, (r + b) >> 1, (g + b) >> 1, b);
+    return FasTC::Pixel(
+            static_cast<int16>(a),
+            static_cast<int16>((r + b) >> 1),
+            static_cast<int16>((g + b) >> 1),
+            static_cast<int16>(b));
   }
 
   // Partition selection functions as specified in
@@ -139,7 +143,7 @@ namespace ASTCC {
     return p;
   }
 
-  static int32 SelectPartition(int32 seed, int32 x, int32 y, int32 z,
+  static uint32 SelectPartition(int32 seed, int32 x, int32 y, int32 z,
                                int32 partitionCount, int32 smallBlock) {
     if(1 == partitionCount)
       return 0;
@@ -152,19 +156,19 @@ namespace ASTCC {
 
     seed += (partitionCount-1) * 1024;
 
-    uint32 rnum = hash52(seed);
-    uint8 seed1  =  rnum        & 0xF;
-    uint8 seed2  = (rnum >>  4) & 0xF;
-    uint8 seed3  = (rnum >>  8) & 0xF;
-    uint8 seed4  = (rnum >> 12) & 0xF;
-    uint8 seed5  = (rnum >> 16) & 0xF;
-    uint8 seed6  = (rnum >> 20) & 0xF;
-    uint8 seed7  = (rnum >> 24) & 0xF;
-    uint8 seed8  = (rnum >> 28) & 0xF;
-    uint8 seed9  = (rnum >> 18) & 0xF;
-    uint8 seed10 = (rnum >> 22) & 0xF;
-    uint8 seed11 = (rnum >> 26) & 0xF;
-    uint8 seed12 = ((rnum >> 30) | (rnum << 2)) & 0xF;
+    uint32 rnum = hash52(static_cast<uint32>(seed));
+    uint8 seed1  = static_cast<uint8>(rnum        & 0xF);
+    uint8 seed2  = static_cast<uint8>((rnum >>  4) & 0xF);
+    uint8 seed3  = static_cast<uint8>((rnum >>  8) & 0xF);
+    uint8 seed4  = static_cast<uint8>((rnum >> 12) & 0xF);
+    uint8 seed5  = static_cast<uint8>((rnum >> 16) & 0xF);
+    uint8 seed6  = static_cast<uint8>((rnum >> 20) & 0xF);
+    uint8 seed7  = static_cast<uint8>((rnum >> 24) & 0xF);
+    uint8 seed8  = static_cast<uint8>((rnum >> 28) & 0xF);
+    uint8 seed9  = static_cast<uint8>((rnum >> 18) & 0xF);
+    uint8 seed10 = static_cast<uint8>((rnum >> 22) & 0xF);
+    uint8 seed11 = static_cast<uint8>((rnum >> 26) & 0xF);
+    uint8 seed12 = static_cast<uint8>(((rnum >> 30) | (rnum << 2)) & 0xF);
 
     seed1 *= seed1;     seed2 *= seed2;
     seed3 *= seed3;     seed4 *= seed4;
@@ -203,17 +207,17 @@ namespace ASTCC {
     return 3;
   }
 
-  static inline int32 Select2DPartition(int32 seed, int32 x, int32 y,
+  static inline uint32 Select2DPartition(int32 seed, int32 x, int32 y,
                                         int32 partitionCount, int32 smallBlock) {
     return SelectPartition(seed, x, y, 0, partitionCount, smallBlock);
   }
 
-  static inline int32 SelectSmall2DPartition(int32 seed, int32 x, int32 y,
+  static inline uint32 SelectSmall2DPartition(int32 seed, int32 x, int32 y,
                                              int32 partitionCount) {
     return Select2DPartition(seed, x, y, partitionCount, 1);
   }
 
-  static inline int32 SelectLarge2DPartition(int32 seed, int32 x, int32 y,
+  static inline uint32 SelectLarge2DPartition(int32 seed, int32 x, int32 y,
                                              int32 partitionCount) {
     return Select2DPartition(seed, x, y, partitionCount, 0);
   }

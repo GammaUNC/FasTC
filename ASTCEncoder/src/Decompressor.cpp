@@ -920,8 +920,8 @@ namespace ASTCC {
     for(uint32 i = 0; i < 8; i++) {
       // Taken from http://graphics.stanford.edu/~seander/bithacks.html#ReverseByteWith64Bits
       #define REVERSE_BYTE(b) (((b) * 0x80200802ULL) & 0x0884422110ULL) * 0x0101010101ULL >> 32
-      unsigned char a = REVERSE_BYTE(texelWeightData[i]);
-      unsigned char b = REVERSE_BYTE(texelWeightData[15 - i]);
+      unsigned char a = static_cast<unsigned char>(REVERSE_BYTE(texelWeightData[i]));
+      unsigned char b = static_cast<unsigned char>(REVERSE_BYTE(texelWeightData[15 - i]));
       #undef REVERSE_BYTE
 
       texelWeightData[i] = b;
