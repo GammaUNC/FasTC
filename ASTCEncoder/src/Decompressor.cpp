@@ -312,7 +312,7 @@ namespace ASTCC {
     while(--range > 0) {
       IntegerEncodedValue val = IntegerEncodedValue::CreateEncoding(range);
       uint32 bitLength = val.GetBitLength(nValues);
-      if(bitLength < nBitsForColorData) {
+      if(bitLength <= nBitsForColorData) {
         // Find the smallest possible range that matches the given encoding
         while(--range > 0) {
           IntegerEncodedValue newval = IntegerEncodedValue::CreateEncoding(range);
