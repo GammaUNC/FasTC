@@ -71,7 +71,6 @@ int main(int argc, char **argv) {
 
   ImageFile imgf (argv[1]);
   if(!imgf.Load()) {
-    fprintf(stderr, "Error loading file: %s\n", argv[1]);
     return 1;
   }
 
