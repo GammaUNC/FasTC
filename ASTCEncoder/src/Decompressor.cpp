@@ -912,6 +912,18 @@ namespace ASTCC {
     }
     assert(strm.GetBitsRead() + weightParams.GetPackedBitSize() == 128);
 
+    // Decode both color data and texel weight data
+    uint32 colorValues[32]; // Four values, two endpoints, four maximum paritions
+    DecodeColorValues(colorValues, colorEndpointData, colorEndpointMode,
+                      nPartitions, colorDataBits);
+
+    FasTC::Pixel endpoints[4][2];
+    const uint32 *colorValuesPtr = colorValues;
+    for(uint32 i = 0; i < nPartitions; i++) {
+      ComputeEndpoints(endpoints[i][0], endpoints[i][1],
+                       colorValuesPtr, colorEndpointMode[i]);
+    }
+
     // Read the texel weight data..
     uint8 texelWeightData[16];
     memcpy(texelWeightData, inBuf, sizeof(texelWeightData));
@@ -928,10 +940,10 @@ namespace ASTCC {
       texelWeightData[15-i] = a;
     }
 
-    // Decode both color data and texel weight data
-    uint32 colorValues[32]; // Four values, two endpoints, four maximum paritions
-    DecodeColorValues(colorValues, colorEndpointData, colorEndpointMode,
-                      nPartitions, colorDataBits);
+    // Make sure that higher non-texel bits are set to zero
+    const uint32 clearByteStart = (weightParams.GetPackedBitSize() >> 3) + 1;
+    texelWeightData[clearByteStart - 1] &= (1 << (weightParams.GetPackedBitSize() % 8)) - 1;
+    memset(texelWeightData + clearByteStart, 0, 16 - clearByteStart);
 
     std::vector<IntegerEncodedValue> texelWeightValues;
     FasTC::BitStreamReadOnly weightStream (texelWeightData);
@@ -940,13 +952,6 @@ namespace ASTCC {
       DecodeIntegerSequence(texelWeightValues, weightStream,
                             weightParams.m_MaxWeight,
                             weightParams.GetNumWeightValues());
-
-    FasTC::Pixel endpoints[4][2];
-    const uint32 *colorValuesPtr = colorValues;
-    for(uint32 i = 0; i < nPartitions; i++) {
-      ComputeEndpoints(endpoints[i][0], endpoints[i][1],
-                       colorValuesPtr, colorEndpointMode[i]);
-    }
 
     // Blocks can be at most 12x12, so we can have as many as 144 weights
     uint32 weights[2][144];
