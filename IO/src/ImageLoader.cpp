@@ -157,8 +157,8 @@ bool ImageLoader::LoadFromPixelBuffer(const uint32 *data, bool flipY) {
   m_BlueData = new uint8[nPixels];
   m_AlphaData = new uint8[nPixels];
 
-  for (uint32 i = 0; i < m_Width; i++) {
-    for (uint32 j = 0; j < m_Height; j++) {
+  for (uint32 j = 0; j < m_Height; j++) {
+    for (uint32 i = 0; i < m_Width; i++) {
       uint32 idx = j*m_Height + i;
       uint32 pIdx = idx;
       if(flipY)
@@ -185,9 +185,6 @@ FasTC::Image<> *ImageLoader::LoadImage() {
   // Read the image data!
   if(!ReadData())
     return NULL;
-
-  m_Width = GetWidth();
-  m_Height = GetHeight();
 
   // Create RGBA buffer 
   const unsigned int dataSz = 4 * GetWidth() * GetHeight();

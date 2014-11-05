@@ -69,7 +69,9 @@ ImageLoaderTGA::~ImageLoaderTGA() { }
 
 bool ImageLoaderTGA::ReadData() {
   Targa tga;
-  targa_loadFromData(&tga, m_RawData, m_NumRawDataBytes);
+  if (targa_loadFromData(&tga, m_RawData, m_NumRawDataBytes) < 0) {
+    return false;
+  }
 
   m_Width = tga.width;
   m_Height = tga.height;
