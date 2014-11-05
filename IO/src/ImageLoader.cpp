@@ -159,10 +159,10 @@ bool ImageLoader::LoadFromPixelBuffer(const uint32 *data, bool flipY) {
 
   for (uint32 j = 0; j < m_Height; j++) {
     for (uint32 i = 0; i < m_Width; i++) {
-      uint32 idx = j*m_Height + i;
+      uint32 idx = j*m_Width + i;
       uint32 pIdx = idx;
       if(flipY)
-        idx = (m_Height - j - 1)*m_Height + i;
+        idx = (m_Height - j - 1)*m_Width + i;
       uint32 pixel = data[idx];
       m_RedData[pIdx] = static_cast<uint8>(pixel & 0xFF);
       m_GreenData[pIdx] = static_cast<uint8>((pixel >> 8) & 0xFF);
