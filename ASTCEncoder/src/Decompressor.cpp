@@ -445,9 +445,9 @@ namespace ASTCC {
 
             case 4: {
               C = 13;
-              // B = dcb000dcb
+              // B = dcb0000dc
               uint32 dcb = (bitval >> 1) & 7;
-              B = (dcb << 6) | dcb;
+              B = (dcb << 6) | (dcb >> 1);
             }
             break;
 
