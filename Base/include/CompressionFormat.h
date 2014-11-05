@@ -146,26 +146,32 @@ namespace FasTC {
       case eCompressionFormat_ASTC10x5:
         outSz[0] = 10;
         outSz[1] = 5;
+        break;
 
       case eCompressionFormat_ASTC10x6:
         outSz[0] = 10;
         outSz[1] = 6;
+        break;
 
       case eCompressionFormat_ASTC10x8:
         outSz[0] = 10;
         outSz[1] = 8;
+        break;
 
       case eCompressionFormat_ASTC10x10:
         outSz[0] = 10;
         outSz[1] = 10;
+        break;
 
       case eCompressionFormat_ASTC12x10:
         outSz[0] = 12;
         outSz[1] = 10;
+        break;
 
       case eCompressionFormat_ASTC12x12:
         outSz[0] = 12;
         outSz[1] = 12;
+        break;
     }
   }
 
