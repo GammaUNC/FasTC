@@ -78,3 +78,57 @@ FOREACH(TEST ${TESTS})
   TARGET_LINK_LIBRARIES(${TEST_NAME} gtest_main)
   ADD_TEST(${TEST_NAME} ${TEST_NAME})
 ENDFOREACH()
+
+
+# Setup the test that makes sure that we don't have any
+# regressions in the ASTC decoder.
+SET(TEST_NAME Test_ASTCEncoder_Decompress)
+
+# Copy the .pvr files that we will use for testing...
+SET(TEST_IMAGES 4x4 12x12 8x8 6x5 10x8 )
+FOREACH(IMAGE ${TEST_IMAGES})
+  FILE(COPY
+    ${FasTC_SOURCE_DIR}/ASTCEncoder/test/data/mandrill_${IMAGE}.astc
+    DESTINATION ${CMAKE_BINARY_DIR}
+    USE_SOURCE_PERMISSIONS
+    )
+ENDFOREACH()
+
+FOREACH(IMAGE ${TEST_IMAGES})
+  FILE(COPY
+    ${FasTC_SOURCE_DIR}/ASTCEncoder/test/data/mandrill_decompressed_${IMAGE}.png
+    DESTINATION ${CMAKE_BINARY_DIR}
+    USE_SOURCE_PERMISSIONS
+    )
+ENDFOREACH()
+
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/IO/include )
+INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/IO/include )
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Core/include )
+
+# HACK for MSVC 2012...
+IF(MSVC)
+  ADD_DEFINITIONS(-D_VARIADIC_MAX=10)
+ENDIF()
+
+# The cpp file to compile for the test
+ADD_EXECUTABLE(${TEST_NAME} TestASTCDecompression.cpp)
+
+# Libraries that we need...
+TARGET_LINK_LIBRARIES(${TEST_NAME} ASTCEncoder)
+TARGET_LINK_LIBRARIES(${TEST_NAME} gtest_main)
+TARGET_LINK_LIBRARIES(${TEST_NAME} FasTCBase)
+TARGET_LINK_LIBRARIES(${TEST_NAME} FasTCIO)
+TARGET_LINK_LIBRARIES(${TEST_NAME} FasTCCore)
+
+IF(MSVC)
+  ADD_TEST(${TEST_NAME}
+    ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/Debug/${TEST_NAME}
+    )
+ELSE()
+  ADD_TEST(${TEST_NAME}
+    ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/${TEST_NAME}
+    )
+ENDIF()
