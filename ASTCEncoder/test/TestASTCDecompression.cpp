@@ -58,29 +58,31 @@
 #include "ImageFile.h"
 #include "Image.h"
 
+#include <string>
+
 class ImageTester {
  private:
-  static void GenerateTestFilenames(const char *suffix, char *outASTC, char *outPNG) {
-    const char *basename = "mandrill";
-    sprintf(outASTC, "%s_%s.astc", basename, suffix);
-    sprintf(outPNG, "%s_decompressed_%s.png", basename, suffix);
+  static std::string GenerateTestFilename(const std::string &basename,
+                                          const std::string &suffix,
+                                          const std::string &ext) {
+    return basename + suffix + std::string(".") + ext;
   }
 
  public:
   explicit ImageTester(const char *suffix) {
-    char astcFilename[256];
-    char pngFilename[256];
+    std::string astcFilename =
+      GenerateTestFilename("mandrill_", std::string(suffix), "astc");
+    std::string pngFilename =
+      GenerateTestFilename("mandrill_decompressed_", std::string(suffix), "png");
 
-    GenerateTestFilenames(suffix, astcFilename, pngFilename);
-
-    ImageFile astc (astcFilename);
+    ImageFile astc (astcFilename.c_str());
     bool success = astc.Load();
     EXPECT_TRUE(success);
     if (!success) {
       return;
     }
 
-    ImageFile png (pngFilename);
+    ImageFile png (pngFilename.c_str());
     success = png.Load();
     EXPECT_TRUE(success);
     if (!success) {
@@ -92,7 +94,6 @@ class ImageTester {
   }
 };
 
-// 4x4 12x12 8x8 6x5 10x8
 TEST(Decompressor, Decompress4x4) {
   ImageTester("4x4");
 }
