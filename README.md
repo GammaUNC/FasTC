@@ -1,7 +1,7 @@
 FasTC [![Build Status](https://travis-ci.org/Mokosha/FasTC.png)](https://travis-ci.org/Mokosha/FasTC)
 =======
 
-A **Fas**t **T**exture **C**ompressor for a variety of formats. This compressor 
+A <b>Fas</b>t <b>T</b>exture <b>C</b>ompressor for a variety of formats. This compressor 
 supports multi-threading via native Win32 threads on Windows and pthreads on other
 operating systems. It has been tested on Windows, OS X, and Ubuntu Linux.
 
