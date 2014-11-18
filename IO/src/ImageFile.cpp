@@ -41,7 +41,7 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "ImageFile.h"
+#include "FasTC/ImageFile.h"
 
 #include <cstring>
 #include <cstdlib>
@@ -50,11 +50,11 @@
 #include <cassert>
 #include <algorithm>
 
-#include "ImageWriter.h"
-#include "ImageLoader.h"
-#include "CompressedImage.h"
-#include "Image.h"
-#include "FileStream.h"
+#include "FasTC/ImageWriter.h"
+#include "FasTC/ImageLoader.h"
+#include "FasTC/CompressedImage.h"
+#include "FasTC/Image.h"
+#include "FasTC/FileStream.h"
 
 #ifdef PNG_FOUND
 #  include "ImageLoaderPNG.h"

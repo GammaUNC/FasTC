@@ -53,7 +53,7 @@
 #ifndef CORE_SRC_COMPRESSIONFUNCS_H_
 #define CORE_SRC_COMPRESSIONFUNCS_H_
 
-#include "CompressionJob.h"
+#include "FasTC/CompressionJob.h"
 #include <iosfwd>
 
 // A compression function format. It takes the raw data and image dimensions and 

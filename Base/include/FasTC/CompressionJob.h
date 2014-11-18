@@ -53,8 +53,8 @@
 #ifndef __COMPRESSION_JOBS_H__
 #define __COMPRESSION_JOBS_H__
 
-#include "TexCompTypes.h"
-#include "CompressionFormat.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/CompressionFormat.h"
 
 #ifdef _MSC_VER
 #   define ALIGN(x) __declspec( align(x) )

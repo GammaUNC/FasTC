@@ -44,7 +44,7 @@
 #ifndef _IMAGE_LOADER_PVR_H_
 #define _IMAGE_LOADER_PVR_H_
 
-#include "ImageLoader.h"
+#include "FasTC/ImageLoader.h"
 
 class ImageLoaderPVR : public ImageLoader {
  public:

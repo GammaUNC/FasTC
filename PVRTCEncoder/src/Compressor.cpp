@@ -50,7 +50,7 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "PVRTCCompressor.h"
+#include "FasTC/PVRTCCompressor.h"
 
 #include <algorithm>
 #include <cassert>
@@ -59,8 +59,9 @@
 #include <iostream>
 #include <vector>
 
-#include "Pixel.h"
-#include "Color.h"
+#include "FasTC/Pixel.h"
+#include "FasTC/Color.h"
+
 #include "PVRTCImage.h"
 #include "Block.h"
 

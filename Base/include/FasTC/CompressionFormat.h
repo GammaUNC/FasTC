@@ -53,7 +53,7 @@
 #ifndef _BASE_INCLUDE_COMPRESSIONFORMAT_H_
 #define _BASE_INCLUDE_COMPRESSIONFORMAT_H_
 
-#include "TexCompTypes.h"
+#include "FasTC/TexCompTypes.h"
 
 namespace FasTC {
 

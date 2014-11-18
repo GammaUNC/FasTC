@@ -50,7 +50,7 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "TexCompTypes.h"
+#include "FasTC/TexCompTypes.h"
 
 enum BPTCParallelStage {
   eParallelStage_Uniform,

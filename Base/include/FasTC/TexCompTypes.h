@@ -57,7 +57,7 @@
 #ifndef _TEX_COMP_TYPES_H_
 #define _TEX_COMP_TYPES_H_
 
-#include "FasTCBaseConfig.h"
+#include "FasTC/BaseConfig.h"
 
 // Do we support C++11?
 #ifdef FASTC_BASE_HAS_CPP11_TYPES

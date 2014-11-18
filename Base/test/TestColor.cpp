@@ -51,7 +51,7 @@
  */
 
 #include "gtest/gtest.h"
-#include "Color.h"
+#include "FasTC/Color.h"
 
 static const float kEpsilon = 1e-6f;
 

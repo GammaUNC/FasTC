@@ -44,7 +44,7 @@
 #ifndef __FILE_STREAM_H__
 #define __FILE_STREAM_H__
 
-#include "TexCompTypes.h"
+#include "FasTC/TexCompTypes.h"
 
 enum EFileMode {
   eFileMode_Read,

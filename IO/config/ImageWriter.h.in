@@ -44,8 +44,8 @@
 #ifndef _IMAGE_WRITER_H_
 #define _IMAGE_WRITER_H_
 
-#include "ImageFileFormat.h"
-#include "TexCompTypes.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/ImageFileFormat.h"
 
 namespace FasTC {
   class Pixel;

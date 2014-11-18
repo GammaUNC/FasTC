@@ -53,8 +53,8 @@
 #ifndef PVRTCENCODER_SRC_BLOCK_H_
 #define PVRTCENCODER_SRC_BLOCK_H_
 
-#include "TexCompTypes.h"
-#include "Pixel.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/Pixel.h"
 
 namespace PVRTCC {
 

@@ -53,7 +53,7 @@
 #ifndef PVRTCENCODER_TEST_TESTUTILS_H_
 #define PVRTCENCODER_TEST_TESTUTILS_H_
 
-#include "TexCompTypes.h"
+#include "FasTC/TexCompTypes.h"
 
 class PixelPrinter {
  private:

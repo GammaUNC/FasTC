@@ -51,7 +51,7 @@
  */
 
 #include "gtest/gtest.h"
-#include "Pixel.h"
+#include "FasTC/Pixel.h"
 
 TEST(Pixel, DefaultConstructor) {
   FasTC::Pixel p;

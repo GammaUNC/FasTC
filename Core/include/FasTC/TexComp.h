@@ -44,11 +44,11 @@
 #ifndef _TEX_COMP_H_
 #define _TEX_COMP_H_
 
-#include "CompressedImage.h"
-#include "CompressionJob.h"
+#include "FasTC/CompressedImage.h"
+#include "FasTC/CompressionJob.h"
 
 #include <iosfwd>
-#include "ImageFwd.h"
+#include "FasTC/ImageFwd.h"
 
 // Forward declarations
 class ImageFile;

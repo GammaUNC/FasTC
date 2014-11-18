@@ -50,7 +50,7 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "FileStream.h"
+#include "FasTC/FileStream.h"
 
 #define _CRT_SECURE_NO_WARNINGS
 #define WIN32_LEAN_AND_MEAN

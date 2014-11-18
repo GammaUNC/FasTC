@@ -66,9 +66,11 @@
 #ifndef __RGBA_ENDPOINTS_H__
 #define __RGBA_ENDPOINTS_H__
 
-#include "TexCompTypes.h"
-#include "Vector4.h"
-#include "Matrix4x4.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/Vector4.h"
+#include "FasTC/Matrix4x4.h"
+
+#include "FasTC/Shapes.h"
 
 #include <algorithm>
 #include <cassert>
@@ -76,8 +78,6 @@
 #include <cfloat>
 #include <cstring>
 #include <limits>
-
-#include "Shapes.h"
 
 static const uint32 kNumColorChannels = 4;
 static const uint32 kMaxNumDataPoints = 16;

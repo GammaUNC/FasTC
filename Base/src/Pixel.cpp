@@ -50,13 +50,13 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "Pixel.h"
+#include "FasTC/Pixel.h"
 
 #include <cstring>
 #include <cassert>
 #include <algorithm>
 
-#include "Bits.h"
+#include "FasTC/Bits.h"
 
 template<typename T>
 static inline T Clamp(const T &v, const T &_min, const T &_max) {

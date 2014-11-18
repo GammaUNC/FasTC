@@ -41,7 +41,7 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "CompressionJob.h"
+#include "FasTC/CompressionJob.h"
 
 #include <new>
 #include <cstdlib>

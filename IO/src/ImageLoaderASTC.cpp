@@ -58,13 +58,13 @@
 #include <cstring>
 #include <iostream>
 
-#include "TexCompTypes.h"
-#include "CompressionFormat.h"
-#include "ScopedAllocator.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/Image.h"
+#include "FasTC/CompressionFormat.h"
+#include "FasTC/ScopedAllocator.h"
 
 #include "GLDefines.h"
-#include "Image.h"
-#include "CompressedImage.h"
+#include "FasTC/CompressedImage.h"
 
 static bool GetFormatForBlockDimensions(FasTC::ECompressionFormat &out,
                                         uint32 blockWidth, uint32 blockHeight) {

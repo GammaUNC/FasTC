@@ -50,21 +50,21 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "CompressedImage.h"
+#include "FasTC/CompressedImage.h"
 
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 
-#include "Pixel.h"
+#include "FasTC/Pixel.h"
 
-#include "TexCompTypes.h"
-#include "BPTCCompressor.h"
-#include "PVRTCCompressor.h"
-#include "DXTCompressor.h"
-#include "ETCCompressor.h"
-#include "ASTCCompressor.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/BPTCCompressor.h"
+#include "FasTC/PVRTCCompressor.h"
+#include "FasTC/DXTCompressor.h"
+#include "FasTC/ETCCompressor.h"
+#include "FasTC/ASTCCompressor.h"
 
 using FasTC::CompressionJob;
 using FasTC::DecompressionJob;

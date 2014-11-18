@@ -53,7 +53,7 @@
 #ifndef ASTCENCODER_INCLUDE_ASTCCOMPRESSOR_H_
 #define ASTCENCODER_INCLUDE_ASTCCOMPRESSOR_H_
 
-#include "CompressionJob.h"
+#include "FasTC/CompressionJob.h"
 
 namespace ASTCC {
 

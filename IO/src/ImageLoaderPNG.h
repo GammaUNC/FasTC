@@ -44,7 +44,7 @@
 #ifndef _IMAGE_LOADER_PNG_H_
 #define _IMAGE_LOADER_PNG_H_
 
-#include "ImageLoader.h"
+#include "FasTC/ImageLoader.h"
 
 class ImageLoaderPNG : public ImageLoader {
  public:

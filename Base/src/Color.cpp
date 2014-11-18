@@ -50,7 +50,7 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "Color.h"
+#include "FasTC/Color.h"
 
 namespace FasTC {
 

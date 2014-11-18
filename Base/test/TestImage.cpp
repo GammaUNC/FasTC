@@ -51,9 +51,9 @@
  */
 
 #include "gtest/gtest.h"
-#include "Image.h"
-#include "IPixel.h"
-#include "Pixel.h"
+#include "FasTC/Image.h"
+#include "FasTC/IPixel.h"
+#include "FasTC/Pixel.h"
 #include "Utils.h"
 
 #include <cstdlib>

@@ -44,9 +44,9 @@
 #ifndef _IMAGE_LOADER_H_
 #define _IMAGE_LOADER_H_
 
-#include "ImageFileFormat.h"
-#include "TexCompTypes.h"
-#include "ImageFwd.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/ImageFwd.h"
+#include "FasTC/ImageFileFormat.h"
 
 class ImageLoader {
 

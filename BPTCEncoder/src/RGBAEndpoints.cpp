@@ -73,9 +73,10 @@
 //
 //------------------------------------------------------------------------------
 
-#include "BPTCConfig.h"
+#include "FasTC/BPTCConfig.h"
+#include "FasTC/BPTCCompressor.h"
+
 #include "RGBAEndpoints.h"
-#include "BPTCCompressor.h"
 #include "CompressionMode.h"
 
 #include <cassert>

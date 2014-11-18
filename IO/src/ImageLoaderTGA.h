@@ -53,7 +53,7 @@
 #ifndef IO_SRC_IMAGELOADERTGA_H_
 #define IO_SRC_IMAGELOADERTGA_H_
 
-#include "ImageLoader.h"
+#include "FasTC/ImageLoader.h"
 
 class ImageLoaderTGA : public ImageLoader {
  public:

@@ -40,23 +40,22 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
-INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Base/include )
-INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/Base/include)
-
-INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/IO/include )
-INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/IO/include )
-
 SET( SOURCES
 	"src/ImageWriter.cpp"
 	"src/ImageLoader.cpp"
 	"src/ImageFile.cpp"
 )
 
+SET( LIBRARY_HEADERS
+	"include/FasTC/ImageFile.h"
+	"include/FasTC/ImageFileFormat.h"
+	"include/FasTC/FileStream.h"
+)
+
 SET( HEADERS
 	"config/ImageWriter.h.in"
 	"config/ImageLoader.h.in"
-	"include/ImageFile.h"
-	"include/FileStream.h"
+    ${LIBRARY_HEADERS}
 )
 
 IF( WIN32 )
@@ -111,20 +110,32 @@ ENDIF(OPENGL_FOUND)
 
 CONFIGURE_FILE(
 	"config/ImageLoader.h.in"
-	"include/ImageLoader.h"
+	"include/FasTC/ImageLoader.h"
 )
 
 CONFIGURE_FILE(
 	"config/ImageWriter.h.in"
-	"include/ImageWriter.h"
+	"include/FasTC/ImageWriter.h"
 )
 
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Base/include)
+INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/Base/include)
 INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Core/include )
+INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/Core/include )
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/IO/include )
+INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/IO/include )
 
-ADD_LIBRARY(FasTCIO
-	${SOURCES}
-	${HEADERS}
+ADD_LIBRARY(FasTCIO ${SOURCES} ${HEADERS})
+
+INSTALL(TARGETS FasTCIO EXPORT FasTCTargets ARCHIVE DESTINATION lib COMPONENT lib)
+SET(EXPORT_HEADERS
+  ${LIBRARY_HEADERS}
+  "${FasTC_BINARY_DIR}/IO/include/FasTC/ImageWriter.h"
+  "${FasTC_BINARY_DIR}/IO/include/FasTC/ImageLoader.h"
 )
+INSTALL(
+  FILES ${EXPORT_HEADERS}
+  DESTINATION ${INCLUDE_INSTALL_DIR}/FasTC COMPONENT dev)
 
 TARGET_LINK_LIBRARIES( FasTCIO FasTCBase )
 TARGET_LINK_LIBRARIES( FasTCIO FasTCCore )

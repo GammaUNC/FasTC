@@ -10,8 +10,8 @@
 	Lesser General Public License for more details.
 */
 
-#include "TexCompTypes.h"
-#include "CompressionJob.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/CompressionJob.h"
 
 namespace DXTC
 {

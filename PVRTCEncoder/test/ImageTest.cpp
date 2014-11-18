@@ -52,7 +52,7 @@
 
 #include "gtest/gtest.h"
 #include "PVRTCImage.h"
-#include "Pixel.h"
+#include "FasTC/Pixel.h"
 #include "TestUtils.h"
 
 #include <cstdlib>

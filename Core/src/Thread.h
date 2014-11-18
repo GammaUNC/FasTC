@@ -44,7 +44,7 @@
 #ifndef __TEX_COMP_THREAD_H__
 #define __TEX_COMP_THREAD_H__
 
-#include "TexCompTypes.h"
+#include "FasTC/TexCompTypes.h"
 
 //!HACK! Apparently MSVC has issues with Yield()...????
 #ifdef _MSC_VER

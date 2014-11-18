@@ -53,10 +53,10 @@
 #include "gtest/gtest.h"
 
 // This is our library header
-#include "ASTCCompressor.h"
+#include "FasTC/ASTCCompressor.h"
 
-#include "ImageFile.h"
-#include "Image.h"
+#include "FasTC/ImageFile.h"
+#include "FasTC/Image.h"
 
 #include <string>
 

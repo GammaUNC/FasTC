@@ -41,8 +41,8 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "StopWatch.h"
-#include "TexCompTypes.h"
+#include "FasTC/StopWatch.h"
+#include "FasTC/TexCompTypes.h"
 
 #include <stdlib.h>
 #include <string.h>

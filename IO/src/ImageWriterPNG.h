@@ -44,8 +44,8 @@
 #ifndef _IMAGE_WRITER_PNG_H_
 #define _IMAGE_WRITER_PNG_H_
 
-#include "ImageWriter.h"
-#include "ImageFwd.h"
+#include "FasTC/ImageWriter.h"
+#include "FasTC/ImageFwd.h"
 
 // Forward Declare
 class ImageWriterPNG : public ImageWriter {

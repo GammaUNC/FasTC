@@ -50,8 +50,8 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "Pixel.h"
-#include "IPixel.h"
+#include "FasTC/Pixel.h"
+#include "FasTC/IPixel.h"
 
 namespace FasTC {
 

@@ -57,7 +57,7 @@
 #include <cassert>
 #include <iostream>
 
-#include "TexCompTypes.h"
+#include "FasTC/TexCompTypes.h"
 
 #include "targa.h"
 

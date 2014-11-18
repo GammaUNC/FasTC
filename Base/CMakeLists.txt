@@ -67,8 +67,8 @@ CHECK_CXX_SOURCE_COMPILES("
 )
 
 CONFIGURE_FILE(
-  "config/FasTCBaseConfig.h.in"
-  "include/FasTCBaseConfig.h"
+  "config/BaseConfig.h.in"
+  "include/FasTC/BaseConfig.h"
 )
 
 SET( SOURCES
@@ -79,34 +79,50 @@ SET( SOURCES
   "src/Color.cpp"
 )
 
+SET( LIBRARY_HEADERS
+  "include/FasTC/Image.h"  
+  "include/FasTC/ImageFwd.h"
+  "include/FasTC/Pixel.h"
+  "include/FasTC/TexCompTypes.h"
+  "include/FasTC/CompressionFormat.h"
+  "include/FasTC/CompressionJob.h"
+  "include/FasTC/IPixel.h"
+  "include/FasTC/Color.h"
+  "include/FasTC/Bits.h"
+  "include/FasTC/BitStream.h"
+  "include/FasTC/MatrixBase.h"
+  "include/FasTC/MatrixSquare.h"
+  "include/FasTC/Matrix3x3.h"
+  "include/FasTC/Matrix4x4.h"
+  "include/FasTC/ScopedAllocator.h"
+  "include/FasTC/VectorBase.h"
+  "include/FasTC/Vector2.h"
+  "include/FasTC/Vector3.h"
+  "include/FasTC/Vector4.h")
+
 SET( HEADERS
-  "include/Bits.h"
-  "include/BitStream.h"
-  "include/Color.h"
-  "include/CompressionJob.h"
-  "config/FasTCBaseConfig.h.in"
-  "include/IPixel.h"
-  "include/Image.h"
-  "include/MatrixBase.h"
-  "include/MatrixSquare.h"
-  "include/Matrix3x3.h"
-  "include/Pixel.h"
-  "include/ScopedAllocator.h"
-  "include/TexCompTypes.h"
-  "include/VectorBase.h"
-  "include/Vector2.h"
-  "include/Vector3.h"
-  "include/Vector4.h"
+  ${LIBRARY_HEADERS}
+  "${FasTC_BINARY_DIR}/Base/include/FasTC/BaseConfig.h"
+  "config/BaseConfig.h.in"
 )
 
 INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)
 INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/Base/include)
 
 ADD_LIBRARY( FasTCBase
-	${HEADERS}
-	${SOURCES}
+  ${HEADERS}
+  ${SOURCES}
 )
 
+INSTALL(
+  TARGETS FasTCBase
+  EXPORT FasTCTargets
+  ARCHIVE DESTINATION lib COMPONENT lib)
+
+INSTALL(
+  FILES ${LIBRARY_HEADERS} "${FasTC_BINARY_DIR}/Base/include/FasTC/BaseConfig.h"
+  DESTINATION ${INCLUDE_INSTALL_DIR}/FasTC COMPONENT dev)
+
 IF( NOT WIN32 AND NOT APPLE )
-  	TARGET_LINK_LIBRARIES( FasTCBase rt )
+  TARGET_LINK_LIBRARIES( FasTCBase rt )
 ENDIF()

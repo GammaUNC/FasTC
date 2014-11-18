@@ -41,8 +41,8 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "ImageWriter.h"
-#include "Pixel.h"
+#include "FasTC/ImageWriter.h"
+#include "FasTC/Pixel.h"
 
 uint32 ImageWriter::GetChannelForPixel(uint32 x, uint32 y, uint32 ch) {
   return m_Pixels[y * GetWidth() + x].Component((ch+1) % 4);

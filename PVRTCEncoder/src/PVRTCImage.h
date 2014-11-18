@@ -53,9 +53,10 @@
 #ifndef PVRTCENCODER_SRC_IMAGE_H_
 #define PVRTCENCODER_SRC_IMAGE_H_
 
-#include "TexCompTypes.h"
-#include "PVRTCCompressor.h"
-#include "Image.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/Image.h"
+
+#include "FasTC/PVRTCCompressor.h"
 
 #include <vector>
 

@@ -41,7 +41,7 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "Image.h"
+#include "FasTC/Image.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -50,9 +50,9 @@
 #include <cassert>
 #include <cmath>
 
-#include "Color.h"
-#include "Pixel.h"
-#include "IPixel.h"
+#include "FasTC/Color.h"
+#include "FasTC/Pixel.h"
+#include "FasTC/IPixel.h"
 
 template <typename T>
 static inline T sad( const T &a, const T &b ) {

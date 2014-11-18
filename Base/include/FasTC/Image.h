@@ -44,8 +44,8 @@
 #ifndef FASTC_BASE_INCLUDE_IMAGE_H_
 #define FASTC_BASE_INCLUDE_IMAGE_H_
 
-#include "TexCompTypes.h"
-#include "ImageFwd.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/ImageFwd.h"
 
 namespace FasTC {
 

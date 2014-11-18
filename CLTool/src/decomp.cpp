@@ -54,10 +54,10 @@
 #  include <Windows.h>
 #endif
 
-#include "Image.h"
-#include "ImageFile.h"
-#include "TexComp.h"
-#include "ThreadSafeStreambuf.h"
+#include "FasTC/Image.h"
+#include "FasTC/ImageFile.h"
+#include "FasTC/TexComp.h"
+#include "FasTC/ThreadSafeStreambuf.h"
 
 void PrintUsage() {
   fprintf(stderr, "Usage: decomp <in_img> <out_img>\n");

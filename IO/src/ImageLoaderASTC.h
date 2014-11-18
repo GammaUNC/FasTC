@@ -53,7 +53,7 @@
 #ifndef _IO_SRC_IMAGE_LOADER_ASTC_H_
 #define _IO_SRC_IMAGE_LOADER_ASTC_H_
 
-#include "ImageLoader.h"
+#include "FasTC/ImageLoader.h"
 
 class ImageLoaderASTC : public ImageLoader {
  private:

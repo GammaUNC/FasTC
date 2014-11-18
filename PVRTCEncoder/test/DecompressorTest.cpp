@@ -54,7 +54,7 @@
 
 #include "TestUtils.h"
 
-#include "PVRTCCompressor.h"
+#include "FasTC/PVRTCCompressor.h"
 
 static const FasTC::ECompressionFormat kFmt = FasTC::eCompressionFormat_PVRTC4;
 

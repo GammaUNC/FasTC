@@ -50,12 +50,13 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "PVRTCCompressor.h"
+#include "FasTC/PVRTCCompressor.h"
 
 #include <cassert>
 #include <vector>
 
-#include "Pixel.h"
+#include "FasTC/Pixel.h"
+
 #include "Block.h"
 #include "PVRTCImage.h"
 

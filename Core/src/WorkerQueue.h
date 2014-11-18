@@ -48,9 +48,10 @@
 class WorkerQueue;
 
 // Necessary includes...
-#include "TexCompTypes.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/StopWatch.h"
+
 #include "Thread.h"
-#include "StopWatch.h"
 #include "CompressionFuncs.h"
 
 #include <iosfwd>

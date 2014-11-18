@@ -56,7 +56,7 @@
 #include "PVRTextureUtilities.h"
 
 // This is our library header
-#include "PVRTCCompressor.h"
+#include "FasTC/PVRTCCompressor.h"
 
 #include "TestUtils.h"
 

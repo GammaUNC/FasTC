@@ -42,7 +42,7 @@
  */
 
 #include "ThreadGroup.h"
-#include "BPTCCompressor.h"
+#include "FasTC/BPTCCompressor.h"
 
 #include <cstdlib>
 #include <cstdio>

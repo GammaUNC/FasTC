@@ -53,7 +53,7 @@
 #ifndef _ASTCENCODER_SRC_INTEGERENCODING_H_
 #define _ASTCENCODER_SRC_INTEGERENCODING_H_
 
-#include "TexCompTypes.h"
+#include "FasTC/TexCompTypes.h"
 
 // Forward declares
 namespace FasTC {

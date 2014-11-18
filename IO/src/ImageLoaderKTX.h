@@ -53,8 +53,8 @@
 #ifndef _IO_SRC_IMAGE_LOADER_KTX_H_
 #define _IO_SRC_IMAGE_LOADER_KTX_H_
 
-#include "ImageLoader.h"
-#include "CompressionFormat.h"
+#include "FasTC/ImageLoader.h"
+#include "FasTC/CompressionFormat.h"
 
 class ImageLoaderKTX : public ImageLoader {
  public:

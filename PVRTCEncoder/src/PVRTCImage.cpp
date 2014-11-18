@@ -63,7 +63,7 @@
 #include <cstdio>
 #include <cmath>
 
-#include "Pixel.h"
+#include "FasTC/Pixel.h"
 using FasTC::Pixel;
 
 #ifdef DEBUG_PVRTC_DECODER

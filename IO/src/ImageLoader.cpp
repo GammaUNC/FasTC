@@ -41,14 +41,14 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "ImageLoader.h"
+#include "FasTC/ImageLoader.h"
+#include "FasTC/Image.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
 #include <assert.h>
 
-#include "Image.h"
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Static helper functions

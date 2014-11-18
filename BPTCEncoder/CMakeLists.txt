@@ -40,12 +40,6 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
-INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)
-INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/Base/include)
-
-INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/BPTCEncoder/include)
-INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/BPTCEncoder/include)
-
 IF(NOT "" STREQUAL "${AVPCLLIB_ROOT}")
   INCLUDE_DIRECTORIES(${AVPCLLIB_INCLUDE_DIR})
   SET(FOUND_NVTT_BPTC_EXPORT TRUE)
@@ -100,16 +94,20 @@ ENDIF()
 
 CONFIGURE_FILE(
   "config/BPTCConfig.h.in"
-  "include/BPTCConfig.h"
+  "include/FasTC/BPTCConfig.h"
+)
+
+SET(LIBRARY_HEADERS
+  "include/FasTC/BPTCCompressor.h"
+  "include/FasTC/Shapes.h"
 )
 
 SET( HEADERS
   config/BPTCConfig.h.in
-  include/BPTCCompressor.h
-  include/Shapes.h
   src/CompressionMode.h
   src/RGBAEndpoints.h
   src/ParallelStage.h
+  ${LIBRARY_HEADERS}
 )
 
 SET( SOURCES
@@ -162,10 +160,23 @@ IF(NOT "" STREQUAL "${AVPCLLIB_ROOT}")
   )
 ENDIF()
 
+SET(BPTC_INCLUDES_DIR ${FasTC_BINARY_DIR}/BPTCEncoder/include/FasTC)
+
+INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)
+INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/Base/include)
+INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/BPTCEncoder/include)
+INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/BPTCEncoder/include)
+
 ADD_LIBRARY( BPTCEncoder
   ${HEADERS}
   ${SOURCES}
 )
+
+INSTALL(TARGETS BPTCEncoder EXPORT FasTCTargets ARCHIVE DESTINATION lib COMPONENT lib)
+INSTALL(
+  FILES ${LIBRARY_HEADERS} "${BPTC_INCLUDES_DIR}/BPTCConfig.h"
+  DESTINATION ${INCLUDE_INSTALL_DIR}/FasTC
+  COMPONENT dev)
 
 TARGET_LINK_LIBRARIES( BPTCEncoder FasTCBase )
 

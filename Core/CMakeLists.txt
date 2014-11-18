@@ -49,23 +49,25 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
-INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Base/include )
-INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/Base/include )
-
 SET( SOURCES
-	"src/TexComp.cpp"
-	"src/CompressedImage.cpp"
+  "src/TexComp.cpp"
+  "src/CompressedImage.cpp"
+)
+
+SET( LIBRARY_HEADERS
+  "include/FasTC/CompressedImage.h"
+  "include/FasTC/ReferenceCounter.h"
+  "include/FasTC/StopWatch.h"
+  "include/FasTC/TexComp.h"
+  "include/FasTC/ThreadSafeStreambuf.h"
 )
 
 SET( HEADERS
-	"include/TexComp.h"
-	"include/CompressedImage.h"
-    "src/CompressionFuncs.h"
+  ${LIBRARY_HEADERS}
+  "src/CompressionFuncs.h"
 )
 
 # Make sure to add the appropriate stopwatch files...
-SET( HEADERS	${HEADERS} "include/StopWatch.h" )
-
 IF( WIN32 )
 	SET( SOURCES ${SOURCES} "src/StopWatchWin32.cpp" )
 ELSEIF( APPLE )
@@ -76,23 +78,6 @@ ELSE()
 	# Assume compiler is GCC
 	SET( LINK_FLAGS -lrt ${LINK_FLAGS} )
 ENDIF()
-
-INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR} )
-
-INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/ASTCEncoder/include )
-INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/ETCEncoder/include )
-INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/DXTEncoder/include )
-
-INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/PVRTCEncoder/include )
-INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/PVRTCEncoder/include)
-
-INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/BPTCEncoder/include )
-INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/BPTCEncoder/include )
-
-INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/IO/include )
-INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/IO/include )
-
-INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Core/include )
 
 ###### Find Threads....
 IF( MSVC )
@@ -106,8 +91,8 @@ ELSE()
 	ENDIF()
 ENDIF()
 
+# Add internal sources
 SET( HEADERS ${HEADERS} "src/Thread.h" )
-SET( HEADERS ${HEADERS} "include/ThreadSafeStreambuf.h" )
 SET( HEADERS ${HEADERS} "src/ThreadGroup.h" )
 SET( HEADERS ${HEADERS} "src/WorkerQueue.h" )
 
@@ -116,10 +101,39 @@ SET( SOURCES ${SOURCES} "src/Thread.cpp" )
 SET( SOURCES ${SOURCES} "src/ThreadGroup.cpp" )
 SET( SOURCES ${SOURCES} "src/WorkerQueue.cpp" )
 
+# Dependencies...
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Base/include )
+INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/Base/include )
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/Core/include )
+INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/Core/include )
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/IO/include )
+INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/IO/include )
+
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/ASTCEncoder/include )
+INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/ASTCEncoder/include )
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/ETCEncoder/include )
+INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/ETCEncoder/include )
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/DXTEncoder/include )
+INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/DXTEncoder/include )
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/PVRTCEncoder/include)
+INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/PVRTCEncoder/include)
+INCLUDE_DIRECTORIES( ${FasTC_SOURCE_DIR}/BPTCEncoder/include )
+INCLUDE_DIRECTORIES( ${FasTC_BINARY_DIR}/BPTCEncoder/include )
+
 ADD_LIBRARY( FasTCCore
 	${HEADERS}
 	${SOURCES}
 )
+
+INSTALL(
+  TARGETS FasTCCore
+  EXPORT FasTCTargets
+  ARCHIVE DESTINATION lib COMPONENT lib
+)
+
+INSTALL(
+  FILES ${LIBRARY_HEADERS}
+  DESTINATION ${INCLUDE_INSTALL_DIR}/FasTC COMPONENT dev)
 
 TARGET_LINK_LIBRARIES( FasTCCore FasTCBase )
 TARGET_LINK_LIBRARIES( FasTCCore FasTCIO )

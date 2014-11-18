@@ -40,24 +40,29 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
-INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)
-INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/Base/include)
-
-INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/DXTEncoder/include)
-INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/DXTEncoder/include)
-
-SET( HEADERS
-  include/DXTCompressor.h
+SET( LIBRARY_HEADERS
+  "include/FasTC/DXTCompressor.h"
 )
 
 SET( SOURCES
-  src/DXTCompressor.cpp
-  src/DXTDecompressor.cpp
+  "src/Compressor.cpp"
+  "src/Decompressor.cpp"
 )
+
+INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)
+INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/Base/include)
+INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/DXTEncoder/include)
+INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/DXTEncoder/include)
 
 ADD_LIBRARY( DXTEncoder
   ${HEADERS}
   ${SOURCES}
 )
+
+INSTALL(TARGETS DXTEncoder EXPORT FasTCTargets ARCHIVE DESTINATION lib COMPONENT lib)
+INSTALL(
+  FILES ${LIBRARY_HEADERS}
+  DESTINATION ${INCLUDE_INSTALL_DIR}/FasTC
+  COMPONENT dev)
 
 TARGET_LINK_LIBRARIES( DXTEncoder FasTCBase )

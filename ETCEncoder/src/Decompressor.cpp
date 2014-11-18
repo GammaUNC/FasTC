@@ -50,8 +50,9 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
+#include "FasTC/ETCCompressor.h"
+
 #include "rg_etc1.h"
-#include "ETCCompressor.h"
 
 namespace ETCC {
 

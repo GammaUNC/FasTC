@@ -41,7 +41,7 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "TexComp.h"
+#include "FasTC/TexComp.h"
 
 #include <algorithm>
 #include <cmath>
@@ -50,14 +50,15 @@
 #include <iostream>
 #include <string.h>
 
-#include "BPTCCompressor.h"
-#include "CompressionFormat.h"
+#include "FasTC/BPTCCompressor.h"
+#include "FasTC/CompressionFormat.h"
+#include "FasTC/DXTCompressor.h"
+#include "FasTC/ETCCompressor.h"
+#include "FasTC/ImageFile.h"
+#include "FasTC/Pixel.h"
+#include "FasTC/PVRTCCompressor.h"
+
 #include "CompressionFuncs.h"
-#include "DXTCompressor.h"
-#include "ETCCompressor.h"
-#include "ImageFile.h"
-#include "Pixel.h"
-#include "PVRTCCompressor.h"
 #include "Thread.h"
 #include "ThreadGroup.h"
 #include "WorkerQueue.h"

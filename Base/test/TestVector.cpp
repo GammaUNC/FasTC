@@ -51,7 +51,7 @@
  */
 
 #include "gtest/gtest.h"
-#include "VectorBase.h"
+#include "FasTC/VectorBase.h"
 
 static const float kEpsilon = 1e-6f;
 
@@ -249,7 +249,7 @@ TEST(VectorBase, Addition) {
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "Vector2.h"
+#include "FasTC/Vector2.h"
 
 TEST(Vector2, BaseFunctionality) {
   FasTC::Vec2f v2f;
@@ -307,7 +307,7 @@ TEST(Vector2, Swizzle) {
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "Vector3.h"
+#include "FasTC/Vector3.h"
 
 TEST(Vector3, BaseFunctionality) {
   FasTC::Vec3f vf;
@@ -393,7 +393,7 @@ TEST(Vector3, CrossProduct) {
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "Vector4.h"
+#include "FasTC/Vector4.h"
 
 TEST(Vector4, BaseFunctionality) {
   FasTC::Vec4f vf;

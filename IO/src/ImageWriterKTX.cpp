@@ -56,10 +56,11 @@
 #include <cstdio>
 #include <cstring>
 
-#include "Image.h"
-#include "Pixel.h"
+#include "FasTC/Image.h"
+#include "FasTC/Pixel.h"
 
-#include "CompressedImage.h"
+#include "FasTC/CompressedImage.h"
+
 #include "GLDefines.h"
 
 ImageWriterKTX::ImageWriterKTX(FasTC::Image<> &im)

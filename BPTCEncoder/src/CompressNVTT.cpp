@@ -50,11 +50,12 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "BPTCCompressor.h"
+#include "FasTC/BPTCCompressor.h"
+
 #include "CompressionMode.h"
 #undef DBL_MAX
-#include "BitStream.h"
-#include "TexCompTypes.h"
+#include "FasTC/BitStream.h"
+#include "FasTC/TexCompTypes.h"
 
 #include <iostream>
 #include <sstream>

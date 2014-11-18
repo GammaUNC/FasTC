@@ -50,25 +50,43 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#ifndef ETCENCODER_INCLUDE_ETCCOMPRESSOR_H_
-#define ETCENCODER_INCLUDE_ETCCOMPRESSOR_H_
+#ifndef PVRTCENCODER_INCLUDE_PVRTCCOMPRESSOR_H_
+#define PVRTCENCODER_INCLUDE_PVRTCCOMPRESSOR_H_
 
-#include "CompressionJob.h"
-#include "TexCompTypes.h"
+#include "FasTC/CompressionJob.h"
+#include "FasTC/PVRTCDefines.h"
 
-namespace ETCC {
+namespace PVRTCC {
 
-  // Takes a stream of compressed ETC1 data and decompresses it into R8G8B8A8
+  // PVRTC works by bilinearly interpolating between blocks in order to
+  // compress and decompress data. As such, the wrap mode defines how the
+  // texture behaves at the boundaries.
+  enum EWrapMode {
+    eWrapMode_Clamp,  // Block endpoints are clamped at boundaries
+    eWrapMode_Wrap,   // Block endpoints wrap around at boundaries
+  };
+
+  // Takes a stream of compressed PVRTC data and decompresses it into R8G8B8A8
   // format. The width and height must be specified in order to properly
   // decompress the data.
-  void Decompress(const FasTC::DecompressionJob &);
+  void Decompress(const FasTC::DecompressionJob &,
+                  const EWrapMode wrapMode = eWrapMode_Wrap,
+                  bool bDebugImages = false);
 
-  // Takes a stream of uncompressed RGBA8 data and compresses it into ETC1
+  // Takes a stream of uncompressed RGBA8 data and compresses it into PVRTC
   // version one. The width and height must be specified in order to properly
-  // decompress the data. This uses the library created by Rich Geldreich found here:
-  // https://code.google.com/p/rg-etc1
-  void Compress_RG(const FasTC::CompressionJob &);
+  // decompress the data.
+  void Compress(const FasTC::CompressionJob &,
+                const EWrapMode wrapMode = eWrapMode_Wrap);
+
+#ifdef PVRTEXLIB_FOUND
+  void CompressPVRLib(const FasTC::CompressionJob &,
+                      bool bTwoBitMode = false,
+                      const EWrapMode wrapMode = eWrapMode_Wrap);
+#endif
+
+  static const uint32 kBlockSize = sizeof(uint64);
 
 }  // namespace PVRTCC
 
-#endif  // ETCENCODER_INCLUDE_ETCCOMPRESSOR_H_
+#endif  // PVRTCENCODER_INCLUDE_PVRTCCOMPRESSOR_H_

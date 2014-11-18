@@ -51,7 +51,7 @@
  */
 
 #include "gtest/gtest.h"
-#include "Bits.h"
+#include "FasTC/Bits.h"
 
 TEST(Bits, Replicate) {
   uint32 xv = 3;

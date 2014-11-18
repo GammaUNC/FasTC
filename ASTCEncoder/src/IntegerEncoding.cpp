@@ -50,21 +50,21 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "ASTCCompressor.h"
+#include "FasTC/ASTCCompressor.h"
 
 #include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <vector>
 
-#include "Utils.h"
-#include "IntegerEncoding.h"
-
-#include "Bits.h"
+#include "FasTC/Bits.h"
 using FasTC::Bits;
 
-#include "BitStream.h"
+#include "FasTC/BitStream.h"
 using FasTC::BitStreamReadOnly;
+
+#include "Utils.h"
+#include "IntegerEncoding.h"
 
 namespace ASTCC {
 

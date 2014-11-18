@@ -48,7 +48,7 @@
 #include <algorithm>
 #include <iostream>
 
-#include "TexCompTypes.h"
+#include "FasTC/TexCompTypes.h"
 
 #include "PVRTextureUtilities.h"
 

@@ -49,14 +49,12 @@
 # 
 # <http://gamma.cs.unc.edu/FasTC/>
 
-INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/PVRTCEncoder/include)
-INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/PVRTCEncoder/include)
-
-INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)
-INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/Base/include)
+SET( LIBRARY_HEADERS
+  "include/FasTC/PVRTCCompressor.h"
+)
 
 SET( HEADERS
-  include/PVRTCCompressor.h
+  ${LIBRARY_HEADERS}
   src/Block.h
   src/PVRTCImage.h
 )
@@ -72,7 +70,7 @@ OPTION(DEBUG_PVRTC_DECODER "Output intermediate images during PVRTC decoding." O
 
 CONFIGURE_FILE(
   "config/PVRTCDefines.h.in"
-  "include/PVRTCDefines.h"
+  "include/FasTC/PVRTCDefines.h"
 )
 
 IF( PVRTEXLIB_FOUND )
@@ -83,10 +81,21 @@ IF( PVRTEXLIB_FOUND )
   )
 ENDIF()
 
+INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/PVRTCEncoder/include)
+INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/PVRTCEncoder/include)
+INCLUDE_DIRECTORIES(${FasTC_SOURCE_DIR}/Base/include)
+INCLUDE_DIRECTORIES(${FasTC_BINARY_DIR}/Base/include)
+
 ADD_LIBRARY( PVRTCEncoder
   ${HEADERS}
   ${SOURCES}
 )
+
+INSTALL(TARGETS PVRTCEncoder EXPORT FasTCTargets ARCHIVE DESTINATION lib COMPONENT lib)
+INSTALL(
+  FILES ${LIBRARY_HEADERS} "${FasTC_BINARY_DIR}/PVRTCEncoder/include/FasTC/PVRTCDefines.h"
+  DESTINATION ${INCLUDE_INSTALL_DIR}/FasTC
+  COMPONENT dev)
 
 TARGET_LINK_LIBRARIES( PVRTCEncoder FasTCBase )
 IF( DEBUG_PVRTC_DECODER )

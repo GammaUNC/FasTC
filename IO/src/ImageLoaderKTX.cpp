@@ -58,12 +58,12 @@
 #include <cstring>
 #include <iostream>
 
-#include "TexCompTypes.h"
-#include "ScopedAllocator.h"
+#include "FasTC/Image.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/CompressedImage.h"
+#include "FasTC/ScopedAllocator.h"
 
 #include "GLDefines.h"
-#include "Image.h"
-#include "CompressedImage.h"
 
 class ByteReader {
  private:

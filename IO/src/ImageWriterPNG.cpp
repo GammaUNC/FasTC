@@ -49,8 +49,8 @@
 
 #include <png.h>
 
-#include "Image.h"
-#include "Pixel.h"
+#include "FasTC/Image.h"
+#include "FasTC/Pixel.h"
 
 class PNGStreamWriter {
 public:

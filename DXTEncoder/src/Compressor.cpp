@@ -13,7 +13,7 @@
 // Refer to "Real-Time DXT Compression" by J.M.P. van Waveren for a more thorough discussion of the
 // algorithms used in this code.
 
-#include "DXTCompressor.h"
+#include "FasTC/DXTCompressor.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>

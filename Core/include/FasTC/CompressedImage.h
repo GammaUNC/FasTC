@@ -44,9 +44,9 @@
 #ifndef _COMPRESSED_IMAGE_H_
 #define _COMPRESSED_IMAGE_H_
 
-#include "TexCompTypes.h"
-#include "CompressionFormat.h"
-#include "Image.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/CompressionFormat.h"
+#include "FasTC/Image.h"
 
 class CompressedImage : public FasTC::Image<FasTC::Pixel> {
  private:

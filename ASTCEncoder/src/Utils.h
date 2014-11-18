@@ -53,11 +53,11 @@
 #ifndef ASTCENCODER_SRC_UTILS_H_
 #define ASTCENCODER_SRC_UTILS_H_
 
-#include "ASTCCompressor.h"
+#include "FasTC/ASTCCompressor.h"
 
-#include "TexCompTypes.h"
-#include "CompressionFormat.h"
-#include "Pixel.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/CompressionFormat.h"
+#include "FasTC/Pixel.h"
 
 namespace ASTCC {
 

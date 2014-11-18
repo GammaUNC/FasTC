@@ -76,8 +76,9 @@
 #ifndef BPTCENCODER_INCLUDE_BPTCCOMPRESSOR_H_
 #define BPTCENCODER_INCLUDE_BPTCCOMPRESSOR_H_
 
-#include "BPTCConfig.h"
-#include "CompressionJob.h"
+#include "FasTC/CompressionJob.h"
+
+#include "FasTC/BPTCConfig.h"
 
 #include <iosfwd>
 

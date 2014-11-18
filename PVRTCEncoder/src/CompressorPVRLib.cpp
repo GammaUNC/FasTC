@@ -51,7 +51,7 @@
  */
 
 // Our library include...
-#include "PVRTCCompressor.h"
+#include "FasTC/PVRTCCompressor.h"
 
 // PVRLib library include...
 #include "PVRTextureUtilities.h"

@@ -44,9 +44,10 @@
 #ifndef _IMAGE_FILE_H_ 
 #define _IMAGE_FILE_H_ 
 
-#include "TexCompTypes.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/ImageFwd.h"
+
 #include "ImageFileFormat.h"
-#include "ImageFwd.h"
 
 // Forward declare
 class CompressedImage;

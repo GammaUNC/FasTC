@@ -41,7 +41,7 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "FileStream.h"
+#include "FasTC/FileStream.h"
 
 #include <stdio.h>
 #include <stdlib.h>

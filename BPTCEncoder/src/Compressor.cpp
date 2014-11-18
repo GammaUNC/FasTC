@@ -73,17 +73,19 @@
 //
 //------------------------------------------------------------------------------
 
-#include "BPTCCompressor.h"
-#include "CompressionMode.h"
+#include "FasTC/BPTCCompressor.h"
 
-#include "TexCompTypes.h"
-#include "BCLookupTables.h"
-#include "RGBAEndpoints.h"
-#include "Shapes.h"
+#include "FasTC/TexCompTypes.h"
+#include "FasTC/BitStream.h"
 
-#include "BitStream.h"
 using FasTC::BitStream;
 using FasTC::BitStreamReadOnly;
+
+#include "FasTC/Shapes.h"
+
+#include "CompressionMode.h"
+#include "BCLookupTables.h"
+#include "RGBAEndpoints.h"
 
 #ifdef HAS_MSVC_ATOMICS
 #   include "Windows.h"

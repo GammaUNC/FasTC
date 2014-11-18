@@ -63,8 +63,8 @@
 //
 //--------------------------------------------------------------------------------------
 
-#include "StopWatch.h"
-#include "TexCompTypes.h"
+#include "FasTC/StopWatch.h"
+#include "FasTC/TexCompTypes.h"
 
 #include <cassert>
 #include <Windows.h>

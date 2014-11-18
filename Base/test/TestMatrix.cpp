@@ -51,7 +51,7 @@
  */
 
 #include "gtest/gtest.h"
-#include "MatrixBase.h"
+#include "FasTC/MatrixBase.h"
 
 static const float kEpsilon = 1e-6f;
 
@@ -221,7 +221,7 @@ TEST(MatrixBase, VectorMultiplication) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "MatrixSquare.h"
+#include "FasTC/MatrixSquare.h"
 
 TEST(MatrixSquare, Constructors) {
   FasTC::MatrixBase<int, 3, 3> m;
@@ -262,7 +262,7 @@ TEST(MatrixSquare, PowerMethod) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "Matrix2x2.h"
+#include "FasTC/Matrix2x2.h"
 
 TEST(Matrix2x2, Constructors) {
   FasTC::MatrixBase<int, 2, 2> m;
@@ -292,7 +292,7 @@ TEST(Matrix2x2, Constructors) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "Matrix3x3.h"
+#include "FasTC/Matrix3x3.h"
 
 TEST(Matrix3x3, Constructors) {
   FasTC::MatrixBase<int, 3, 3> m;
@@ -323,7 +323,7 @@ TEST(Matrix3x3, Constructors) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "Matrix4x4.h"
+#include "FasTC/Matrix4x4.h"
 
 TEST(Matrix4x4, Constructors) {
   FasTC::MatrixBase<int, 4, 4> m;

@@ -50,7 +50,7 @@
  * <http://gamma.cs.unc.edu/FasTC/>
  */
 
-#include "ThreadSafeStreambuf.h"
+#include "FasTC/ThreadSafeStreambuf.h"
 
 #include <cstdlib>
 #include <cstdio>
