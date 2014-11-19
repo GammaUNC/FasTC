@@ -92,7 +92,7 @@ void ExtractBasename(const char *filename, char *buf, size_t bufSz) {
   size_t len = strlen(filename);
   const char *end = filename + len;
   const char *ext = end;
-  const char *base = filename;
+  const char *base = NULL;
   while(--end != filename && !base) {
     if(*end == '.') {
       ext = end;
@@ -321,7 +321,7 @@ int main(int argc, char **argv) {
   }
 
   if (ci->GetWidth() != img.GetWidth() ||
-          ci->GetHeight() != img.GetHeight()) {
+      ci->GetHeight() != img.GetHeight()) {
     fprintf(stderr, "Cannot compute image metrics: compressed and uncompressed dimensions differ.\n");
   } else {
     double PSNR = img.ComputePSNR(ci);
