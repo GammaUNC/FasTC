@@ -83,6 +83,7 @@ using FasTC::BitStreamReadOnly;
 
 #include "FasTC/Shapes.h"
 
+#include "AnchorTables.h"
 #include "CompressionMode.h"
 #include "BCLookupTables.h"
 #include "RGBAEndpoints.h"
@@ -166,17 +167,6 @@ static const char *kBlockStatString[kNumBlockStats] = {
 
 namespace BPTCC {
 
-static const int kAnchorIdx2[kNumShapes2] = {
-  15, 15, 15, 15, 15, 15, 15, 15,
-  15, 15, 15, 15, 15, 15, 15, 15,
-  15,  2,  8,  2,  2,  8,  8, 15,
-  2 ,  8,  2,  2,  8,  8,  2,  2,
-  15, 15,  6,  8,  2,  8, 15, 15,
-  2 ,  8,  2,  2,  2, 15, 15,  6,
-  6 ,  2,  6,  8, 15, 15,  2,  2,
-  15, 15, 15, 15, 15,  2,  2, 15
-};
-
 static const uint32 kWMValues[] = {
   0x32b92180, 0x32ba3080, 0x31103200, 0x28103c80,
   0x32bb3080, 0x25903600, 0x3530b900, 0x3b32b180, 0x34b5b98
@@ -184,59 +174,9 @@ static const uint32 kWMValues[] = {
 static const uint32 kNumWMVals = sizeof(kWMValues) / sizeof(kWMValues[0]);
 static uint32 gWMVal = -1;
 
-static const int kAnchorIdx3[2][kNumShapes3] = {
-  {3,  3, 15, 15,  8,  3, 15, 15,
-  8 ,  8,  6,  6,  6,  5,  3,  3,
-  3 ,  3,  8, 15,  3,  3,  6, 10,
-  5 ,  8,  8,  6,  8,  5, 15, 15,
-  8 , 15,  3,  5,  6, 10,  8, 15,
-  15,  3, 15,  5, 15, 15, 15, 15,
-  3 , 15,  5,  5,  5,  8,  5, 10,
-  5 , 10,  8, 13, 15, 12,  3,  3 },
-
-  {15,  8,  8,  3, 15, 15,  3,  8,
-  15 , 15, 15, 15, 15, 15, 15,  8,
-  15 ,  8, 15,  3, 15,  8, 15,  8,
-  3  , 15,  6, 10, 15, 15, 10,  8,
-  15 ,  3, 15, 10, 10,  8,  9, 10,
-  6  , 15,  8, 15,  3,  6,  6,  8,
-  15 ,  3, 15, 15, 15, 15, 15, 15,
-  15 , 15, 15, 15,  3, 15, 15,  8 }
-};
-
 template <typename T>
 static inline T sad(const T &a, const T &b) {
   return (a > b)? a - b : b - a;
-}
-
-static uint32 GetAnchorIndexForSubset(
-  int subset, const int shapeIdx, const int nSubsets
-) {
-
-  int anchorIdx = 0;
-  switch(subset) {
-    case 1:
-    {
-      if(nSubsets == 2) {
-        anchorIdx = kAnchorIdx2[shapeIdx];
-      } else {
-        anchorIdx = kAnchorIdx3[0][shapeIdx];
-      }
-    }
-    break;
-
-    case 2:
-    {
-      assert(nSubsets == 3);
-      anchorIdx = kAnchorIdx3[1][shapeIdx];
-    }
-    break;
-
-    default:
-    break;
-  }
-
-  return anchorIdx;
 }
 
 template <typename T>
@@ -1554,8 +1494,6 @@ static void CompressOptimalColorBC7(uint32 pixel, BitStream &stream) {
   stream.WriteBits(kWMValues[gWMVal = (gWMVal+1) % kNumWMVals], 31);
 }
 
-static void DecompressBC7Block(const uint8 block[16], uint32 outBuf[16]);
-
 void GetBlock(const uint32 x, const uint32 y, const uint32 pixelsWide,
               const uint32 *inPixels, uint32 block[16]) {
   memcpy(block, inPixels + y*pixelsWide + x, 4 * sizeof(uint32));
@@ -1588,8 +1526,11 @@ void Compress(const FasTC::CompressionJob &cj, CompressionSettings settings) {
       const uint8 *inBlock = reinterpret_cast<const uint8 *>(block);
       const uint8 *cmpblock = reinterpret_cast<const uint8 *>(outBuf);
       uint32 unComp[16];
-      DecompressBC7Block(cmpblock, unComp);
-      const uint8* unCompData = reinterpret_cast<const uint8 *>(unComp);
+      uint8* unCompData = reinterpret_cast<uint8 *>(unComp);
+
+      FasTC::DecompressionJob dj(FasTC::eCompressionFormat_BPTC,
+                                 cmpblock, unCompData, 4, 4);
+      Decompress(dj);
 
       double diffSum = 0.0;
       for(int k = 0; k < 64; k+=4) {
@@ -1695,8 +1636,11 @@ void CompressAtomic(FasTC::CompressionJobList &cjl) {
       const uint8 *inBlock = reinterpret_cast<const uint8 *>(block);
       const uint8 *cmpData = outBuf;
       uint32 unComp[16];
-      DecompressBC7Block(cmpData, unComp);
-      const uint8* unCompData = reinterpret_cast<uint8 *>(unComp);
+      uint8* unCompData = reinterpret_cast<uint8 *>(unComp);
+
+      FasTC::DecompressionJob dj(FasTC::eCompressionFormat_BPTC,
+                                 cmpData, unCompData, 4, 4);
+      Decompress(dj);
 
       uint32 diffSum = 0;
       for(uint32 k = 0; k < 64; k++) {
@@ -2273,230 +2217,6 @@ static void CompressBC7Block(
   CompressClusters(selection, block, settings, outBuf, modeError, &bestMode);
 
   PrintStat(logStream, kBlockStatString[eBlockStat_Path], path);
-}
-
-static void DecompressBC7Block(const uint8 block[16], uint32 outBuf[16]) {
-
-  BitStreamReadOnly strm(block);
-
-  uint32 mode = 0;
-  while(!strm.ReadBit()) {
-    mode++;
-  }
-
-  const CompressionMode::Attributes *attrs =
-    CompressionMode::GetAttributesForMode(mode);
-  const uint32 nSubsets = attrs->numSubsets;
-
-  uint32 idxMode = 0;
-  uint32 rotMode = 0;
-  uint32 shapeIdx = 0;
-  if ( nSubsets > 1 ) {
-    shapeIdx = strm.ReadBits(mode == 0? 4 : 6);
-  } else if( attrs->hasRotation ) {
-    rotMode = strm.ReadBits(2);
-    if( attrs->hasIdxMode ) {
-      idxMode = strm.ReadBit();
-    }
-  }
-
-  assert(idxMode < 2);
-  assert(rotMode < 4);
-  assert(shapeIdx < ((mode == 0)? 16U : 64U));
-
-  uint32 cp = attrs->colorChannelPrecision;
-  const uint32 shift = 8 - cp;
-
-  uint8 eps[3][2][4];
-  for(uint32 ch = 0; ch < 3; ch++)
-  for(uint32 i = 0; i < nSubsets; i++)
-  for(uint32 ep = 0; ep < 2; ep++)
-    eps[i][ep][ch] = strm.ReadBits(cp) << shift;
-
-  uint32 ap = attrs->alphaChannelPrecision;
-  const uint32 ash = 8 - ap;
-
-  if(ap == 0) {
-    for(uint32 i = 0; i < nSubsets; i++)
-    for(uint32 ep = 0; ep < 2; ep++)
-      eps[i][ep][3] = 0xFF;
-  } else {
-    for(uint32 i = 0; i < nSubsets; i++)
-    for(uint32 ep = 0; ep < 2; ep++)
-      eps[i][ep][3] = strm.ReadBits(ap) << ash;
-  }
-
-  // Handle pbits
-  switch(attrs->pbitType) {
-    case CompressionMode::ePBitType_None:
-      // Do nothing.
-    break;
-
-    case CompressionMode::ePBitType_Shared:
-
-      cp += 1;
-      ap += 1;
-
-      for(uint32 i = 0; i < nSubsets; i++) {
-
-        uint32 pbit = strm.ReadBit();
-
-        for(uint32 j = 0; j < 2; j++)
-        for(uint32 ch = 0; ch < kNumColorChannels; ch++) {
-          const uint32 prec = ch == 3? ap : cp;
-          eps[i][j][ch] |= pbit << (8-prec);
-        }
-      }
-    break;
-
-    case CompressionMode::ePBitType_NotShared:
-
-      cp += 1;
-      ap += 1;
-
-      for(uint32 i = 0; i < nSubsets; i++)
-      for(uint32 j = 0; j < 2; j++) {
-
-        uint32 pbit = strm.ReadBit();
-
-        for(uint32 ch = 0; ch < kNumColorChannels; ch++) {
-          const uint32 prec = ch == 3? ap : cp;
-          eps[i][j][ch] |= pbit << (8-prec);
-        }
-      }
-    break;
-  }
-
-  // Quantize endpoints...
-  for(uint32 i = 0; i < nSubsets; i++)
-  for(uint32 j = 0; j < 2; j++)
-  for(uint32 ch = 0; ch < kNumColorChannels; ch++) {
-    const uint32 prec = ch == 3? ap : cp;
-    eps[i][j][ch] |= eps[i][j][ch] >> prec;
-  }
-
-  // Figure out indices...
-  uint32 alphaIndices[kMaxNumDataPoints];
-  uint32 colorIndices[kMaxNumDataPoints];
-
-  int nBitsPerAlpha = attrs->numBitsPerAlpha;
-  int nBitsPerColor = attrs->numBitsPerIndex;
-
-  uint32 idxPrec = attrs->numBitsPerIndex;
-  for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
-    uint32 subset = GetSubsetForIndex(i, shapeIdx, nSubsets);
-
-    int idx = 0;
-    if(GetAnchorIndexForSubset(subset, shapeIdx, nSubsets) == i) {
-      idx = strm.ReadBits(idxPrec - 1);
-    } else {
-      idx = strm.ReadBits(idxPrec);
-    }
-    colorIndices[i] = idx;
-  }
-
-  idxPrec = attrs->numBitsPerAlpha;
-  if(idxPrec == 0) {
-    memcpy(alphaIndices, colorIndices, sizeof(alphaIndices));
-  } else {
-    for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
-      uint32 subset = GetSubsetForIndex(i, shapeIdx, nSubsets);
-
-      int idx = 0;
-      if(GetAnchorIndexForSubset(subset, shapeIdx, nSubsets) == i) {
-        idx = strm.ReadBits(idxPrec - 1);
-      } else {
-        idx = strm.ReadBits(idxPrec);
-      }
-      alphaIndices[i] = idx;
-    }
-
-    if(idxMode) {
-      for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
-        swap(alphaIndices[i], colorIndices[i]);
-      }
-
-      swap(nBitsPerAlpha, nBitsPerColor);
-    }
-  }
-
-  assert(strm.GetBitsRead() == 128);
-
-  // Get final colors by interpolating...
-  for(uint32 i = 0; i < kMaxNumDataPoints; i++) {
-
-    const uint32 subset = GetSubsetForIndex(i, shapeIdx, nSubsets);
-    uint32 &pixel = outBuf[i];
-
-    pixel = 0;
-    for(int ch = 0; ch < 4; ch++) {
-      if(ch == 3 && nBitsPerAlpha > 0) {
-        uint32 i0 =
-          kInterpolationValues[nBitsPerAlpha - 1][alphaIndices[i]][0];
-        uint32 i1 =
-          kInterpolationValues[nBitsPerAlpha - 1][alphaIndices[i]][1];
-
-        const uint32 ep1 = static_cast<uint32>(eps[subset][0][3]);
-        const uint32 ep2 = static_cast<uint32>(eps[subset][1][3]);
-        const uint8 ip = (((ep1 * i0 + ep2 * i1) + 32) >> 6) & 0xFF;
-        pixel |= ip << 24;
-
-      } else {
-        uint32 i0 =
-          kInterpolationValues[nBitsPerColor - 1][colorIndices[i]][0];
-        uint32 i1 =
-          kInterpolationValues[nBitsPerColor - 1][colorIndices[i]][1];
-
-        const uint32 ep1 = static_cast<uint32>(eps[subset][0][ch]);
-        const uint32 ep2 = static_cast<uint32>(eps[subset][1][ch]);
-        const uint8 ip = (((ep1 * i0 + ep2 * i1) + 32) >> 6) & 0xFF;
-        pixel |= ip << (8*ch);
-      }
-    }
-
-    // Swap colors if necessary...
-    uint8 *pb = reinterpret_cast<uint8 *>(&pixel);
-    switch(rotMode) {
-      default:
-      case 0:
-        // Do nothing
-        break;
-
-      case 1:
-        swap(pb[0], pb[3]);
-        break;
-
-      case 2:
-        swap(pb[1], pb[3]);
-        break;
-
-      case 3:
-        swap(pb[2], pb[3]);
-        break;
-    }
-  }
-}
-
-// Convert the image from a BC7 buffer to a RGBA8 buffer
-void Decompress(const FasTC::DecompressionJob &dj) {
-
-  const uint8 *inBuf = dj.InBuf();
-  uint32 *outBuf = reinterpret_cast<uint32 *>(dj.OutBuf());
-
-  for(unsigned int j = 0; j < dj.Height(); j += 4) {
-    for(unsigned int i = 0; i < dj.Width(); i += 4) {
-
-      uint32 pixels[16];
-      DecompressBC7Block(inBuf, pixels);
-
-      memcpy(outBuf + j*dj.Width() + i, pixels, 4 * sizeof(pixels[0]));
-      memcpy(outBuf + (j+1)*dj.Width() + i, pixels+4, 4 * sizeof(pixels[0]));
-      memcpy(outBuf + (j+2)*dj.Width() + i, pixels+8, 4 * sizeof(pixels[0]));
-      memcpy(outBuf + (j+3)*dj.Width() + i, pixels+12, 4 * sizeof(pixels[0]));
-
-      inBuf += 16;
-    }
-  }
 }
 
 }  // namespace BPTCC

@@ -77,10 +77,12 @@
 #define BPTCENCODER_INCLUDE_BPTCCOMPRESSOR_H_
 
 #include "FasTC/CompressionJob.h"
+#include "FasTC/Pixel.h"
 
 #include "FasTC/BPTCConfig.h"
 
 #include <iosfwd>
+#include <vector>
 
 namespace BPTCC {
   // The various available block modes that a BPTC compressor can choose from.
@@ -229,6 +231,21 @@ namespace BPTCC {
   void CompressNVTTWithStats(const FasTC::CompressionJob &,
                              std::ostream *logStream);
 #endif
+
+  // A logical BPTC block. Each block has a mode, up to three
+  // endpoint pairs, a shape, and a per-pixel index to choose
+  // the proper endpoints.
+  struct LogicalBlock {
+    EBlockMode m_Mode;
+    Shape m_Shape;
+    FasTC::Pixel m_Endpoints[3][2];
+    uint32 m_Indices[16];
+    uint32 m_AlphaIndices[16];
+  };
+
+  // Decompress the data stored into logical blocks
+  void DecompressLogical(const FasTC::DecompressionJob &,
+                         std::vector<LogicalBlock> *out);
 
   // Decompress the image given as BPTC data to R8G8B8A8 format.
   void Decompress(const FasTC::DecompressionJob &);

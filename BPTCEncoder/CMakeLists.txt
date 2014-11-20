@@ -104,6 +104,7 @@ SET(LIBRARY_HEADERS
 
 SET( HEADERS
   config/BPTCConfig.h.in
+  src/AnchorTables.h
   src/CompressionMode.h
   src/RGBAEndpoints.h
   src/ParallelStage.h
@@ -112,6 +113,7 @@ SET( HEADERS
 
 SET( SOURCES
   src/Compressor.cpp
+  src/Decompressor.cpp
   src/RGBAEndpoints.cpp
   src/ParallelStage.cpp
 )
