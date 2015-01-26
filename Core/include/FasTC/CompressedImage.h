@@ -62,6 +62,8 @@ class CompressedImage : public FasTC::Image<FasTC::Pixel> {
   FasTC::ECompressionFormat m_Format;
   uint8 *m_CompressedData;
 
+  typedef FasTC::Image<FasTC::Pixel> UncompressedImage;
+
  public:
   CompressedImage(const CompressedImage &);
   CompressedImage &operator=(const CompressedImage &);

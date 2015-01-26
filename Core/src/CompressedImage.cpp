@@ -71,7 +71,7 @@ using FasTC::DecompressionJob;
 using FasTC::ECompressionFormat;
 
 CompressedImage::CompressedImage( const CompressedImage &other )
-  : Image(other)
+  : UncompressedImage(other)
   , m_Format(other.m_Format)
   , m_CompressedData(0)
 {
@@ -88,7 +88,7 @@ CompressedImage::CompressedImage(
   const ECompressionFormat format,
   const unsigned char *data
 )
-  : FasTC::Image<>(width, height, reinterpret_cast<uint32 *>(NULL))
+  : UncompressedImage(width, height, reinterpret_cast<uint32 *>(NULL))
   , m_Format(format)
   , m_CompressedData(0)
 {
@@ -101,7 +101,7 @@ CompressedImage::CompressedImage(
 }
 
 CompressedImage &CompressedImage::operator=(const CompressedImage &other) {
-  Image::operator=(other);
+  UncompressedImage::operator=(other);
   m_Format = other.m_Format;
   if(other.m_CompressedData) {
     uint32 cmpSz = GetCompressedSize();
