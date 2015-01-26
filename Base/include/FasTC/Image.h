@@ -125,6 +125,11 @@ namespace FasTC {
 
   extern void GenerateGaussianKernel(Image<IPixel> &out, uint32 size, float sigma);
 
+  template <typename PixelType>
+  extern void SplitChannels(const Image<PixelType> &in,
+                            Image<IPixel> *channelOne,
+                            Image<IPixel> *channelTwo,
+                            Image<IPixel> *channelThree);
 }  // namespace FasTC
 
 #endif // __TEXCOMP_IMAGE_H__

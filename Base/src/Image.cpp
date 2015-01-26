@@ -59,6 +59,11 @@ static inline T sad( const T &a, const T &b ) {
   return (a > b)? a - b : b - a;
 }
 
+template<typename T>
+static inline T Clamp(const T &v, const T &a, const T &b) {
+  return ::std::min(::std::max(a, v), b);
+}
+
 // wtf
 #ifdef _MSC_VER
 template<typename T> T log2(T x) { return static_cast<T>(log((long double)x) / log(2.0)); }
@@ -485,11 +490,6 @@ void Image<PixelType>::SetImageData(uint32 width, uint32 height, PixelType *data
   }
 }
 
-  template<typename T>
-  static inline T Clamp(const T &v, const T &a, const T &b) {
-    return ::std::min(::std::max(a, v), b);
-  }
-
 template<typename PixelType>
 void Image<PixelType>::Filter(const Image<IPixel> &kernel) {
   Image<IPixel> k(kernel);
@@ -563,6 +563,51 @@ void GenerateGaussianKernel(Image<IPixel> &out, uint32 size, float sigma) {
       out(halfSz + i, halfSz + j) = exp(- (j*j + i*i) / (2*sigma*sigma));
     }
   }
+}
+
+template <typename T>
+void SplitChannelsImpl(const Image<T> &in,
+                       Image<IPixel> *channelOne,
+                       Image<IPixel> *channelTwo,
+                       Image<IPixel> *channelThree) {
+  assert(channelOne != NULL);
+  assert(channelTwo != NULL);
+  assert(channelThree != NULL);
+  assert(in.GetWidth() == channelOne->GetWidth());
+  assert(in.GetHeight() == channelOne->GetHeight());
+  assert(in.GetWidth() == channelTwo->GetWidth());
+  assert(in.GetHeight() == channelTwo->GetHeight());
+  assert(in.GetWidth() == channelThree->GetWidth());
+  assert(in.GetHeight() == channelThree->GetHeight());
+
+  Image<IPixel> &i1 = *channelOne;
+  Image<IPixel> &i2 = *channelTwo;
+  Image<IPixel> &i3 = *channelThree;
+
+  for (uint32 j = 0; j < in.GetHeight(); j++) {
+    for(uint32 i = 0; i < in.GetWidth(); i++) {
+      T c = in(i, j);
+      i1(i, j) = c.R();
+      i2(i, j) = c.G();
+      i3(i, j) = c.B();
+    }
+  }
+}
+
+template <>
+void SplitChannels<Color>(const Image<Color> &in,
+                          Image<IPixel> *channelOne,
+                          Image<IPixel> *channelTwo,
+                          Image<IPixel> *channelThree) {
+  SplitChannelsImpl(in, channelOne, channelTwo, channelThree);
+}
+
+template <>
+void SplitChannels<Pixel>(const Image<Pixel> &in,
+                          Image<IPixel> *channelOne,
+                          Image<IPixel> *channelTwo,
+                          Image<IPixel> *channelThree) {
+  SplitChannelsImpl(in, channelOne, channelTwo, channelThree);
 }
 
 }  // namespace FasTC

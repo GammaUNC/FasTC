@@ -51,6 +51,7 @@
  */
 
 #include "gtest/gtest.h"
+#include "FasTC/Color.h"
 #include "FasTC/Image.h"
 #include "FasTC/IPixel.h"
 #include "FasTC/Pixel.h"
@@ -166,4 +167,47 @@ TEST(Image, ComputeMSSIM) {
 
   double SSIM = img.ComputeSSIM(&img);
   EXPECT_EQ(SSIM, 1.0);
+}
+
+TEST(Image, SplitImage) {
+
+  const uint32 w = 16;
+  const uint32 h = 16;
+
+  FasTC::Image<FasTC::Pixel> img(w, h);
+  for(uint32 j = 0; j < h; j++) {
+    for(uint32 i = 0; i < w; i++) {
+      img(i, j) = FasTC::Pixel(i, j, i+j, 255);
+    }
+  }
+
+  FasTC::Image<FasTC::IPixel> i1(w, h);
+  FasTC::Image<FasTC::IPixel> i2(w, h);
+  FasTC::Image<FasTC::IPixel> i3(w, h);
+  FasTC::SplitChannels(img, &i1, &i2, &i3);
+
+  for(uint32 j = 0; j < h; j++) {
+    for(uint32 i = 0; i < w; i++) {
+      EXPECT_EQ(i1(i, j), img(i, j).R());
+      EXPECT_EQ(i2(i, j), img(i, j).G());
+      EXPECT_EQ(i3(i, j), img(i, j).B());
+    }
+  }
+
+  FasTC::Image<FasTC::Color> img2(w, h);
+  for(uint32 j = 0; j < h; j++) {
+    for(uint32 i = 0; i < w; i++) {
+      img2(i, j) = FasTC::Color(j, i, i*j, 255);
+    }
+  }
+
+  FasTC::SplitChannels(img2, &i1, &i2, &i3);
+
+  for(uint32 j = 0; j < h; j++) {
+    for(uint32 i = 0; i < w; i++) {
+      EXPECT_EQ(i1(i, j), img2(i, j).R());
+      EXPECT_EQ(i2(i, j), img2(i, j).G());
+      EXPECT_EQ(i3(i, j), img2(i, j).B());
+    }
+  }
 }
