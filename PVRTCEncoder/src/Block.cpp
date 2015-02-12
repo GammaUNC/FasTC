@@ -146,10 +146,8 @@ namespace PVRTCC {
   }
 
   void Block::SetLerpValue(uint32 texelIdx, uint8 lerpVal) {
-    assert(texelIdx >= 0);
     assert(texelIdx <= 15);
 
-    assert(lerpVal >= 0);
     assert(lerpVal < 4);
 
     m_LongData &= ~(static_cast<uint64>(0x3) << (texelIdx * 2));

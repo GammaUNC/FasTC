@@ -1123,8 +1123,6 @@ double CompressionMode::CompressCluster(
     assert(pBitCombo == bestPbitCombo);
   #endif
 
-  assert(bestPbitCombo >= 0);
-
   return OptimizeEndpointsForCluster(
     cluster, p1, p2, bestIndices, bestPbitCombo
   );

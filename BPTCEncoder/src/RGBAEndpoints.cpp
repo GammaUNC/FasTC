@@ -338,7 +338,6 @@ double RGBACluster::QuantizedError(
 
     totalError += minError;
 
-    assert(bestBucket >= 0);
     if(indices) indices[i] = bestBucket;
   }
 

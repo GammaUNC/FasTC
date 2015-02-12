@@ -86,7 +86,7 @@ class RGBAVector : public FasTC::Vector4<float> {
   typedef FasTC::Vector4<float> BaseVector;
  public:
   uint32 GetIdx() const { return  m_Idx; }
-  RGBAVector() : BaseVector(-1.0, -1.0, -1.0, -1.0) { }
+  RGBAVector() : BaseVector(-1.0, -1.0, -1.0, -1.0), m_Idx(0) { }
   RGBAVector(uint32 idx, uint32 pixel) : 
    BaseVector(
     static_cast<float>(pixel & 0xFF),
