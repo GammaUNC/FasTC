@@ -610,4 +610,79 @@ void SplitChannels<Pixel>(const Image<Pixel> &in,
   SplitChannelsImpl(in, channelOne, channelTwo, channelThree);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// Discrete Cosine Transform
+//
+////////////////////////////////////////////////////////////////////////////////
+
+static void DCT(Image<IPixel> *img) {
+  Image<IPixel> new_img = *img;
+
+  float N = static_cast<float>(img->GetWidth());
+  float M = static_cast<float>(img->GetHeight());
+
+  for (unsigned int v = 0; v < img->GetHeight(); ++v) {
+    for (unsigned int u = 0; u < img->GetWidth(); ++u) {
+      new_img(u, v) = 0.0f;
+      for (unsigned int y = 0; y < img->GetHeight(); ++y) {
+        for (unsigned int x = 0; x < img->GetWidth(); ++x) {
+          float fx = static_cast<float>(x);
+          float fy = static_cast<float>(y);
+          new_img(u, v) += (*img)(x, y)
+            * cos((2*fx + 1) / (2 * N))
+            * cos((2*fy + 1) / (2 * M));
+        }
+      }
+
+      if (u == 0 && v == 0) {
+        new_img(u, v) *= 0.5;
+      } else if (u == 0 || v == 0) {
+        new_img(u, v) /= sqrt(2);
+      }
+      new_img(u, v) *= 0.25;
+    }
+  }
+
+  *img = new_img;
+}
+
+extern void DiscreteCosineXForm(Image<IPixel> *img, int blockSize) {
+  Image<IPixel> block(blockSize, blockSize);
+  for (unsigned int j = 0; j < img->GetHeight(); j += blockSize) {
+    for (unsigned int i = 0; i < img->GetWidth(); i += blockSize) {
+      // Populate block
+      for (int y = 0; y < blockSize; ++y) {
+        for (int x = 0; x < blockSize; ++x) {
+          IPixel xx = std::min(img->GetWidth() - 1, i + x);
+          IPixel yy = std::min(img->GetHeight() - 1, j + y);
+          block(x, y) = (*img)(xx, yy);
+        }
+      }
+
+      // Transform it
+      DCT(&block);
+
+      // Put it back in the original image
+      for (int y = 0; y < blockSize; ++y) {
+        for (int x = 0; x < blockSize; ++x) {
+          if (i + x >= img->GetWidth()) {
+            continue;
+          }
+
+          if (j + y >= img->GetHeight()) {
+            continue;
+          }
+
+          assert (i + x <= img->GetWidth());
+          assert (j + y <= img->GetHeight());
+
+          (*img)(i + x, j + y) = block(x, y);
+        }
+      }
+    }
+  }
+}
+
+
 }  // namespace FasTC
