@@ -74,15 +74,15 @@ TEST(Image, BilinearUpscale) {
   for(uint32 i = 0; i < img.GetWidth(); i++) {
     for(uint32 j = 0; j < img.GetHeight(); j++) {
       if(i == 0) {
-        EXPECT_EQ(img(i, j).R(), i);
+        EXPECT_EQ(static_cast<uint32>(img(i, j).R()), i);
       } else {
-        EXPECT_EQ(img(i, j).R(), i-1);
+        EXPECT_EQ(static_cast<uint32>(img(i, j).R()), i-1);
       }
 
       if(j == 0) {
-        EXPECT_EQ(img(i, j).G(), j);
+        EXPECT_EQ(static_cast<uint32>(img(i, j).G()), j);
       } else {
-        EXPECT_EQ(img(i, j).G(), j-1);
+        EXPECT_EQ(static_cast<uint32>(img(i, j).G()), j-1);
       }
     }
   }
@@ -145,13 +145,13 @@ TEST(Image, NonuniformBilinearUpscale) {
       } else if(i == 15) {
         EXPECT_EQ(img(i, j).R(), 12);
       } else {
-        EXPECT_EQ(img(i, j).R(), i-2);
+        EXPECT_EQ(static_cast<uint32>(img(i, j).R()), i-2);
       }
 
       if(j == 0) {
         EXPECT_EQ(img(i, j).G(), 0);
       } else {
-        EXPECT_EQ(img(i, j).G(), j-1);
+        EXPECT_EQ(static_cast<uint32>(img(i, j).G()), j-1);
       }
     }
   }
@@ -198,7 +198,7 @@ TEST(Image, BilinearUpscaleWrapped) {
       } else if(i == 15) {
         EXPECT_EQ(p.R(), 9);
       } else {
-        EXPECT_EQ(p.R(), i-2);
+        EXPECT_EQ(static_cast<uint32>(p.R()), i-2);
       }
 
       if(j == 0) {
@@ -208,7 +208,7 @@ TEST(Image, BilinearUpscaleWrapped) {
       } else if(j == 15) {
         EXPECT_EQ(p.G(), 9);
       } else {
-        EXPECT_EQ(p.G(), j-2);
+        EXPECT_EQ(static_cast<uint32>(p.G()), j-2);
       }
     }
   }
