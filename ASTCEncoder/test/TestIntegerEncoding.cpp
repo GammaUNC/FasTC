@@ -58,50 +58,50 @@ TEST(IntegerEncoding, GetEncoding) {
   // According to table C.2.7
   IntegerEncodedValue val = IntegerEncodedValue::CreateEncoding(1);
   EXPECT_EQ(val.GetEncoding(), ASTCC::eIntegerEncoding_JustBits);
-  EXPECT_EQ(val.BaseBitLength(), 1);
+  EXPECT_EQ(val.BaseBitLength(), 1U);
 
   val = IntegerEncodedValue::CreateEncoding(2);
   EXPECT_EQ(val.GetEncoding(), ASTCC::eIntegerEncoding_Trit);
-  EXPECT_EQ(val.BaseBitLength(), 0);
+  EXPECT_EQ(val.BaseBitLength(), 0U);
 
   val = IntegerEncodedValue::CreateEncoding(3);
   EXPECT_EQ(val.GetEncoding(), ASTCC::eIntegerEncoding_JustBits);
-  EXPECT_EQ(val.BaseBitLength(), 2);
+  EXPECT_EQ(val.BaseBitLength(), 2U);
 
   val = IntegerEncodedValue::CreateEncoding(4);
   EXPECT_EQ(val.GetEncoding(), ASTCC::eIntegerEncoding_Quint);
-  EXPECT_EQ(val.BaseBitLength(), 0);
+  EXPECT_EQ(val.BaseBitLength(), 0U);
 
   val = IntegerEncodedValue::CreateEncoding(5);
   EXPECT_EQ(val.GetEncoding(), ASTCC::eIntegerEncoding_Trit);
-  EXPECT_EQ(val.BaseBitLength(), 1);
+  EXPECT_EQ(val.BaseBitLength(), 1U);
 
   val = IntegerEncodedValue::CreateEncoding(7);
   EXPECT_EQ(val.GetEncoding(), ASTCC::eIntegerEncoding_JustBits);
-  EXPECT_EQ(val.BaseBitLength(), 3);
+  EXPECT_EQ(val.BaseBitLength(), 3U);
 
   val = IntegerEncodedValue::CreateEncoding(9);
   EXPECT_EQ(val.GetEncoding(), ASTCC::eIntegerEncoding_Quint);
-  EXPECT_EQ(val.BaseBitLength(), 1);
+  EXPECT_EQ(val.BaseBitLength(), 1U);
 
   val = IntegerEncodedValue::CreateEncoding(11);
   EXPECT_EQ(val.GetEncoding(), ASTCC::eIntegerEncoding_Trit);
-  EXPECT_EQ(val.BaseBitLength(), 2);
+  EXPECT_EQ(val.BaseBitLength(), 2U);
 
   val = IntegerEncodedValue::CreateEncoding(15);
   EXPECT_EQ(val.GetEncoding(), ASTCC::eIntegerEncoding_JustBits);
-  EXPECT_EQ(val.BaseBitLength(), 4);
+  EXPECT_EQ(val.BaseBitLength(), 4U);
 
   val = IntegerEncodedValue::CreateEncoding(19);
   EXPECT_EQ(val.GetEncoding(), ASTCC::eIntegerEncoding_Quint);
-  EXPECT_EQ(val.BaseBitLength(), 2);
+  EXPECT_EQ(val.BaseBitLength(), 2U);
 
   val = IntegerEncodedValue::CreateEncoding(23);
   EXPECT_EQ(val.GetEncoding(), ASTCC::eIntegerEncoding_Trit);
-  EXPECT_EQ(val.BaseBitLength(), 3);
+  EXPECT_EQ(val.BaseBitLength(), 3U);
 
   val = IntegerEncodedValue::CreateEncoding(31);
   EXPECT_EQ(val.GetEncoding(), ASTCC::eIntegerEncoding_JustBits);
-  EXPECT_EQ(val.BaseBitLength(), 5);
+  EXPECT_EQ(val.BaseBitLength(), 5U);
 }
 
