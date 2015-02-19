@@ -48,6 +48,8 @@
 #include <cstdio>
 #include <cstring>
 #include <cassert>
+
+#define _USE_MATH_DEFINES
 #include <cmath>
 
 #include "FasTC/Color.h"
@@ -616,6 +618,8 @@ void SplitChannels<Pixel>(const Image<Pixel> &in,
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+typedef void (*DCTBlockFn)(Image<IPixel> *);
+  
 static void DCT(Image<IPixel> *img) {
   Image<IPixel> new_img = *img;
 
@@ -625,29 +629,74 @@ static void DCT(Image<IPixel> *img) {
   for (unsigned int v = 0; v < img->GetHeight(); ++v) {
     for (unsigned int u = 0; u < img->GetWidth(); ++u) {
       new_img(u, v) = 0.0f;
+      float fu = static_cast<float>(u);
+      float fv = static_cast<float>(v);
       for (unsigned int y = 0; y < img->GetHeight(); ++y) {
         for (unsigned int x = 0; x < img->GetWidth(); ++x) {
           float fx = static_cast<float>(x);
           float fy = static_cast<float>(y);
           new_img(u, v) += (*img)(x, y)
-            * cos((2*fx + 1) / (2 * N))
-            * cos((2*fy + 1) / (2 * M));
+            * cos(((2*fx + 1) * fu * M_PI) / (2 * N))
+            * cos(((2*fy + 1) * fv * M_PI) / (2 * M));
         }
       }
-
+      
       if (u == 0 && v == 0) {
-        new_img(u, v) *= 0.5;
+        new_img(u, v) /= N;
       } else if (u == 0 || v == 0) {
-        new_img(u, v) /= sqrt(2);
+        new_img(u, v) *= sqrt(2) / N;
+      } else {
+        new_img(u, v) *= 2 / N;
       }
-      new_img(u, v) *= 0.25;
     }
   }
 
   *img = new_img;
 }
 
-extern void DiscreteCosineXForm(Image<IPixel> *img, int blockSize) {
+static void IDCT(Image<IPixel> *img) {
+  Image<IPixel> new_img = *img;
+
+  float N = static_cast<float>(img->GetWidth());
+  float M = static_cast<float>(img->GetHeight());
+
+  assert (N == M);
+
+  for (unsigned int y = 0; y < img->GetHeight(); ++y) {
+    for (unsigned int x = 0; x < img->GetWidth(); ++x) {
+      new_img(x, y) = 0.0f;
+      float fx = static_cast<float>(x);
+      float fy = static_cast<float>(y);          
+
+      for (unsigned int v = 0; v < img->GetHeight(); ++v) {
+        for (unsigned int u = 0; u < img->GetWidth(); ++u) {
+          float fu = static_cast<float>(u);
+          float fv = static_cast<float>(v);
+          new_img(x, y) += (*img)(u, v)
+            * cos(((2*fx + 1) * fu * M_PI) / (2 * N))
+            * cos(((2*fy + 1) * fv * M_PI) / (2 * M));
+
+          if (u == 0 && v == 0) {
+            new_img(x, y) /= N;
+          } else if (u == 0 || v == 0) {
+            new_img(x, y) /= sqrt(2) / N;
+          } else {
+            new_img(x, y) *= 2 / N;
+          }
+        }
+      }
+    }
+  }
+
+  *img = new_img;
+}
+
+static void RunDCTBlockFn(Image<IPixel> *img, int blockSize, DCTBlockFn fn) {
+  assert (NULL != fn);
+  assert (0 < blockSize);
+  assert (static_cast<uint32>(blockSize) < img->GetWidth());
+  assert (static_cast<uint32>(blockSize) < img->GetHeight());
+  
   Image<IPixel> block(blockSize, blockSize);
   for (unsigned int j = 0; j < img->GetHeight(); j += blockSize) {
     for (unsigned int i = 0; i < img->GetWidth(); i += blockSize) {
@@ -660,8 +709,8 @@ extern void DiscreteCosineXForm(Image<IPixel> *img, int blockSize) {
         }
       }
 
-      // Transform it
-      DCT(&block);
+      // Run the function
+      fn(&block);
 
       // Put it back in the original image
       for (int y = 0; y < blockSize; ++y) {
@@ -684,5 +733,12 @@ extern void DiscreteCosineXForm(Image<IPixel> *img, int blockSize) {
   }
 }
 
+void DiscreteCosineXForm(Image<IPixel> *img, int blockSize) {
+  RunDCTBlockFn(img, blockSize, DCT);
+}
+
+void InvDiscreteCosineXForm(Image<IPixel> *img, int blockSize) {
+  RunDCTBlockFn(img, blockSize, IDCT);
+}
 
 }  // namespace FasTC
