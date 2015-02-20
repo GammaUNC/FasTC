@@ -672,17 +672,20 @@ static void IDCT(Image<IPixel> *img) {
         for (unsigned int u = 0; u < img->GetWidth(); ++u) {
           float fu = static_cast<float>(u);
           float fv = static_cast<float>(v);
-          new_img(x, y) += (*img)(u, v)
+
+          float idct = (*img)(u, v)
             * cos(((2*fx + 1) * fu * M_PI) / (2 * N))
             * cos(((2*fy + 1) * fv * M_PI) / (2 * M));
 
           if (u == 0 && v == 0) {
-            new_img(x, y) /= N;
+            idct /= N;
           } else if (u == 0 || v == 0) {
-            new_img(x, y) /= sqrt(2) / N;
+            idct *= sqrt(2) / N;
           } else {
-            new_img(x, y) *= 2 / N;
+            idct *= 2 / N;
           }
+
+          new_img(x, y) += FasTC::IPixel(idct);
         }
       }
     }

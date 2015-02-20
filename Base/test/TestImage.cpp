@@ -213,6 +213,33 @@ TEST(Image, SplitImage) {
 }
 
 TEST(Image, DCT) {
+  const uint32 w = 32;
+  const uint32 h = 32;
+
+  FasTC::Image<FasTC::IPixel> img(w, h);
+  for (uint32 j = 0; j < h; ++j) {
+    for (uint32 i = 0; i < w; ++i) {
+      img(i, j) = static_cast<FasTC::IPixel>(1);
+    }
+  }
+
+  // Make sure that taking the DCT and inverse DCT returns
+  // the same image...
+  FasTC::DiscreteCosineXForm(&img, 8);
+
+  // First make sure they're different
+  for (uint32 j = 0; j < h; ++j) {
+    for (uint32 i = 0; i < w; ++i) {
+      if ( (i % 8) == 0 && (j % 8) == 0 ) {
+        EXPECT_NEAR(img(i, j), 8.0f, 1e-5);
+      } else {
+        EXPECT_NEAR(img(i, j), 0.0f, 1e-5);
+      }
+    }
+  }  
+}
+
+TEST(Image, IDCT) {
 
   const uint32 w = 32;
   const uint32 h = 32;
@@ -221,7 +248,6 @@ TEST(Image, DCT) {
   for (uint32 j = 0; j < h; ++j) {
     for (uint32 i = 0; i < w; ++i) {
       img(i, j) = static_cast<FasTC::IPixel>(i + j);
-//      img(i, j) = static_cast<FasTC::IPixel>(1);
     }
   }
 
@@ -242,7 +268,7 @@ TEST(Image, DCT) {
 
   for (uint32 j = 0; j < h; ++j) {
     for (uint32 i = 0; i < w; ++i) {
-      EXPECT_NEAR(img(i, j), orig(i, j), 1e-5);
+      EXPECT_NEAR(img(i, j), orig(i, j), 1e-4);
     }
   }
 }
