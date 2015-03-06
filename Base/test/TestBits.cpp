@@ -55,15 +55,15 @@
 
 TEST(Bits, Replicate) {
   uint32 xv = 3;
-  EXPECT_EQ(FasTC::Replicate(xv, 2, 8), 0xFF);
-  EXPECT_EQ(FasTC::Replicate(xv, 0, 7), 0);
-  EXPECT_EQ(FasTC::Replicate(xv, 3, 4), 0x06);
+  EXPECT_EQ(FasTC::Replicate(xv, 2, 8), 0xFFU);
+  EXPECT_EQ(FasTC::Replicate(xv, 0, 7), 0U);
+  EXPECT_EQ(FasTC::Replicate(xv, 3, 4), 0x06U);
 
   xv = 0;
-  EXPECT_EQ(FasTC::Replicate(xv, 1, 0), 0);
-  EXPECT_EQ(FasTC::Replicate(xv, 0, 7), 0);
+  EXPECT_EQ(FasTC::Replicate(xv, 1, 0), 0U);
+  EXPECT_EQ(FasTC::Replicate(xv, 0, 7), 0U);
 
   xv = 5;
-  EXPECT_EQ(FasTC::Replicate(xv, 2, 0), 0);
-  EXPECT_EQ(FasTC::Replicate(xv, 3, 6), 0x2D);
+  EXPECT_EQ(FasTC::Replicate(xv, 2, 0), 0U);
+  EXPECT_EQ(FasTC::Replicate(xv, 3, 6), 0x2DU);
 }
