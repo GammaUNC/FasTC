@@ -67,18 +67,27 @@ class Indexer {
   const uint32 m_Height;
 
   uint32 Resolve(int32 i, uint32 limit) const {
+    int32 l = static_cast<int32>(limit);
+
+    // Assumptions
+    assert(i > -l);
+    assert(i < 2*l);
+
     int32 r;
     switch(m_WrapMode) {
     case eWrapMode_Clamp:
-      r = static_cast<uint32>(std::max(0, std::min<int32>(i, limit)));
+      r = static_cast<uint32>(std::max(0, std::min(i, l)));
       break;
 
     case eWrapMode_Wrap:
       {
 	r = i;
-	int32 l = static_cast<int32>(limit);
-	while (r >= l) { r -= l; }
-	while (r <  0) { r += l; }
+	if ((l & (l-1)) == 0) {
+	  r = (r + l) & (l - 1);
+	} else {
+	  if (r >= l) { r -= l; }
+	  if (r <  0) { r += l; }
+	}
       }
       break;
     }
