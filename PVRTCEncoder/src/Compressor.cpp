@@ -62,7 +62,6 @@
 #include "FasTC/Pixel.h"
 #include "FasTC/Color.h"
 
-#include "PVRTCImage.h"
 #include "Block.h"
 
 #define USE_CONSTANT_LUTS
