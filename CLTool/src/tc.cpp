@@ -75,6 +75,7 @@
 void PrintUsage() {
   fprintf(stderr, "Usage: tc [OPTIONS] imagefile\n");
   fprintf(stderr, "\n");
+  fprintf(stderr, "\t-h|--help\tPrint this help.\n");
   fprintf(stderr, "\t-v\t\tVerbose mode: prints out Entropy, Mean Local Entropy, and MSSIM\n");
   fprintf(stderr, "\t-f <fmt>\tFormat to use. Either \"BPTC\", \"ETC1\", \"DXT1\", \"DXT5\", or \"PVRTC\". Default: BPTC\n");
   fprintf(stderr, "\t-l\t\tSave an output log.\n");
@@ -179,6 +180,11 @@ int main(int argc, char **argv) {
       fileArg++;
       knowArg = true;
       continue;
+    }
+
+    if (strcmp(argv[fileArg], "-h") == 0 || strcmp(argv[fileArg], "--help") == 0) {
+      PrintUsage();
+      exit(0);
     }
 
     if (strcmp(argv[fileArg], "-d") == 0) {
