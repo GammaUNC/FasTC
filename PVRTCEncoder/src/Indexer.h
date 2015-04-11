@@ -76,7 +76,7 @@ class Indexer {
     int32 r;
     switch(m_WrapMode) {
     case eWrapMode_Clamp:
-      r = static_cast<uint32>(std::max(0, std::min(i, l)));
+      r = static_cast<uint32>(std::max(0, std::min(i, l-1)));
       break;
 
     case eWrapMode_Wrap:
