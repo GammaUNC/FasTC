@@ -81,13 +81,13 @@ class Indexer {
 
     case eWrapMode_Wrap:
       {
-	r = i;
-	if ((l & (l-1)) == 0) {
-	  r = (r + l) & (l - 1);
-	} else {
-	  if (r >= l) { r -= l; }
-	  if (r <  0) { r += l; }
-	}
+        r = i;
+        if ((l & (l-1)) == 0) {
+          r = (r + l) & (l - 1);
+        } else {
+          if (r >= l) { r -= l; }
+          if (r <  0) { r += l; }
+        }
       }
       break;
     }
