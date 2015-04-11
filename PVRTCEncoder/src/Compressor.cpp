@@ -62,7 +62,11 @@
 #include "FasTC/Pixel.h"
 #include "FasTC/Color.h"
 
+#ifndef NDEBUG
+#  include "PVRTCImage.h"
+#endif
 #include "Block.h"
+#include "Indexer.h"
 
 #define USE_CONSTANT_LUTS
 
@@ -231,18 +235,26 @@ namespace PVRTCC {
   #define AssertPOT(x) (void)(0)
 #endif
 
+  static uint8 LookupIntensityByte(CompressionLabel *labels,
+				   const uint32 *pixels,
+				   uint32 index) {
+    float i = 255.0f * LookupIntensity(labels, pixels, index);
+    return static_cast<uint8>(i + 0.5f);
+  }
+
   static EExtremaResult ComputeLocalExtrema(
     CompressionLabel *labels, const uint8 *inBuf,
-    const uint32 x, const uint32 y, const uint32 width, const uint32 height) {
+    const uint32 x, const uint32 y, const Indexer &idxr) {
 
+    uint32 width = idxr.GetWidth();
+    uint32 height = idxr.GetHeight();
+    
     AssertPOT(width);
     AssertPOT(height);
 
-    assert(x < width);
-    assert(y < height);
-
     const uint32 *pixels = reinterpret_cast<const uint32 *>(inBuf);
-    uint8 i0 = static_cast<uint8>(255.0f * LookupIntensity(labels, pixels, y*width + x) + 0.5f);
+    uint32 idx0 = idxr(x, y);
+    uint8 i0 = LookupIntensityByte(labels, pixels, idx0);
 
     int32 ng = 0;
     int32 nl = 0;
@@ -254,14 +266,10 @@ namespace PVRTCC {
 
       if(i == 0 && j == 0) continue;
 
-      int32 xx = (i + static_cast<int32>(x + width)) & (width - 1);
-      int32 yy = (j + static_cast<int32>(y + height)) & (height - 1);
+      int32 xx = i + static_cast<int32>(x);
+      int32 yy = j + static_cast<int32>(y);
+      uint8 ix = LookupIntensityByte(labels, pixels, idxr(xx, yy));
 
-      assert(xx >= 0 && xx < static_cast<int32>(width));
-      assert(yy >= 0 && yy < static_cast<int32>(height));
-
-      uint32 idx = static_cast<uint32>(xx) + width * static_cast<uint32>(yy);
-      uint8 ix = static_cast<uint8>(255.0f * LookupIntensity(labels, pixels, idx) + 0.5f);
       if(ix >= i0) {
         ng++;
       }
@@ -276,15 +284,15 @@ namespace PVRTCC {
       return result;
     }
 
-    CompressionLabel &l = labels[y*width + x];
+    CompressionLabel &l = labels[idx0];
     const int32 kThreshold = kKernelSz * kKernelSz - 1;
     if(ng >= kThreshold) {
       l.lowLabel.distance = 1;
-      l.lowLabel.AddIdx(y*width+x);
+      l.lowLabel.AddIdx(idx0);
       result = eExtremaResult_LocalMin;
     } else if(nl >= kThreshold) {
       l.highLabel.distance = 1;
-      l.highLabel.AddIdx(y*width+x);
+      l.highLabel.AddIdx(idx0);
       result = eExtremaResult_LocalMax;
     }
 
@@ -351,23 +359,25 @@ namespace PVRTCC {
 
   static void LabelImageForward(CompressionLabel *labels,
                                 const uint8 *inBuf,
-                                const uint32 w, const uint32 h) {
-
+                                const Indexer &idxr) {
+    uint32 w = idxr.GetWidth();
+    uint32 h = idxr.GetHeight();
+    
     AssertPOT(w);
     AssertPOT(h);
 
     for(uint32 j = 0; j < h+3; j++) {
       for(uint32 i = 0; i < w; i++) {
-        EExtremaResult result = ComputeLocalExtrema(labels, inBuf, i, j & (h - 1), w, h);
+        EExtremaResult result = ComputeLocalExtrema(labels, inBuf, i, j, idxr);
         bool dilateMax = result != eExtremaResult_LocalMax;
         bool dilateMin = result != eExtremaResult_LocalMin;
 
         if(dilateMax || dilateMin) {
           // Look up and to the left to determine the distance...
-          uint32 upIdx = ((j+h-1) & (h - 1)) * w + i;
-          uint32 leftIdx = (j & (h - 1)) * w + ((i+w-1) & (w - 1));
+          uint32 upIdx = idxr(i, j - 1);
+          uint32 leftIdx = idxr(i - 1, j);
 
-          CompressionLabel &l = labels[(j & (h - 1))*w + i];
+          CompressionLabel &l = labels[idxr(i, j)];
           CompressionLabel &up = labels[upIdx];
           CompressionLabel &left = labels[leftIdx];
 
@@ -431,8 +441,10 @@ namespace PVRTCC {
 #endif
   }
 
-  static void LabelImageBackward(CompressionLabel *labels,
-                                 const uint32 w, const uint32 h) {
+  static void LabelImageBackward(CompressionLabel *labels, const Indexer &idxr) {
+
+    uint32 w = idxr.GetWidth();
+    uint32 h = idxr.GetHeight();
 
     AssertPOT(w);
     AssertPOT(h);
@@ -441,82 +453,28 @@ namespace PVRTCC {
     for(int32 j = static_cast<int32>(h)+2; j >= 0; j--) {
       for(int32 i = static_cast<int32>(w)-1; i >= 0; i--) {
 
-        CompressionLabel &l = labels[(j & (h - 1)) * w + i];
+        CompressionLabel &l = labels[idxr(i, j)];
 
         // Add top right corner
-        neighbors[0] = &(labels[((j + h - 1) & (h - 1)) * w + ((i + 1) & (w - 1))]);
+        neighbors[0] = &(labels[idxr(i+1, j-1)]);
 
         // Add right label
-        neighbors[1] = &(labels[(j & (h - 1)) * w + ((i + 1) & (w - 1))]);
+        neighbors[1] = &(labels[idxr(i+1, j)]);
 
         // Add bottom right label
-        neighbors[2] = &(labels[((j + 1) & (h - 1)) * w + ((i + 1) & (w - 1))]);
+        neighbors[2] = &(labels[idxr(i+1, j+1)]);
 
         // Add bottom label
-        neighbors[3] = &(labels[((j + 1) & (h - 1)) * w + i]);
+	neighbors[3] = &(labels[idxr(i, j+1)]);
 
         // Add bottom left label
-        neighbors[4] = &(labels[((j + 1) & (h - 1)) * w + ((i + w - 1) & (w - 1))]);
+        neighbors[4] = &(labels[idxr(i-1, j+1)]);
 
         DilateLabelBackward(l.highLabel, neighbors, true);
         DilateLabelBackward(l.lowLabel, neighbors, false);
       }
     }
   }
-
-#if 0
-  static void DilateImage(CompressionLabel *labels, const uint8 *inBuf, uint32 w, uint32 h) {
-    for(uint32 j = 0; j < h; j++)
-    for(uint32 i = 0; i < w; i++) {
-      ComputeLocalExtrema(labels, inBuf, i, j, w, h);
-
-      uint32 idx = j*w + i;
-
-      uint32 minLowDist = labels[idx].lowLabel.distance == 0? 5 : labels[idx].lowLabel.distance - 1;
-      uint32 minHighDist = labels[idx].highLabel.distance == 0? 5 : labels[idx].highLabel.distance - 1;
-
-      for(int32 y = 0; y < 3; y++)
-      for(int32 x = 0; x < 3; x++) {
-        uint32 cidx = ((j + y + h-1) & (h-1))*w + ((i+x+w-1) & (w-1));
-
-        if(labels[cidx].lowLabel.distance > 0)
-          minLowDist = ::std::min<uint32>(minLowDist, labels[cidx].lowLabel.distance);
-
-        if(labels[cidx].highLabel.distance > 0)
-          minHighDist = ::std::min<uint32>(minHighDist, labels[cidx].highLabel.distance);
-      }
-
-      if(static_cast<int32>(minLowDist) != labels[idx].lowLabel.distance - 1) {
-        labels[idx].lowLabel.nLabels = 0;
-      }
-
-      if(static_cast<int32>(minHighDist) != labels[idx].highLabel.distance - 1) {
-        labels[idx].highLabel.nLabels = 0;
-      }
-
-      for(int32 y = 0; y < 3; y++)
-      for(int32 x = 0; x < 3; x++) {
-        uint32 cidx = ((j + y + h-1) & (h-1))*w + ((i+x+w-1) & (w-1));
-
-        if(minLowDist > 0 && labels[cidx].lowLabel.distance == minLowDist) {
-          labels[idx].lowLabel.Combine(labels[cidx].lowLabel);
-        }
-
-        if(minHighDist > 0 && labels[cidx].highLabel.distance == minHighDist) {
-          labels[idx].highLabel.Combine(labels[cidx].highLabel);
-        }
-      }
-
-      if(minLowDist > 0 && minLowDist < 5) {
-        labels[idx].lowLabel.distance = minLowDist + 1;
-      }
-
-      if(minHighDist > 0 && minHighDist < 5) {
-        labels[idx].highLabel.distance = minHighDist + 1;
-      }
-    }
-  }
-#endif
 
   static FasTC::Color CollectLabel(const uint32 *pixels, const Label &label) {
     FasTC::Color ret;
@@ -536,7 +494,10 @@ namespace PVRTCC {
 
   static void GenerateLowHighImages(CompressionLabel *labels,
                                     const uint8 *inBuf, uint8 *outBuf,
-                                    const uint32 w, const uint32 h) {
+                                    const Indexer &idxr) {
+    uint32 w = idxr.GetWidth();
+    uint32 h = idxr.GetHeight();
+    
     assert((w % 4) == 0);
     assert((h % 4) == 0);
     AssertPOT(w);
@@ -556,7 +517,7 @@ namespace PVRTCC {
         for(uint32 y = j*4; y <= (j+1)*4; y++)
         for(uint32 x = i*4; x <= (i+1)*4; x++) {
 
-          uint32 idx = (y & (h-1))*w + (x & (w-1));
+          uint32 idx = idxr(x, y);
           float intensity = labels[idx].intensity;
           if(intensity < minIntensity) {
             minIntensity = intensity;
@@ -616,9 +577,10 @@ namespace PVRTCC {
 #endif
           // Average all of the values together now...
           FasTC::Color high, low;
-          for(uint32 y = 0; y < 4; y++)
-          for(uint32 x = 0; x < 4; x++) {
-            uint32 idx = y * 4 + x;
+	  Indexer localIdxr(4, 4);
+          for(uint32 y = 0; y < localIdxr.GetHeight(); y++)
+	  for(uint32 x = 0; x < localIdxr.GetWidth(); x++) {
+            uint32 idx = localIdxr(x, y);
             FasTC::Color c = blockColors[0][idx];
             if(c.A() < 0.0f) {
               c.Unpack(pixels[maxIntensityIdx]);
@@ -699,7 +661,10 @@ namespace PVRTCC {
     }
   }
 
-  static void GenerateModulationValues(uint8 *outBuf, const uint8 *inBuf, uint32 w, uint32 h) {
+  static void GenerateModulationValues(uint8 *outBuf, const uint8 *inBuf,
+				       const Indexer &idxr) {
+    uint32 w = idxr.GetWidth();
+    uint32 h = idxr.GetHeight();
 
     AssertPOT(w);
     AssertPOT(h);
@@ -715,13 +680,14 @@ namespace PVRTCC {
     // every iteration of the loop. Once we finish with a block, topLeft becomes topRight and
     // bottomLeft becomes bottomRight. Also, when we go to the next row, bottomRight becomes
     // topLeft.
+    Indexer blkIdxr(blocksW, blocksH, idxr.GetWrapMode());
     for(uint32 j = 0; j < blocksH; j++) {
       for(uint32 i = 0; i < blocksW; i++) {
 
         const int32 lowXIdx = i;
-        const int32 highXIdx = (i + 1) & (blocksW - 1);
+        const int32 highXIdx = blkIdxr.ResolveX(i + 1);
         const int32 lowYIdx = j;
-        const int32 highYIdx = (j + 1) & (blocksH - 1);
+        const int32 highYIdx = blkIdxr.ResolveY(j + 1);
 
         const uint32 topLeftBlockIdx = GetBlockIndex(lowXIdx, lowYIdx);
         const uint32 topRightBlockIdx = GetBlockIndex(highXIdx, lowYIdx);
@@ -759,8 +725,8 @@ namespace PVRTCC {
 
         for(uint32 y = 0; y < 4; y++) {
           for(uint32 x = 0; x < 4; x++) {
-            uint32 pixelX = (i*4 + 2 + x) & (w - 1);
-            uint32 pixelY = (j*4 + 2 + y) & (h - 1);
+            uint32 pixelX = idxr.ResolveX(i*4 + 2 + x);
+            uint32 pixelY = idxr.ResolveY(j*4 + 2 + y);
             FasTC::Pixel colorA = BilerpPixels(x, y, topLeftA, topRightA, bottomLeftA, bottomRightA);
             FasTC::Pixel colorB = BilerpPixels(x, y, topLeftB, topRightB, bottomLeftB, bottomRightB);
             FasTC::Pixel original(pixels[pixelY * w + pixelX]);
@@ -938,8 +904,10 @@ namespace PVRTCC {
     CompressionLabel *labels =
       (CompressionLabel *)calloc(width * height, sizeof(CompressionLabel));
 
+    Indexer idxr(width, height, wrapMode);
+
     // First traverse forward...
-    LabelImageForward(labels, cj.InBuf(), width, height);
+    LabelImageForward(labels, cj.InBuf(), idxr);
 
 #ifndef NDEBUG
     gDbgPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
@@ -961,7 +929,7 @@ namespace PVRTCC {
 #endif
 
     // Then traverse backward...
-    LabelImageBackward(labels, width, height);
+    LabelImageBackward(labels, idxr);
 
 #ifndef NDEBUG
     DebugOutputLabels("Backward-", labels, width, height);
@@ -992,10 +960,10 @@ namespace PVRTCC {
 #endif
 
     // Then combine everything...
-    GenerateLowHighImages(labels, cj.InBuf(), cj.OutBuf(), width, height);
+    GenerateLowHighImages(labels, cj.InBuf(), cj.OutBuf(), idxr);
 
     // Then compute modulation values
-    GenerateModulationValues(cj.OutBuf(), cj.InBuf(), width, height);
+    GenerateModulationValues(cj.OutBuf(), cj.InBuf(), idxr);
 
     // Cleanup
     free(labels);
