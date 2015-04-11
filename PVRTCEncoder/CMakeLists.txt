@@ -57,6 +57,7 @@ SET( HEADERS
   ${LIBRARY_HEADERS}
   src/Block.h
   src/PVRTCImage.h
+  src/Indexer.h
 )
 
 SET( SOURCES
