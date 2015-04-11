@@ -246,12 +246,6 @@ namespace PVRTCC {
     CompressionLabel *labels, const uint8 *inBuf,
     const uint32 x, const uint32 y, const Indexer &idxr) {
 
-    uint32 width = idxr.GetWidth();
-    uint32 height = idxr.GetHeight();
-    
-    AssertPOT(width);
-    AssertPOT(height);
-
     const uint32 *pixels = reinterpret_cast<const uint32 *>(inBuf);
     uint32 idx0 = idxr(x, y);
     uint8 i0 = LookupIntensityByte(labels, pixels, idx0);
