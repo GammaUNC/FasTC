@@ -70,6 +70,8 @@ using FasTC::Pixel;
 #  include "../../IO/include/ImageFile.h"
 #endif
 
+#include "Indexer.h"
+
 template <typename T>
 inline T Clamp(const T &v, const T &a, const T &b) {
   return ::std::min(::std::max(a, v), b);
@@ -142,10 +144,11 @@ void Image::BilinearUpscale(uint32 xtimes, uint32 ytimes,
   delete m_FractionalPixels;
   m_FractionalPixels = new FasTC::Pixel[newWidth * newHeight];
 
+  Indexer idxr(newWidth, newHeight, wrapMode);
   for(uint32 j = 0; j < newHeight; j++) {
     for(uint32 i = 0; i < newWidth; i++) {
 
-      const uint32 pidx = j * newWidth + i;
+      const uint32 pidx = idxr(i, j);
       FasTC::Pixel &p = upscaledPixels[pidx];
       FasTC::Pixel &fp = m_FractionalPixels[pidx];
 
@@ -504,42 +507,8 @@ const FasTC::Pixel &Image::GetPixel(int32 i, int32 j, EWrapMode wrapMode) const 
 }
 
 uint32 Image::GetPixelIndex(int32 i, int32 j, EWrapMode wrapMode) const {
-  while(i < 0) {
-    if(wrapMode == eWrapMode_Clamp) {
-      i = 0;
-    } else {
-      i += GetWidth();
-    }
-  }
-
-  while(i >= static_cast<int32>(GetWidth())) {
-    if(wrapMode == eWrapMode_Clamp) {
-      i = GetWidth() - 1;
-    } else {
-      i -= GetWidth();
-    }
-  }
-
-  while(j < 0) {
-    if(wrapMode == eWrapMode_Clamp) {
-      j = 0;
-    } else {
-      j += GetHeight();
-    }
-  }
-
-  while(j >= static_cast<int32>(GetHeight())) {
-    if(wrapMode == eWrapMode_Clamp) {
-      j = GetHeight() - 1;
-    } else {
-      j -= GetHeight();
-    }
-  }
-
-  uint32 idx = j * GetWidth() + i;
-  assert(idx >= 0);
-  assert(idx < GetWidth() * GetHeight());
-  return idx;
+  Indexer idxr(GetWidth(), GetHeight(), wrapMode);
+  return idxr(i, j);
 }
 
 #ifdef DEBUG_PVRTC_DECODER
