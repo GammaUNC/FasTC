@@ -76,6 +76,8 @@
 #define GL_UNSIGNED_INT                   0x1405
 #define GL_FLOAT                          0x1406
 #define GL_DOUBLE                         0x140A
+
+#define GL_RGBA                           0x1908
 #define GL_RGBA8                          0x8058
 
 #endif  // GL_VERSION_1_1
