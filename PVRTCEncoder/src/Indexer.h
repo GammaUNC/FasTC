@@ -73,7 +73,7 @@ class Indexer {
     assert(i > -l);
     assert(i < 2*l);
 
-    int32 r;
+    int32 r = -1;
     switch(m_WrapMode) {
     case eWrapMode_Clamp:
       r = static_cast<uint32>(std::max(0, std::min(i, l-1)));
@@ -93,7 +93,7 @@ class Indexer {
     }
 
     assert (r >= 0);
-    assert (r < limit);
+    assert (r < static_cast<int32>(limit));
     return r;
   }
 
@@ -117,7 +117,6 @@ class Indexer {
 
     uint32 index = _j * this->m_Width + _i;
     assert (index < this->m_Width * this->m_Height);
-    assert (index >= 0);
     return index;
   }
 };
