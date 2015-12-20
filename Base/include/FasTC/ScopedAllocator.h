@@ -63,12 +63,7 @@ namespace FasTC {
     T *m_Ptr;
     ScopedAllocator() : m_Ptr(NULL) { }
    public:
-    static ScopedAllocator<T> Create(uint32 nBytes) {
-      ScopedAllocator<T> actr;
-      actr.m_Ptr = new T[nBytes];
-      return actr;
-    }
-
+    ScopedAllocator<T>(uint32 nBytes) : m_Ptr(new T[nBytes]) { }
     ~ScopedAllocator() {
       if(m_Ptr) {
         delete [] m_Ptr;

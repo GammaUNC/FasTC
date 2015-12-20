@@ -205,8 +205,7 @@ bool ImageLoaderKTX::ReadData() {
     const uint8 *imgData = rdr.GetData() + bytesOfKeyValueData;
     while(rdr.GetData() < imgData) {
       LOAD(keyAndValueByteSize);
-      FasTC::ScopedAllocator<uint8> keyValueData =
-        FasTC::ScopedAllocator<uint8>::Create(keyAndValueByteSize);
+      FasTC::ScopedAllocator<uint8> keyValueData(keyAndValueByteSize);
       if(!keyValueData) {
         fprintf(stderr, "KTX loader - out of memory.\n");
         return false;
