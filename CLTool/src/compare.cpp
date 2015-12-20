@@ -47,6 +47,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 #include <iostream>
 #include <fstream>
 #ifdef _MSC_VER
@@ -59,26 +60,66 @@
 #include "FasTC/TexComp.h"
 #include "FasTC/ThreadSafeStreambuf.h"
 
+static void PrintUsageAndExit() {
+  fprintf(stderr, "Usage: compare [-d] <img1> <img2>\n");
+  exit(1);
+}
+
+void gen_random(char *s, const int len) {
+  static const char alphanum[] =
+  "0123456789"
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  "abcdefghijklmnopqrstuvwxyz";
+
+  srand(time(NULL));
+  for (int i = 0; i < len; ++i) {
+    s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+  }
+
+  s[len] = 0;
+}
+
 int main(int argc, char **argv) {
-  if(argc != 3) {
-    fprintf(stderr, "Usage: compare <img1> <img2>\n");
-    return 1;
+  if(argc != 3 && argc != 4) {
+    PrintUsageAndExit();
   }
 
-  ImageFile img1f (argv[1]);
+  bool diff_images = false;
+  int arg = 1;
+  if (strncmp(argv[arg], "-d", 2) == 0) {
+    diff_images = true;
+    arg++;
+  }
+
+  ImageFile img1f (argv[arg]);
   if(!img1f.Load()) {
-    fprintf(stderr, "Error loading file: %s\n", argv[1]);
+    fprintf(stderr, "Error loading file: %s\n", argv[arg]);
     return 1;
   }
+  arg++;
 
-  ImageFile img2f (argv[2]);
+  ImageFile img2f (argv[arg]);
   if(!img2f.Load()) {
-    fprintf(stderr, "Error loading file: %s\n", argv[2]);
+    fprintf(stderr, "Error loading file: %s\n", argv[arg]);
     return 1;
   }
+  arg++;
 
   FasTC::Image<> &img1 = *img1f.GetImage();
   FasTC::Image<> &img2 = *img2f.GetImage();
+
+  if (diff_images) {
+    FasTC::Image<> diff = img1.Diff(&img2);
+
+    char fname_buf [5 + 16 + 4]; // "diff-" + hash + ".png"
+    strncat(fname_buf, "diff-", 5);
+    gen_random(fname_buf + 5, 16);
+    strncat(fname_buf + 5 + 16, ".png", 4);
+
+    EImageFileFormat fmt = ImageFile::DetectFileFormat(fname_buf);
+    ImageFile cImgFile (fname_buf, fmt, diff);
+    cImgFile.Write();
+  }
 
   double PSNR = img1.ComputePSNR(&img2);
   if(PSNR > 0.0) {

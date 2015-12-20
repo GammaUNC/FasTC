@@ -48,6 +48,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cassert>
+#include <iostream>
 
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -64,6 +65,29 @@ static inline T sad( const T &a, const T &b ) {
 template<typename T>
 static inline T Clamp(const T &v, const T &a, const T &b) {
   return ::std::min(::std::max(a, v), b);
+}
+
+template<typename T> inline T PixelAbs(const T &a);
+template<> inline FasTC::IPixel PixelAbs<FasTC::IPixel>(const FasTC::IPixel &p) {
+  return FasTC::IPixel(fabs(p[0]));
+}
+
+template<> inline FasTC::Pixel PixelAbs<FasTC::Pixel>(const FasTC::Pixel &p) {
+  FasTC::Pixel result = p;
+  if (result.R() < 0) { result.R() = -result.R(); }
+  if (result.G() < 0) { result.G() = -result.G(); }
+  if (result.B() < 0) { result.B() = -result.B(); }
+  if (result.A() < 0) { result.A() = -result.A(); }
+  return result;
+}
+
+template<> inline FasTC::Color PixelAbs<FasTC::Color>(const FasTC::Color &p) {
+  FasTC::Color result = p;
+  if (result.R() < 0) { result.R() = -result.R(); }
+  if (result.G() < 0) { result.G() = -result.G(); }
+  if (result.B() < 0) { result.B() = -result.B(); }
+  if (result.A() < 0) { result.A() = -result.A(); }
+  return result;
 }
 
 // wtf
@@ -172,6 +196,35 @@ const PixelType & Image<PixelType>::operator()(uint32 i, uint32 j) const {
   assert(i < GetWidth());
   assert(j < GetHeight());
   return m_Pixels[j * GetWidth() + i];
+}
+
+template<typename PixelType>
+Image<PixelType> Image<PixelType>::Diff(Image<PixelType> *other) {
+  if (!other) {
+    std::cerr << "Image::Diff - ERROR: other == null" << std::endl;
+    assert(false);
+  }
+
+  if (GetWidth() != other->GetWidth() ||
+      GetHeight() != other->GetHeight()) {
+    std::cerr << "Image::Diff - ERROR: Images differ in dimension" << std::endl;
+    assert(false);
+    return *this;
+  }
+
+  this->ComputePixels();
+  other->ComputePixels();
+
+  Image<PixelType> result(GetWidth(), GetHeight());
+  for (int j = 0; j < GetHeight(); ++j) {
+    for (int i = 0; i < GetWidth(); ++i) {
+      result(i, j) = PixelAbs((*this)(i, j) - (*other)(i, j));
+      result(i, j).MakeOpaque();
+    }
+  }
+
+  // !SPEED! We do an unnecessary copy here...
+  return result;
 }
 
 template<typename PixelType>
