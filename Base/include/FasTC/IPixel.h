@@ -77,6 +77,8 @@ class IPixel : public VectorBase<float, 1> {
   // up in the most-significant byte.
   uint32 Pack() const;
   void Unpack(uint32 rgba);
+
+  void MakeOpaque() { /* Do nothing.. */ }
 };
 REGISTER_VECTOR_TYPE(IPixel);
 

@@ -93,6 +93,8 @@ class Color : public Vec4f {
 
   // Tests for equality by comparing the values and the bit depths.
   bool operator==(const Color &) const;
+
+  void MakeOpaque() { A() = 1.f ; }
 };
 REGISTER_VECTOR_TYPE(Color);
 

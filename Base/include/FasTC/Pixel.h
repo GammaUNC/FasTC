@@ -170,6 +170,8 @@ class Pixel : public Vector4<int16> {
       vec[i] = (vec[i] < 0)? 0 : ((vec[i] > 255)? 255 : vec[i]);
     }
   }
+
+  void MakeOpaque() { A() = 255; }
 };
 REGISTER_VECTOR_TYPE(Pixel);
 
