@@ -80,15 +80,24 @@ void gen_random(char *s, const int len) {
 }
 
 int main(int argc, char **argv) {
-  if(argc != 3 && argc != 4) {
+  if(argc < 3 || argc > 5) {
     PrintUsageAndExit();
   }
 
   bool diff_images = false;
+  float diff_multiplier = 1.0;
   int arg = 1;
   if (strncmp(argv[arg], "-d", 2) == 0) {
     diff_images = true;
     arg++;
+
+    if (argc == 5) {
+      diff_multiplier = static_cast<float>(atoi(argv[arg]));
+      if (diff_multiplier < 0) {
+        PrintUsageAndExit();
+      }
+      arg++;
+    }
   }
 
   ImageFile img1f (argv[arg]);
@@ -109,7 +118,7 @@ int main(int argc, char **argv) {
   FasTC::Image<> &img2 = *img2f.GetImage();
 
   if (diff_images) {
-    FasTC::Image<> diff = img1.Diff(&img2);
+    FasTC::Image<> diff = img1.Diff(&img2, diff_multiplier);
 
     char fname_buf [5 + 16 + 4]; // "diff-" + hash + ".png"
     strncat(fname_buf, "diff-", 5);

@@ -97,7 +97,7 @@ namespace FasTC {
     double ComputePSNR(Image<PixelType> *other);
     double ComputeSSIM(Image<PixelType> *other);
 
-    Image<PixelType> Diff(Image<PixelType> *other);
+    Image<PixelType> Diff(Image<PixelType> *other, float mult);
 
     double ComputeEntropy();
     double ComputeMeanLocalEntropy();

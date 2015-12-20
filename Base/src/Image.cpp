@@ -199,7 +199,7 @@ const PixelType & Image<PixelType>::operator()(uint32 i, uint32 j) const {
 }
 
 template<typename PixelType>
-Image<PixelType> Image<PixelType>::Diff(Image<PixelType> *other) {
+Image<PixelType> Image<PixelType>::Diff(Image<PixelType> *other, float mult) {
   if (!other) {
     std::cerr << "Image::Diff - ERROR: other == null" << std::endl;
     assert(false);
@@ -219,6 +219,7 @@ Image<PixelType> Image<PixelType>::Diff(Image<PixelType> *other) {
   for (int j = 0; j < GetHeight(); ++j) {
     for (int i = 0; i < GetWidth(); ++i) {
       result(i, j) = PixelAbs((*this)(i, j) - (*other)(i, j));
+      result(i, j) *= mult;
       result(i, j).MakeOpaque();
     }
   }
