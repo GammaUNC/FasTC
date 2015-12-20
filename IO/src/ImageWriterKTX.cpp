@@ -86,7 +86,7 @@ class ByteWriter {
       m_BufferSz <<= 1;
       uint8 *newBuffer = new uint8[m_BufferSz];
       memcpy(newBuffer, m_Base, m_BytesWritten);
-      delete m_Base;
+      delete [] m_Base;
       m_Base = newBuffer;
       m_Head = m_Base + m_BytesWritten;
     }
@@ -138,6 +138,8 @@ bool ImageWriterKTX::WriteImage() {
 
     default:
       fprintf(stderr, "Unsupported KTX compressed format: %d\n", ci->GetFormat());
+      m_RawFileData = wtr.GetBytes();
+      m_RawFileDataSz = wtr.GetBytesWritten();
       return false;
     }
   } else {

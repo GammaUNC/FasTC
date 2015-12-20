@@ -71,7 +71,7 @@ public:
       uint8 *newData = new uint8[writer.m_RawFileDataSz << 1];
       memcpy(newData, writer.m_RawFileData, writer.m_RawFileDataSz);
       writer.m_RawFileDataSz <<= 1;
-      delete writer.m_RawFileData;
+      delete [] writer.m_RawFileData;
       writer.m_RawFileData = newData;
     }
 

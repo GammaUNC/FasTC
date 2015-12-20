@@ -479,8 +479,7 @@ int targa_loadFromData(Targa *targa, const unsigned char *data, int dataLength)
 	}
 	else { // RLE image
 		ii = 0;
-		nn = 0;
-		rleId = 0;
+    nn = 0;
 		colorMode = (bitLength / 8);
 		length = (targa->width * targa->height);
 		while(ii < length) {

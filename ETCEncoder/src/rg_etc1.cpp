@@ -1811,7 +1811,7 @@ namespace rg_etc1
          {
             if (block_inten[0] > m_pSorted_luma[n - 1])
             {
-               const uint min_error = labs(block_inten[0] - m_pSorted_luma[n - 1]);
+               const uint min_error = block_inten[0] - m_pSorted_luma[n - 1];
                if (min_error >= trial_solution.m_error)
                   continue;
             }
@@ -1825,7 +1825,7 @@ namespace rg_etc1
          {
             if (m_pSorted_luma[0] > block_inten[3])
             {
-               const uint min_error = labs(m_pSorted_luma[0] - block_inten[3]);
+               const uint min_error = m_pSorted_luma[0] - block_inten[3];
                if (min_error >= trial_solution.m_error)
                   continue;
             }

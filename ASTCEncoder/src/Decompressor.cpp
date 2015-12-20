@@ -820,7 +820,7 @@ namespace ASTCC {
 
     // Determine partitions, partition index, and color endpoint modes
     int32 planeIdx = -1;
-    uint32 partitionIndex = nPartitions;
+    uint32 partitionIndex;
     uint32 colorEndpointMode[4] = {0, 0, 0, 0};
  
     // Define color data.

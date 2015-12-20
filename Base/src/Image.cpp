@@ -552,6 +552,9 @@ template class Image<Color>;
 void GenerateGaussianKernel(Image<IPixel> &out, uint32 size, float sigma) {
 
   assert(size % 2);
+  if (size == 0) {
+    return;
+  }
 
   out = Image<IPixel>(size, size);
   if(size == 1) {

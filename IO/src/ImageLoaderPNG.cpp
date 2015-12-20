@@ -140,6 +140,7 @@ bool ImageLoaderPNG::ReadData() {
     default:
       ReportError("PNG color type unsupported");
       png_destroy_read_struct(&png_ptr, NULL, NULL);
+      delete [] rowData;
       return false;
 
     case PNG_COLOR_TYPE_PALETTE:

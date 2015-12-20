@@ -71,7 +71,7 @@ namespace FasTC {
 
     ~ScopedAllocator() {
       if(m_Ptr) {
-        delete m_Ptr;
+        delete [] m_Ptr;
         m_Ptr = NULL;
       }
     }
