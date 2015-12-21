@@ -117,6 +117,12 @@ int main(int argc, char **argv) {
   FasTC::Image<> &img1 = *img1f.GetImage();
   FasTC::Image<> &img2 = *img2f.GetImage();
 
+  if (img1.GetWidth() != img2.GetWidth() ||
+      img1.GetHeight() != img2.GetHeight()) {
+    std::cerr << "Images differ in dimension!" << std::endl;
+    return 1;
+  }
+
   if (diff_images) {
     FasTC::Image<> diff = img1.Diff(&img2, diff_multiplier);
 
