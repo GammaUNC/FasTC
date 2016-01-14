@@ -216,8 +216,8 @@ Image<PixelType> Image<PixelType>::Diff(Image<PixelType> *other, float mult) {
   other->ComputePixels();
 
   Image<PixelType> result(GetWidth(), GetHeight());
-  for (int j = 0; j < GetHeight(); ++j) {
-    for (int i = 0; i < GetWidth(); ++i) {
+  for (uint32 j = 0; j < GetHeight(); ++j) {
+    for (uint32 i = 0; i < GetWidth(); ++i) {
       result(i, j) = PixelAbs((*this)(i, j) - (*other)(i, j));
       result(i, j) *= mult;
       result(i, j).MakeOpaque();
