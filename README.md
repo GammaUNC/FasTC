@@ -22,7 +22,7 @@ create a separate build directory for compilation:
 
     mkdir FasTC
     cd FasTC
-    git clone git@github.com:Mokosha/FasTC.git src
+    git clone https://github.com/Mokosha/FasTC.git src
     mkdir build
     cd build
     cmake ../src -DCMAKE_BUILD_TYPE=Release
