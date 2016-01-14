@@ -127,6 +127,7 @@ int main(int argc, char **argv) {
     FasTC::Image<> diff = img1.Diff(&img2, diff_multiplier);
 
     char fname_buf [5 + 16 + 4 + 1]; // "diff-" + hash + ".png" + null
+    memset(fname_buf, 0, sizeof(fname_buf));
     strncat(fname_buf, "diff-", 5);
     gen_random(fname_buf + 5, 16);
     strncat(fname_buf + 5 + 16, ".png", 4);
