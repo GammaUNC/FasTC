@@ -1722,7 +1722,7 @@ static ShapeSelection BoxSelection(
 
   RGBACluster cluster(pixels);
 
-  result.m_NumIndices = 1;
+  result.m_NumShapesToSearch = 1;
   for(unsigned int i = 0; i < kNumShapes2; i++) {
     cluster.SetShapeIndex(i, 2);
 
@@ -1758,7 +1758,7 @@ static ShapeSelection BoxSelection(
     ~(static_cast<uint32>(eBlockMode_Four) |
       static_cast<uint32>(eBlockMode_Five));
 
-  result.m_NumIndices++;
+  result.m_NumShapesToSearch++;
   for(unsigned int i = 0; i < kNumShapes3; i++) {
     cluster.SetShapeIndex(i, 3);
 
@@ -1794,7 +1794,7 @@ static void CompressClusters(const ShapeSelection &selection, const uint32 pixel
   CompressionMode::Params bestParams;
 
   uint32 selectedModes = selection.m_SelectedModes;
-  uint32 numShapeIndices = std::min<uint32>(5, selection.m_NumIndices);
+  uint32 numShapeIndices = std::min<uint32>(5, selection.m_NumShapesToSearch);
 
   // If we don't have any indices, turn off two and three partition modes,
   // since the compressor will simply ignore the shapeIndex variable afterwards...
@@ -2102,7 +2102,7 @@ static void CompressBC7Block(
   ShapeSelection selection;
   uint32 path = 0;
 
-  selection.m_NumIndices = 1;
+  selection.m_NumShapesToSearch = 1;
   for(unsigned int i = 0; i < kNumShapes2; i++) {
     blockCluster.SetShapeIndex(i, 2);
 
@@ -2156,7 +2156,7 @@ static void CompressBC7Block(
   // There are not 3 subset blocks that support alpha, so only check these
   // if the entire block is opaque.
   if(opaque) {
-    selection.m_NumIndices++;
+    selection.m_NumShapesToSearch++;
     for(unsigned int i = 0; i < kNumShapes3; i++) {
       blockCluster.SetShapeIndex(i, 3);
 

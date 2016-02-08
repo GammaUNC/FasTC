@@ -61,6 +61,10 @@
 namespace DXTC
 {
   void DecompressDXT1Block(const uint8 *block, uint32 *outBuf) {
+    // When we call FasTC::Pixel::FromBits, we expect the bits
+    // to be read out of memory in LSB (byte) order first. Hence,
+    // we can't read the blocks directly as uint16 values out of
+    // the DXT buffer and we have to swap the bytes before hand.
     uint16 colorA = block[0];
     colorA <<= 8;
     colorA |= block[1];

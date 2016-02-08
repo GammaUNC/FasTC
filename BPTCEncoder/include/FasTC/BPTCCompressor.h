@@ -127,11 +127,11 @@ namespace BPTCC {
   // between zero and sixty-four that corresponds to one of the available
   // partitioning schemes defined by the BPTC format.
   struct ShapeSelection {
-    // This is the number of indices from which to select the appropriate
-    // shapes. I.e. the compressor will try the first m_NumIndices shapes
-    uint32 m_NumIndices;
+    // This is the number of valid shapes in m_Shapes
+    uint32 m_NumShapesToSearch;
 
-    // These are the shape indices to use when evaluating two-partition shapes.
+    // These are the shape indices to use when evaluating shapes. 
+    // I.e. the shapes that the compressor will try to optimize.
     Shape m_Shapes[10];
 
     // This is the additional mask to prevent modes once shape selection
@@ -141,7 +141,7 @@ namespace BPTCC {
 
     // Defaults
     ShapeSelection()
-    : m_NumIndices(0)
+    : m_NumShapesToSearch(0)
     , m_SelectedModes(static_cast<EBlockMode>(0xFF))
     { }
   };
