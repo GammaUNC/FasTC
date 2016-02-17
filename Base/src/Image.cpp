@@ -43,15 +43,15 @@
 
 #include "FasTC/Image.h"
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 #include <algorithm>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
 #include <cassert>
 #include <iostream>
-
-#define _USE_MATH_DEFINES
-#include <cmath>
 
 #include "FasTC/Color.h"
 #include "FasTC/Pixel.h"
@@ -737,7 +737,7 @@ static void IDCT(Image<IPixel> *img) {
           if (u == 0 && v == 0) {
             idct /= N;
           } else if (u == 0 || v == 0) {
-            idct *= sqrt(2) / N;
+            idct *= sqrtf(2) / N;
           } else {
             idct *= 2 / N;
           }
@@ -751,20 +751,20 @@ static void IDCT(Image<IPixel> *img) {
   *img = new_img;
 }
 
-static void RunDCTBlockFn(Image<IPixel> *img, int blockSize, DCTBlockFn fn) {
+static void RunDCTBlockFn(Image<IPixel> *img, uint32 blockSize, DCTBlockFn fn) {
   assert (NULL != fn);
   assert (0 < blockSize);
-  assert (static_cast<uint32>(blockSize) < img->GetWidth());
-  assert (static_cast<uint32>(blockSize) < img->GetHeight());
+  assert (blockSize < img->GetWidth());
+  assert (blockSize < img->GetHeight());
   
   Image<IPixel> block(blockSize, blockSize);
-  for (unsigned int j = 0; j < img->GetHeight(); j += blockSize) {
-    for (unsigned int i = 0; i < img->GetWidth(); i += blockSize) {
+  for (uint32 j = 0; j < img->GetHeight(); j += blockSize) {
+    for (uint32 i = 0; i < img->GetWidth(); i += blockSize) {
       // Populate block
-      for (int y = 0; y < blockSize; ++y) {
-        for (int x = 0; x < blockSize; ++x) {
-          IPixel xx = std::min(img->GetWidth() - 1, i + x);
-          IPixel yy = std::min(img->GetHeight() - 1, j + y);
+      for (uint32 y = 0; y < blockSize; ++y) {
+        for (uint32 x = 0; x < blockSize; ++x) {
+          uint32 xx = std::min(img->GetWidth() - 1, i + x);
+          uint32 yy = std::min(img->GetHeight() - 1, j + y);
           block(x, y) = (*img)(xx, yy);
         }
       }
@@ -773,8 +773,8 @@ static void RunDCTBlockFn(Image<IPixel> *img, int blockSize, DCTBlockFn fn) {
       fn(&block);
 
       // Put it back in the original image
-      for (int y = 0; y < blockSize; ++y) {
-        for (int x = 0; x < blockSize; ++x) {
+      for (uint32 y = 0; y < blockSize; ++y) {
+        for (uint32 x = 0; x < blockSize; ++x) {
           if (i + x >= img->GetWidth()) {
             continue;
           }
@@ -793,11 +793,11 @@ static void RunDCTBlockFn(Image<IPixel> *img, int blockSize, DCTBlockFn fn) {
   }
 }
 
-void DiscreteCosineXForm(Image<IPixel> *img, int blockSize) {
+void DiscreteCosineXForm(Image<IPixel> *img, uint32 blockSize) {
   RunDCTBlockFn(img, blockSize, DCT);
 }
 
-void InvDiscreteCosineXForm(Image<IPixel> *img, int blockSize) {
+void InvDiscreteCosineXForm(Image<IPixel> *img, uint32 blockSize) {
   RunDCTBlockFn(img, blockSize, IDCT);
 }
 

@@ -58,6 +58,7 @@
 #include "Utils.h"
 
 #include <cstdlib>
+#include <functional>
 
 TEST(Image, NonSpecificConstructor) {
   FasTC::Pixel p;
@@ -188,16 +189,20 @@ TEST(Image, SplitImage) {
 
   for(uint32 j = 0; j < h; j++) {
     for(uint32 i = 0; i < w; i++) {
-      EXPECT_EQ(i1(i, j), img(i, j).R());
-      EXPECT_EQ(i2(i, j), img(i, j).G());
-      EXPECT_EQ(i3(i, j), img(i, j).B());
+      EXPECT_FLOAT_EQ(i1(i, j), img(i, j).R());
+      EXPECT_FLOAT_EQ(i2(i, j), img(i, j).G());
+      EXPECT_FLOAT_EQ(i3(i, j), img(i, j).B());
     }
   }
 
   FasTC::Image<FasTC::Color> img2(w, h);
   for(uint32 j = 0; j < h; j++) {
     for(uint32 i = 0; i < w; i++) {
-      img2(i, j) = FasTC::Color(j, i, i*j, 255);
+      const float r = static_cast<float>(j);
+      const float g = static_cast<float>(i);
+      const float b = static_cast<float>(i*j);
+      const float a = 255.0f;
+      img2(i, j) = FasTC::Color(r, g, b, a);
     }
   }
 
@@ -205,9 +210,9 @@ TEST(Image, SplitImage) {
 
   for(uint32 j = 0; j < h; j++) {
     for(uint32 i = 0; i < w; i++) {
-      EXPECT_EQ(i1(i, j), img2(i, j).R());
-      EXPECT_EQ(i2(i, j), img2(i, j).G());
-      EXPECT_EQ(i3(i, j), img2(i, j).B());
+      EXPECT_FLOAT_EQ(i1(i, j), img2(i, j).R());
+      EXPECT_FLOAT_EQ(i2(i, j), img2(i, j).G());
+      EXPECT_FLOAT_EQ(i3(i, j), img2(i, j).B());
     }
   }
 }
@@ -247,7 +252,7 @@ TEST(Image, IDCT) {
   FasTC::Image<FasTC::IPixel> img(w, h);
   for (uint32 j = 0; j < h; ++j) {
     for (uint32 i = 0; i < w; ++i) {
-      img(i, j) = static_cast<FasTC::IPixel>(i + j);
+      img(i, j) = static_cast<float>(i + j);
     }
   }
 
@@ -260,7 +265,7 @@ TEST(Image, IDCT) {
   // First make sure they're different
   for (uint32 j = 0; j < h; ++j) {
     for (uint32 i = 0; i < w; ++i) {
-      EXPECT_NE(img(i, j), orig(i, j));
+      EXPECT_PRED2(std::not_equal_to<float>(), img(i, j), orig(i, j));
     }
   }  
   

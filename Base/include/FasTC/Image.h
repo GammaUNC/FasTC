@@ -133,8 +133,8 @@ namespace FasTC {
                             Image<IPixel> *channelTwo,
                             Image<IPixel> *channelThree);
 
-  extern void DiscreteCosineXForm(Image<IPixel> *img, int blockSize);
-  extern void InvDiscreteCosineXForm(Image<IPixel> *img, int blockSize);
+  extern void DiscreteCosineXForm(Image<IPixel> *img, uint32 blockSize);
+  extern void InvDiscreteCosineXForm(Image<IPixel> *img, uint32 blockSize);
 }  // namespace FasTC
 
 #endif // __TEXCOMP_IMAGE_H__

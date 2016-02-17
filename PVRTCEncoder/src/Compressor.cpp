@@ -459,7 +459,7 @@ namespace PVRTCC {
         neighbors[2] = &(labels[idxr(i+1, j+1)]);
 
         // Add bottom label
-	neighbors[3] = &(labels[idxr(i, j+1)]);
+        neighbors[3] = &(labels[idxr(i, j+1)]);
 
         // Add bottom left label
         neighbors[4] = &(labels[idxr(i-1, j+1)]);
@@ -571,9 +571,9 @@ namespace PVRTCC {
 #endif
           // Average all of the values together now...
           FasTC::Color high, low;
-	  Indexer localIdxr(4, 4);
+          Indexer localIdxr(4, 4);
           for(uint32 y = 0; y < localIdxr.GetHeight(); y++)
-	  for(uint32 x = 0; x < localIdxr.GetWidth(); x++) {
+          for(uint32 x = 0; x < localIdxr.GetWidth(); x++) {
             uint32 idx = localIdxr(x, y);
             FasTC::Color c = blockColors[0][idx];
             if(c.A() < 0.0f) {
