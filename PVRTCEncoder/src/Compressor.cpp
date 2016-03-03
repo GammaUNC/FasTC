@@ -68,7 +68,10 @@
 #include "Block.h"
 #include "Indexer.h"
 
-#define USE_CONSTANT_LUTS
+// !FIXME! Figure out why the PSNR of these LUTs is worse than when
+// we don't use them -- they should be optimal. This is reflected
+// in Github issue #19
+// #define USE_CONSTANT_LUTS
 
 namespace PVRTCC {
 
@@ -506,6 +509,9 @@ namespace PVRTCC {
     for(uint32 j = 0; j < blocksH; j++) {
       for(uint32 i = 0; i < blocksW; i++) {
 
+        bool isHole[2][16];
+        memset(isHole, 0, sizeof(isHole));
+
         float minIntensity = 1.1f, maxIntensity = -0.1f;
         uint32 minIntensityIdx = 0, maxIntensityIdx = 0;
         for(uint32 y = j*4; y <= (j+1)*4; y++)
@@ -532,15 +538,13 @@ namespace PVRTCC {
           if(labels[idx].highLabel.distance > 0) {
             blockColors[0][localIdx] = CollectLabel(pixels, labels[idx].highLabel);
           } else {
-            // Mark the color as unused
-            blockColors[0][localIdx].A() = -1.0f;
+            isHole[0][localIdx] = true;
           }
 
           if(labels[idx].lowLabel.distance > 0) {
             blockColors[1][localIdx] = CollectLabel(pixels, labels[idx].lowLabel);
           } else {
-            // Mark the color as unused
-            blockColors[1][localIdx].A() = -1.0f;
+            isHole[1][localIdx] = true;
           }
         }
 
@@ -550,7 +554,16 @@ namespace PVRTCC {
           // Assume all same color
           FasTC::Pixel color(pixels[minIntensityIdx]);
           if(color.A() < 0xFF) {
-            assert(!"Implement me!");
+            if (color.A() == 0) {
+              color.Unpack(0);    // Set to total black
+              b.SetColorA(color);
+              b.SetColorB(color);
+            } else {
+              // !FIXME! Actually compute better lookup tables for
+              // this case...
+              b.SetColorA(color, color.A() < 200);
+              b.SetColorB(color, color.A() < 200);
+            }
           } else {
             FasTC::Pixel high, low;
             high.A() = low.A() = 0xFF;
@@ -576,13 +589,13 @@ namespace PVRTCC {
           for(uint32 x = 0; x < localIdxr.GetWidth(); x++) {
             uint32 idx = localIdxr(x, y);
             FasTC::Color c = blockColors[0][idx];
-            if(c.A() < 0.0f) {
+            if(isHole[0][idx]) {
               c.Unpack(pixels[maxIntensityIdx]);
             }
             high += c * (1.0f / 16.0f);
 
             c = blockColors[1][idx];
-            if(c.A() < 0.0f) {
+            if(isHole[1][idx]) {
               c.Unpack(pixels[minIntensityIdx]);
             }
             low += c * (1.0f / 16.0f);
@@ -591,10 +604,10 @@ namespace PVRTCC {
           // Store them as our endpoints for this block...
           FasTC::Pixel p;
           p.Unpack(high.Pack());
-          b.SetColorA(p);
+          b.SetColorA(p, p.A() < 200);
 
           p.Unpack(low.Pack());
-          b.SetColorB(p);
+          b.SetColorB(p, p.B() < 200);
 #ifdef USE_CONSTANT_LUTS
         }
 #endif
@@ -739,6 +752,7 @@ namespace PVRTCC {
                 int32 o = original.Component(c);
                 errorVec[c] = r - o;
               }
+
               uint32 error = static_cast<uint64>(errorVec.LengthSq());
 
               if(error < bestError) {
