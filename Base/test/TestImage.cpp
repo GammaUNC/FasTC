@@ -265,7 +265,7 @@ TEST(Image, IDCT) {
   // First make sure they're different
   for (uint32 j = 0; j < h; ++j) {
     for (uint32 i = 0; i < w; ++i) {
-      EXPECT_PRED2(std::not_equal_to<float>(), img(i, j), orig(i, j));
+      EXPECT_NE(img(i, j), orig(i, j));
     }
   }  
   

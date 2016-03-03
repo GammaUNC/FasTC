@@ -79,6 +79,14 @@ class IPixel : public VectorBase<float, 1> {
   void Unpack(uint32 rgba);
 
   void MakeOpaque() { /* Do nothing.. */ }
+
+  bool operator==(const IPixel &other) const {
+    return static_cast<float>(*this) == static_cast<float>(other);
+  }
+
+  bool operator!=(const IPixel &other) const {
+    return static_cast<float>(*this) != static_cast<float>(other);
+  }
 };
 REGISTER_VECTOR_TYPE(IPixel);
 
