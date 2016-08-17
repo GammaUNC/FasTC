@@ -52,7 +52,6 @@
 
 #if _MSC_VER
 #  define _CRT_SECURE_NO_WARNINGS
-#  define snprintf _snprintf
 #endif
 
 #include "PVRTCImage.h"

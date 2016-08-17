@@ -173,7 +173,8 @@ INSTALL(
 ENABLE_TESTING()
 
 IF(MSVC)
-  SET(gtest_force_shared_crt TRUE)
+  MESSAGE("Setting force shared crt")
+  SET(gtest_force_shared_crt TRUE CACHE BOOL "Used to properly select MSVC runtime libraries" FORCE)
 ENDIF(MSVC)
 
 ADD_SUBDIRECTORY(GTest)
