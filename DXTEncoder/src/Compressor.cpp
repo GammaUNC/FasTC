@@ -88,7 +88,7 @@ namespace DXTC
         const uint32 kOffset = j*cj.Width() + i;
         ExtractBlock(inPixels + kOffset, cj.Width(), block);
         stb_compress_dxt_block(outBuf, block, 1, STB_DXT_DITHER);
-        outBuf += 8;
+        outBuf += 16;
       }
       startX = 0;
     }
