@@ -1,4 +1,4 @@
-FasTC [![Build Status](https://travis-ci.org/Mokosha/FasTC.png)](https://travis-ci.org/Mokosha/FasTC)
+FasTC [![Build Status](https://travis-ci.org/GammaUNC/FasTC.png)](https://travis-ci.org/GammaUNC/FasTC)
 =======
 
 A <b>Fas</b>t <b>T</b>exture <b>C</b>ompressor for a variety of formats. This compressor 
