@@ -6,10 +6,13 @@ compiler:
   - gcc
   - clang
 
-before_install:
-  - sudo add-apt-repository ppa:kalakris/cmake -y
-  - sudo apt-get update -qq
-  - sudo apt-get install cmake
+addons:
+  apt:
+    sources:
+      - george-edison55-precise-backports # cmake 3.2.3 / doxygen 1.8.3
+    packages:
+      - cmake
+      - cmake-data
 
 before_script:
   - mkdir build
