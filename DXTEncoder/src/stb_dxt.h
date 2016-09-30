@@ -519,7 +519,7 @@ static void stb__CompressColorBlock(unsigned char *dest, unsigned char *block, i
   }
 
   // write the color block
-  if(max16 < min16)
+  if(max16 <= min16)
   {
      unsigned short t = min16;
      min16 = max16;
