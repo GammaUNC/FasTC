@@ -326,6 +326,8 @@ int main(int argc, char **argv) {
       strcat(basename, "-pvrtc-4bpp.png");
     } else if(format == FasTC::eCompressionFormat_DXT1) {
       strcat(basename, "-dxt1.png");
+    } else if(format == FasTC::eCompressionFormat_DXT5) {
+      strcat(basename, "-dxt5.png");
     } else if(format == FasTC::eCompressionFormat_ETC1) {
       strcat(basename, "-etc1.png");
     }

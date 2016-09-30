@@ -91,7 +91,9 @@ bool CompressedImage::DecompressImage(unsigned char *outBuf, unsigned int outBuf
   DecompressionJob dj (m_Format, byteData, outBuf, GetWidth(), GetHeight());
   if(m_Format == FasTC::eCompressionFormat_DXT1) {
     DXTC::DecompressDXT1(dj);
-  } else if(m_Format == FasTC::eCompressionFormat_ETC1) {
+  } else if(m_Format == FasTC::eCompressionFormat_DXT5) {
+    DXTC::DecompressDXT5(dj);
+  } else if (m_Format == FasTC::eCompressionFormat_ETC1) {
     ETCC::Decompress(dj);
   } else if(FasTC::COMPRESSION_FORMAT_PVRTC_BEGIN <= m_Format &&
             FasTC::COMPRESSION_FORMAT_PVRTC_END >= m_Format) {

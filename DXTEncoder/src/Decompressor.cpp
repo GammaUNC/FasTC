@@ -57,11 +57,39 @@ namespace {
     FasTC::Pixel *colors[4] = { &a, &b, &c, &d };
 
     uint32 *outPixels = reinterpret_cast<uint32 *>(outBuf);
-    for(uint32 i = 0; i < 16; i++) {
-      outPixels[i] = colors[(mod >> (i*2)) & 3]->Pack();
+    for (uint32 i = 0; i < 16; i++) {
+      outPixels[i] &= 0xFF000000;
+      outPixels[i] |= colors[(mod >> (i * 2)) & 3]->Pack() & 0x00FFFFFF;
     }
   }
 
+  void DecompressDXT5Block(const uint8 *block, uint32 *outBuf) {
+    int alpha0 = block[0];
+    int alpha1 = block[1];
+
+    int palette[8];
+    palette[0] = alpha0;
+    palette[1] = alpha1;
+
+    if (alpha0 > alpha1) {
+      for (int i = 2; i < 8; ++i) {
+        palette[i] = ((8 - i) * alpha0 + (i - 1) * alpha1) / 7;
+      }
+    } else {
+      for (int i = 2; i < 6; ++i) {
+        palette[i] = ((6 - i) * alpha0 + (i - 1) * alpha1) / 5;
+      }
+      palette[6] = 0;
+      palette[7] = 255;
+    }
+
+    uint64 mod = *reinterpret_cast<const uint64 *>(block) >> 16;
+    uint32 *outPixels = reinterpret_cast<uint32 *>(outBuf);
+    for (uint32 i = 0; i < 16; i++) {
+      outPixels[i] &= 0x00FFFFFF;
+      outPixels[i] |= palette[(mod >> (i * 3)) & 7] << 24;
+    }
+  }
 }  // namespace
 
 namespace DXTC
@@ -91,6 +119,37 @@ namespace DXTC
         for(uint32 x = 0; x < 4; x++) {
           offset = (j*4 + y)*dcj.Width() + ((i*4)+x);
           outPixels[offset] = outBlock[y*4 + x];
+        }
+      }
+    }
+  }
+
+  void DecompressDXT5(const FasTC::DecompressionJob &dcj)
+  {
+    assert(!(dcj.Height() & 3));
+    assert(!(dcj.Width() & 3));
+
+    uint32 blockW = dcj.Width() >> 2;
+    uint32 blockH = dcj.Height() >> 2;
+
+    const uint32 blockSz = GetBlockSize(FasTC::eCompressionFormat_DXT5);
+
+    uint32 *outPixels = reinterpret_cast<uint32 *>(dcj.OutBuf());
+
+    uint32 outBlock[16];
+    memset(outBlock, 0xFF, sizeof(outBlock));
+
+    for (uint32 j = 0; j < blockH; j++) {
+      for (uint32 i = 0; i < blockW; i++) {
+
+        uint32 offset = (j * blockW + i) * blockSz;
+        DecompressDXT5Block(dcj.InBuf() + offset, outBlock);
+        DecompressDXT1Block(dcj.InBuf() + offset + blockSz / 2, outBlock, false);
+
+        for (uint32 y = 0; y < 4; y++)
+        for (uint32 x = 0; x < 4; x++) {
+          offset = (j * 4 + y)*dcj.Width() + ((i * 4) + x);
+          outPixels[offset] = outBlock[y * 4 + x];
         }
       }
     }

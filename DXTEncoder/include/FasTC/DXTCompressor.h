@@ -25,4 +25,5 @@ namespace DXTC
   void CompressImageDXT5(const FasTC::CompressionJob &);
 
   void DecompressDXT1(const FasTC::DecompressionJob &);
+  void DecompressDXT5(const FasTC::DecompressionJob &);
 }
