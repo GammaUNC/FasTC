@@ -23,20 +23,14 @@
 
 #include "FasTC/Pixel.h"
 
-namespace DXTC
-{
-  void DecompressDXT1Block(const uint8 *block, uint32 *outBuf) {
+namespace {
+  void DecompressDXT1Block(const uint8 *block, uint32 *outBuf, bool check_order) {
     // When we call FasTC::Pixel::FromBits, we expect the bits
     // to be read out of memory in LSB (byte) order first. Hence,
     // we can't read the blocks directly as uint16 values out of
     // the DXT buffer and we have to swap the bytes before hand.
-    uint16 colorA = block[0];
-    colorA <<= 8;
-    colorA |= block[1];
-
-    uint16 colorB = block[2];
-    colorB <<= 8;
-    colorB |= block[3];
+    uint16 colorA = block[1] | block[0] << 8;
+    uint16 colorB = block[3] | block[2] << 8;
 
     uint32 mod = reinterpret_cast<const uint32 *>(block + 4)[0];
 
@@ -45,12 +39,20 @@ namespace DXTC
     a.FromBits(reinterpret_cast<const uint8 *>(&colorA), kFiveSixFive);
     b.FromBits(reinterpret_cast<const uint8 *>(&colorB), kFiveSixFive);
 
-    uint8 kFullDepth[4] = {8, 8, 8, 8};
+    uint8 kFullDepth[4] = { 8, 8, 8, 8 };
     a.ChangeBitDepth(kFullDepth);
     b.ChangeBitDepth(kFullDepth);
 
-    d = (a + b*2) / 3;
-    c = (a*2 + b) / 3;
+    // However, for the purposes of properly decoding DXT, we can read them as ints...
+    const uint16 *block_ptr = reinterpret_cast<const uint16 *>(block);
+    if (!check_order || block_ptr[0] > block_ptr[1]) {
+      c = (a * 2 + b) / 3;
+      d = (a + b * 2) / 3;
+    }
+    else {
+      c = (a + b) / 2;
+      // d already initialized to zero...
+    }
 
     FasTC::Pixel *colors[4] = { &a, &b, &c, &d };
 
@@ -60,6 +62,10 @@ namespace DXTC
     }
   }
 
+}  // namespace
+
+namespace DXTC
+{
   void DecompressDXT1(const FasTC::DecompressionJob &dcj)
   {
     assert(!(dcj.Height() & 3));
@@ -73,11 +79,13 @@ namespace DXTC
     uint32 *outPixels = reinterpret_cast<uint32 *>(dcj.OutBuf());
 
     uint32 outBlock[16];
+    memset(outBlock, 0xFF, sizeof(outBlock));
+
     for(uint32 j = 0; j < blockH; j++) {
       for(uint32 i = 0; i < blockW; i++) {
 
         uint32 offset = (j * blockW + i) * blockSz;
-        DecompressDXT1Block(dcj.InBuf() + offset, outBlock);
+        DecompressDXT1Block(dcj.InBuf() + offset, outBlock, true);
 
         for(uint32 y = 0; y < 4; y++)
         for(uint32 x = 0; x < 4; x++) {
