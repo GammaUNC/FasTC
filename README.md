@@ -97,7 +97,7 @@ compression time and PSNR.
   * [DXT1](http://www.opengl.org/registry/specs/EXT/texture_compression_s3tc.txt) [2]
   * [DXT5](http://www.opengl.org/registry/specs/EXT/texture_compression_s3tc.txt) [2]
   * [PVRTC](http://web.onetel.net.uk/~simonnihal/assorted3d/fenney03texcomp.pdf)
-* `-d`: Specifies the decompressed output file.
+* `-d`: Specifies the output file. Format supported PNG, PVR, TGA, KTX, ASTC
   * **Default**: `<filename>`-`<fmt>`.png
 * `-nd`: Suppress decompressed output.
 * `-t`: Specifies the number of threads to use for compression.
@@ -135,7 +135,7 @@ with atomic synchronization primitives, I would invoke the following command:
 
 If I wanted to compress a texture into PVRTC, I would invoke the following command:
 
-    CLTool/tc -f PVRTC path/to/image.png
+    CLTool/tc -f PVRTC path/to/image.pvr
 
 [1] Compression code courtesy of [Rich Geldreich](https://code.google.com/p/rg-etc1/) <br>
 [2] Compression code courtesy of [Sean Barrett](https://github.com/nothings/stb/blob/master/stb_dxt.h).
