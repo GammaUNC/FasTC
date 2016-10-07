@@ -51,14 +51,10 @@ class CompressedImage : public FasTC::Image<FasTC::Pixel> {
 
   virtual void ComputePixels();
 
-  static uint32 GetCompressedSize(uint32 uncompressedSize, FasTC::ECompressionFormat format);
-  static uint32 GetUncompressedSize(uint32 compressedSize, FasTC::ECompressionFormat format) {
-    uint32 cmp = GetCompressedSize(compressedSize, format);
-    return compressedSize * (compressedSize / cmp);
-  }
+  static uint32 GetCompressedSize(uint32 width, uint32 height, FasTC::ECompressionFormat format);
 
   uint32 GetCompressedSize() const {
-    return GetCompressedSize(GetUncompressedSize(), m_Format);
+    return GetCompressedSize(GetWidth(), GetHeight(), m_Format);
   }
   uint32 GetUncompressedSize() const {
     return GetWidth() * GetHeight() * sizeof(uint32);

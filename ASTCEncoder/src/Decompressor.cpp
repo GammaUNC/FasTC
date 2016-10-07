@@ -970,9 +970,12 @@ namespace ASTCC {
         uint32 uncompData[144];
         DecompressBlock(blockPtr, blockWidth, blockHeight, uncompData);
 
+        uint32 decompWidth = std::min(blockWidth, dcj.Width() - i);
+        uint32 decompHeight = std::min(blockHeight, dcj.Height() - j);
+
         uint8 *outRow = dcj.OutBuf() + (j*dcj.Width() + i)*4;
-        for(uint32 jj = 0; jj < blockHeight; jj++) {
-          memcpy(outRow + jj*dcj.Width()*4, uncompData + jj*blockWidth, blockWidth*4);
+        for(uint32 jj = 0; jj < decompHeight; jj++) {
+          memcpy(outRow + jj*dcj.Width()*4, uncompData + jj*blockWidth, decompWidth*4);
         }
 
         blockIdx++;

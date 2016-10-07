@@ -133,21 +133,16 @@ void CompressedImage::ComputePixels() {
   SetImageData(GetWidth(), GetHeight(), newPixels);
 }
 
-uint32 CompressedImage::GetCompressedSize(uint32 uncompressedSize, ECompressionFormat format) {
-
-  // Make sure that the uncompressed size is a multiple of the pixel size.
-  assert(uncompressedSize % sizeof(uint32) == 0);
-
+uint32 CompressedImage::GetCompressedSize(uint32 width, uint32 height, ECompressionFormat format) {
   // The compressed size is the block size times the number of blocks
   uint32 blockDim[2];
   GetBlockDimensions(format, blockDim);
 
+  const uint32 blocksWide = (width + blockDim[0] - 1) / blockDim[0];
+  const uint32 blocksHigh = (height + blockDim[1] - 1) / blockDim[1];
   const uint32 uncompBlockSize = blockDim[0] * blockDim[1] * sizeof(uint32);
 
-  // The uncompressed block size should be a factor of the uncompressed size.
-  assert(uncompressedSize % uncompBlockSize == 0);
-
-  const uint32 nBlocks = uncompressedSize / uncompBlockSize;
+  const uint32 nBlocks = blocksWide * blocksHigh;
   const uint32 blockSz = GetBlockSize(format);
 
   return nBlocks * blockSz;

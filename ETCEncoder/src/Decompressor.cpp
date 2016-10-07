@@ -19,22 +19,28 @@
 
 #include "rg_etc1.h"
 
+#include <algorithm>
+#include <cassert>
+
 namespace ETCC {
 
-  void Decompress(const FasTC::DecompressionJob &cj) {
-
-    uint32 blocksX = cj.Width() / 4;
-    uint32 blocksY = cj.Height() / 4;
+  void Decompress(const FasTC::DecompressionJob &dcj) {
+    uint32 blocksX = (dcj.Width() + 3) / 4;
+    uint32 blocksY = (dcj.Height() + 3) / 4;
 
     for(uint32 j = 0; j < blocksY; j++) {
       for(uint32 i = 0; i < blocksX; i++) {
         uint32 pixels[16];
         uint32 blockIdx = j*blocksX + i;
-        rg_etc1::unpack_etc1_block(cj.InBuf() + blockIdx * 8, pixels);
-        for(uint32 y = 0; y < 4; y++)
-        for(uint32 x = 0; x < 4; x++) {
-          uint32 *out = reinterpret_cast<uint32 *>(cj.OutBuf());
-          out[(j*4 + y)*cj.Width() + (i*4 + x)] = pixels[y*4 + x];
+        rg_etc1::unpack_etc1_block(dcj.InBuf() + blockIdx * 8, pixels);
+
+        uint32 decompWidth = std::min(4U, dcj.Width() - i * 4);
+        uint32 decompHeight = std::min(4U, dcj.Height() - j * 4);
+
+        for(uint32 y = 0; y < decompHeight; y++)
+        for(uint32 x = 0; x < decompWidth; x++) {
+          uint32 *out = reinterpret_cast<uint32 *>(dcj.OutBuf());
+          out[(j*4 + y)*dcj.Width() + (i*4 + x)] = pixels[y*4 + x];
         }
       }
     }

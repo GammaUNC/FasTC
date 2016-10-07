@@ -392,14 +392,13 @@ CompressedImage *CompressImage(
     height = newHeight;
   }
 
-  uint32 dataSz = width * height * 4;
-  uint32 *data = new uint32[dataSz / 4];
-  memset(data, 0, dataSz);
+  uint32 *data = new uint32[width * height];
+  memset(data, 0, width * height * sizeof(data[0]));
 
   CompressedImage *outImg = NULL;
 
   // Allocate data based on the compression method
-  uint32 cmpDataSz = CompressedImage::GetCompressedSize(dataSz, settings.format);
+  uint32 cmpDataSz = CompressedImage::GetCompressedSize(width, height, settings.format);
 
   // Make sure that we have RGBA data...
   img->ComputePixels();
@@ -485,7 +484,7 @@ bool CompressImageData(
 
   // Allocate data based on the compression method
   uint32 compressedDataSzNeeded =
-    CompressedImage::GetCompressedSize(dataSz, settings.format);
+    CompressedImage::GetCompressedSize(width, height, settings.format);
 
   if(compressedDataSzNeeded == 0) {
     ReportError("Unknown compression format");

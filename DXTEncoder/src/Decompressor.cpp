@@ -17,6 +17,7 @@
 
 #include "FasTC/DXTCompressor.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
@@ -94,13 +95,9 @@ namespace {
 
 namespace DXTC
 {
-  void DecompressDXT1(const FasTC::DecompressionJob &dcj)
-  {
-    assert(!(dcj.Height() & 3));
-    assert(!(dcj.Width() & 3));
-
-    uint32 blockW = dcj.Width() >> 2;
-    uint32 blockH = dcj.Height() >> 2;
+  void DecompressDXT1(const FasTC::DecompressionJob &dcj) {
+    uint32 blockW = (dcj.Width() + 3) >> 2;
+    uint32 blockH = (dcj.Height() + 3) >> 2;
 
     const uint32 blockSz = GetBlockSize(FasTC::eCompressionFormat_DXT1);
 
@@ -115,8 +112,11 @@ namespace DXTC
         uint32 offset = (j * blockW + i) * blockSz;
         DecompressDXT1Block(dcj.InBuf() + offset, outBlock, true);
 
-        for(uint32 y = 0; y < 4; y++)
-        for(uint32 x = 0; x < 4; x++) {
+        uint32 decompWidth = std::min(4U, dcj.Width() - i * 4);
+        uint32 decompHeight = std::min(4U, dcj.Height() - j * 4);
+
+        for(uint32 y = 0; y < decompHeight; y++)
+        for(uint32 x = 0; x < decompWidth; x++) {
           offset = (j*4 + y)*dcj.Width() + ((i*4)+x);
           outPixels[offset] = outBlock[y*4 + x];
         }
@@ -124,13 +124,9 @@ namespace DXTC
     }
   }
 
-  void DecompressDXT5(const FasTC::DecompressionJob &dcj)
-  {
-    assert(!(dcj.Height() & 3));
-    assert(!(dcj.Width() & 3));
-
-    uint32 blockW = dcj.Width() >> 2;
-    uint32 blockH = dcj.Height() >> 2;
+  void DecompressDXT5(const FasTC::DecompressionJob &dcj) {
+    uint32 blockW = (dcj.Width() + 3) >> 2;
+    uint32 blockH = (dcj.Height() + 3) >> 2;
 
     const uint32 blockSz = GetBlockSize(FasTC::eCompressionFormat_DXT5);
 
@@ -146,8 +142,11 @@ namespace DXTC
         DecompressDXT5Block(dcj.InBuf() + offset, outBlock);
         DecompressDXT1Block(dcj.InBuf() + offset + blockSz / 2, outBlock, false);
 
-        for (uint32 y = 0; y < 4; y++)
-        for (uint32 x = 0; x < 4; x++) {
+        uint32 decompWidth = std::min(4U, dcj.Width() - i * 4);
+        uint32 decompHeight = std::min(4U, dcj.Height() - j * 4);
+
+        for (uint32 y = 0; y < decompHeight; y++)
+        for (uint32 x = 0; x < decompWidth; x++) {
           offset = (j * 4 + y)*dcj.Width() + ((i * 4) + x);
           outPixels[offset] = outBlock[y * 4 + x];
         }

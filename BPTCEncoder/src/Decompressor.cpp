@@ -353,10 +353,13 @@ void Decompress(const FasTC::DecompressionJob &dj) {
       uint32 pixels[16];
       DecompressBC7Block(inBuf, pixels);
 
-      memcpy(outBuf + j*dj.Width() + i, pixels, 4 * sizeof(pixels[0]));
-      memcpy(outBuf + (j+1)*dj.Width() + i, pixels+4, 4 * sizeof(pixels[0]));
-      memcpy(outBuf + (j+2)*dj.Width() + i, pixels+8, 4 * sizeof(pixels[0]));
-      memcpy(outBuf + (j+3)*dj.Width() + i, pixels+12, 4 * sizeof(pixels[0]));
+      uint32 decompWidth = std::min(4U, dj.Width() - i);
+      uint32 decompHeight = std::min(4U, dj.Height() - j);
+
+      uint32 *outRow = outBuf + j * dj.Width() + i;
+      for (uint32 jj = 0; jj < decompHeight; ++jj) {
+        memcpy(outRow + jj*dj.Width(), pixels + 4 * jj, decompWidth * sizeof(pixels[0]));
+      }
 
       inBuf += 16;
     }

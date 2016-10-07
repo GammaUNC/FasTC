@@ -305,7 +305,7 @@ bool ImageLoaderKTX::ReadData() {
         return false;
     }
 
-    uint32 dataSize = CompressedImage::GetCompressedSize(pixelWidth * pixelHeight * 4, m_Format);
+    uint32 dataSize = CompressedImage::GetCompressedSize(pixelWidth, pixelHeight, m_Format);
     m_PixelData = new uint8[dataSize];
     memcpy(m_PixelData, rdr.GetData(), dataSize);
     rdr.Advance(dataSize);
