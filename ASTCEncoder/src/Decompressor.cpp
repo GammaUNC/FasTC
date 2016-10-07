@@ -41,7 +41,8 @@ namespace ASTCC {
     bool m_bDualPlane;
     uint32 m_MaxWeight;
     bool m_bError;
-    bool m_bVoidExtent;
+    bool m_bVoidExtentLDR;
+    bool m_bVoidExtentHDR;
 
     TexelWeightParams() {
       memset(this, 0, sizeof(*this));
@@ -74,7 +75,17 @@ namespace ASTCC {
 
     // Does this match the void extent block mode?
     if((modeBits & 0x01FF) == 0x1FC) {
-      params.m_bVoidExtent = true;
+      if (modeBits & 0x200) {
+        params.m_bVoidExtentHDR = true;
+      } else {
+        params.m_bVoidExtentLDR = true;
+      }
+
+      // Next two bits must be one.
+      if (!(modeBits & 0x400) || !strm.ReadBit()) {
+        params.m_bError = true;
+      }
+
       return params;
     }
 
@@ -254,6 +265,28 @@ namespace ASTCC {
     params.m_bDualPlane = D;
 
     return params;
+  }
+
+  void FillVoidExtentLDR(BitStreamReadOnly& strm, uint32* const outBuf,
+    uint32 blockWidth, uint32 blockHeight) {
+    // Don't actually care about the void extent, just read the bits...
+    for (int i = 0; i < 4; ++i) {
+      strm.ReadBits(13);
+    }
+
+    // Decode the RGBA components and renormalize them to the range [0, 255]
+    uint16 r = strm.ReadBits(16);
+    uint16 g = strm.ReadBits(16);
+    uint16 b = strm.ReadBits(16);
+    uint16 a = strm.ReadBits(16);
+
+    uint32 rgba = (r >> 8) | (g & 0xFF00) | (static_cast<uint32>(b) & 0xFF00) << 8
+      | (static_cast<uint32>(a) & 0xFF00) << 16;
+
+    for (uint32 j = 0; j < blockHeight; j++)
+    for (uint32 i = 0; i < blockWidth; i++) {
+      outBuf[j * blockWidth + i] = rgba;
+    }
   }
 
   void FillError(uint32 *outBuf, uint32 blockWidth, uint32 blockHeight) {
@@ -754,6 +787,17 @@ namespace ASTCC {
     // Was there an error?
     if(weightParams.m_bError) {
       assert(!"Invalid block mode");
+      FillError(outBuf, blockWidth, blockHeight);
+      return;
+    }
+
+    if (weightParams.m_bVoidExtentLDR) {
+      FillVoidExtentLDR(strm, outBuf, blockWidth, blockHeight);
+      return;
+    }
+
+    if (weightParams.m_bVoidExtentHDR) {
+      assert(!"HDR void extent blocks are unsupported!");
       FillError(outBuf, blockWidth, blockHeight);
       return;
     }
