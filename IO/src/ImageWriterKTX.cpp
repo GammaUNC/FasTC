@@ -97,7 +97,17 @@ bool ImageWriterKTX::WriteImage() {
       break;
 
     case FasTC::eCompressionFormat_PVRTC4:
-      wtr.Write(COMPRESSED_RGBA_PVRTC_4BPPV1_IMG);  // glInternalFormat
+      wtr.Write(GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG);  // glInternalFormat
+      wtr.Write(GL_RGBA);  // glBaseFormat
+      break;
+
+    case FasTC::eCompressionFormat_DXT1:
+      wtr.Write(GL_COMPRESSED_RGB_S3TC_DXT1_EXT);  // glInternalFormat
+      wtr.Write(GL_RGB);  // glBaseFormat
+      break;
+
+    case FasTC::eCompressionFormat_DXT5:
+      wtr.Write(GL_COMPRESSED_RGBA_S3TC_DXT5_EXT);  // glInternalFormat
       wtr.Write(GL_RGBA);  // glBaseFormat
       break;
 
@@ -127,11 +137,15 @@ bool ImageWriterKTX::WriteImage() {
   wtr.Write(orientationValue, oValLen + 1); // value
   wtr.Write(orientationKey, tkvSz - kvSz - 4); // padding
 
-  if(ci && ci->GetFormat() == FasTC::eCompressionFormat_BPTC) {
+  if(ci &&
+     (ci->GetFormat() == FasTC::eCompressionFormat_BPTC ||
+      ci->GetFormat() == FasTC::eCompressionFormat_DXT5)) {
     static const uint32 kImageSize = m_Width * m_Height;
     wtr.Write(kImageSize); // imageSize
     wtr.Write(ci->GetCompressedData(), kImageSize); // imagedata...
-  } else if(ci && ci->GetFormat() == FasTC::eCompressionFormat_PVRTC4) {
+  } else if(ci &&
+            (ci->GetFormat() == FasTC::eCompressionFormat_PVRTC4 ||
+             ci->GetFormat() == FasTC::eCompressionFormat_DXT1)) {
     static const uint32 kImageSize = m_Width * m_Height >> 1;
     wtr.Write(kImageSize); // imageSize
     wtr.Write(ci->GetCompressedData(), kImageSize); // imagedata...
