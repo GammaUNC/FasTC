@@ -67,7 +67,7 @@ Image &Image::operator=(const Image &other) {
   FasTC::Image<FasTC::Pixel>::operator=(other);
 
   assert(m_FractionalPixels);
-  delete m_FractionalPixels;
+  delete [] m_FractionalPixels;
   m_FractionalPixels = new FasTC::Pixel[other.GetWidth() * other.GetHeight()];
   memcpy(m_FractionalPixels, other.m_FractionalPixels,
          GetWidth() * GetHeight() * sizeof(FasTC::Pixel));
@@ -105,7 +105,7 @@ void Image::BilinearUpscale(uint32 xtimes, uint32 ytimes,
   FasTC::Pixel *upscaledPixels = new FasTC::Pixel[newWidth * newHeight];
 
   assert(m_FractionalPixels);
-  delete m_FractionalPixels;
+  delete [] m_FractionalPixels;
   m_FractionalPixels = new FasTC::Pixel[newWidth * newHeight];
 
   Indexer idxr(newWidth, newHeight, wrapMode);

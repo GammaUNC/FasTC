@@ -506,7 +506,7 @@ double Image<PixelType>::ComputeEntropy() {
 template<typename PixelType>
 void Image<PixelType>::SetImageData(uint32 width, uint32 height, PixelType *data) {
   if(m_Pixels) {
-    delete m_Pixels;
+    delete [] m_Pixels;
   }
 
   if(!data) {

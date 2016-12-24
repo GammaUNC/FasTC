@@ -48,7 +48,7 @@ class ImageWriter {
  public:
   virtual ~ImageWriter() {
     if(m_RawFileData) {
-      delete m_RawFileData;
+      delete [] m_RawFileData;
       m_RawFileData = 0;
     }
   }
