@@ -77,7 +77,7 @@ namespace DXTC
     const uint32 kBlockSz = GetBlockSize(FasTC::eCompressionFormat_DXT5);
     const uint32 startBlock = cj.CoordsToBlockIdx(cj.XStart(), cj.YStart());
     uint8 *outBuf = cj.OutBuf() + startBlock * kBlockSz;
-    
+
     const uint32 *inPixels = reinterpret_cast<const uint32 *>(cj.InBuf());
     uint32 endY = std::min(cj.YEnd(), cj.Height() - 4);
     uint32 startX = cj.XStart();
@@ -94,3 +94,4 @@ namespace DXTC
     }
   }
 }
+

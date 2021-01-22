@@ -52,6 +52,7 @@ void PrintUsage() {
   fprintf(stderr, "\t-t <num>\tCompress the image using <num> threads. Default: 1\n");
   fprintf(stderr, "\t-a \t\tCompress the image using synchronization via atomic operations. Default: Off\n");
   fprintf(stderr, "\t-j <num>\tUse <num> blocks for each work item in a worker queue threading model. Default: (Blocks / Threads)\n");
+  fprintf(stderr, "\t-o <file>\tOutput compressed raw file (decompressed output/psnr/timing are then ignored)\n");
 }
 
 void ExtractBasename(const char *filename, char *buf, size_t bufSz) {
@@ -87,6 +88,7 @@ int main(int argc, char **argv) {
   }
 
   char decompressedOutput[256];
+  char compressedOutput[256];
   decompressedOutput[0] = '\0';
   bool bDecompress = true;
   int numJobs = 0;
@@ -99,6 +101,7 @@ int main(int argc, char **argv) {
   bool bUsePVRTexLib = false;
   bool bUseNVTT = false;
   bool bVerbose = false;
+  bool cutTheCrap = false;
   FasTC::ECompressionFormat format = FasTC::eCompressionFormat_BPTC;
 
   bool knowArg = false;
@@ -243,6 +246,25 @@ int main(int argc, char **argv) {
       continue;
     }
 
+	if (strcmp(argv[fileArg], "-o") == 0) {
+		fileArg++;
+
+		if (fileArg == argc) {
+			PrintUsage();
+			exit(1);
+		}
+		else {
+			size_t sz = 255;
+			sz = ::std::min(sz, static_cast<size_t>(strlen(argv[fileArg])));
+			memcpy(compressedOutput, argv[fileArg], sz + 1);
+		}
+
+		fileArg++;
+		knowArg = true;
+		cutTheCrap = true;
+		continue;
+	}
+
   } while (knowArg && fileArg < argc);
 
   if (fileArg == argc) {
@@ -295,49 +317,63 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  if (ci->GetWidth() != img.GetWidth() ||
-      ci->GetHeight() != img.GetHeight()) {
-    fprintf(stderr, "Cannot compute image metrics: compressed and uncompressed dimensions differ.\n");
+  if (cutTheCrap) {
+
+	  const uint8* data = ci->GetCompressedData();
+	  uint32 size = ci->GetCompressedSize();
+	  FILE* fc = fopen(compressedOutput, "wb");
+	  fwrite(data, size, 1, fc);
+	  fclose(fc);
+
   } else {
-    double PSNR = img.ComputePSNR(ci);
-    if(PSNR > 0.0) {
-      fprintf(stdout, "PSNR: %.3f\n", PSNR);
-    }
-    else {
-      fprintf(stderr, "Error computing PSNR\n");
-    }
+	  if (ci->GetWidth() != img.GetWidth() ||
+		  ci->GetHeight() != img.GetHeight()) {
+		  fprintf(stderr, "Cannot compute image metrics: compressed and uncompressed dimensions differ.\n");
+	  }
+	  else {
+		  double PSNR = img.ComputePSNR(ci);
+		  if (PSNR > 0.0) {
+			  fprintf(stdout, "PSNR: %.3f\n", PSNR);
+		  }
+		  else {
+			  fprintf(stderr, "Error computing PSNR\n");
+		  }
 
-    if(bVerbose) {
-      double SSIM = img.ComputeSSIM(ci);
-      if(SSIM > 0.0) {
-        fprintf(stdout, "SSIM: %.9f\n", SSIM);
-      } else {
-        fprintf(stderr, "Error computing SSIM\n");
-      }
-    }
+		  if (bVerbose) {
+			  double SSIM = img.ComputeSSIM(ci);
+			  if (SSIM > 0.0) {
+				  fprintf(stdout, "SSIM: %.9f\n", SSIM);
+			  }
+			  else {
+				  fprintf(stderr, "Error computing SSIM\n");
+			  }
+		  }
+	  }
+
+	  if (bDecompress) {
+		  if (decompressedOutput[0] != '\0') {
+			  memcpy(basename, decompressedOutput, 256);
+		  }
+		  else if (format == FasTC::eCompressionFormat_BPTC) {
+			  strcat(basename, "-bptc.png");
+		  }
+		  else if (format == FasTC::eCompressionFormat_PVRTC4) {
+			  strcat(basename, "-pvrtc-4bpp.png");
+		  }
+		  else if (format == FasTC::eCompressionFormat_DXT1) {
+			  strcat(basename, "-dxt1.png");
+		  }
+		  else if (format == FasTC::eCompressionFormat_ETC1) {
+			  strcat(basename, "-etc1.png");
+		  }
+
+		  EImageFileFormat fmt = ImageFile::DetectFileFormat(basename);
+		  ImageFile cImgFile(basename, fmt, *ci);
+		  cImgFile.Write();
+	  }
   }
 
-  if(bDecompress) {
-    if(decompressedOutput[0] != '\0') {
-      memcpy(basename, decompressedOutput, 256);
-    } else if(format == FasTC::eCompressionFormat_BPTC) {
-      strcat(basename, "-bptc.png");
-    } else if(format == FasTC::eCompressionFormat_PVRTC4) {
-      strcat(basename, "-pvrtc-4bpp.png");
-    } else if(format == FasTC::eCompressionFormat_DXT1) {
-      strcat(basename, "-dxt1.png");
-    } else if(format == FasTC::eCompressionFormat_DXT5) {
-      strcat(basename, "-dxt5.png");
-    } else if(format == FasTC::eCompressionFormat_ETC1) {
-      strcat(basename, "-etc1.png");
-    }
-
-    EImageFileFormat fmt = ImageFile::DetectFileFormat(basename);
-    ImageFile cImgFile (basename, fmt, *ci);
-    cImgFile.Write();
-  }
-
-  // Cleanup 
+  // Cleanup
   delete ci;
   if(bSaveLog) {
     logFile.close();
